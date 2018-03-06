@@ -1,2 +1,2 @@
-# plandepth
-Investigating planning depth using a multi stage task
+# Adaptive planning depth
+Investigating adaptive planning depth using a multi stage task
