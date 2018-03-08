@@ -10,61 +10,86 @@ import torch
 from tasks import MultiStage
 from agents import Random, Informed
 
+import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 sns.set(context = 'talk', style = 'white', color_codes = True)
 
 runs = 10000
-trials = 3
-
+trials = 4
 na = 2
 ns = 6
 no = 5
 
+uniq = np.load('outlike_bf_d%d.npy' % trials)
 mnom = torch.distributions.Multinomial(probs = torch.ones(ns, no))
-outcome_likelihood = mnom.sample((runs,))
 
+#outcome_likelihood = mnom.sample((runs,))
+outcome_likelihood = torch.from_numpy(np.tile(uniq[:250], (40,1,1))[np.random.permutation(runs)])
+
+p = .5
 transition_matrix = torch.zeros(na, ns, ns)
 transition_matrix[0, :-1, 1:] = torch.eye(ns-1)
-transition_matrix[0,-1,0] = 1.
-transition_matrix[1, :2,-2:] = torch.eye(2)
-transition_matrix[1, 2:,:-2] = torch.eye(4)
+transition_matrix[0,-1,0] = 1
+transition_matrix[1, -2:, 0:3] = (1-p)/2; transition_matrix[1, -2:, 1] = p
+transition_matrix[1, 2, 3:6] = (1-p)/2; transition_matrix[1, 2, 4] = p
+transition_matrix[1, 0, 3:6] = (1-p)/2; transition_matrix[1, 0, 4] = p
+transition_matrix[1, 3, 0] = (1-p)/2; transition_matrix[1, 3, -2] = (1-p)/2; transition_matrix[1, 3, -1] = p
+transition_matrix[1, 1, 2:5] = (1-p)/2; transition_matrix[1, 1, 3] = p
 
-ms = MultiStage(outcome_likelihood, 
+
+ms = [MultiStage(outcome_likelihood, 
                 transition_matrix, 
                 runs = runs, 
-                trials = trials)
+                trials = trials) for x in range(trials)]
 
-agent1 = Random(runs = runs, trials = trials, na = na)
-agent2 = Informed(transition_matrix, 
+for i in range(1,trials):
+    ms[i].states[:,0] = ms[0].states[:,0]
+
+#for trials = 3 set costs to [-.2, -.6]
+#for trials = 4 set costs to [-.1, -.3]
+
+costs = torch.FloatTensor([-.1, -.3])
+#agent1 = Random(runs = runs, trials = trials, na = na)
+agent = [Informed(transition_matrix, 
                   outcome_likelihood,
                   runs = runs,
-                  trials = trials, 
-                  na = na)
+                  trials = trials,
+                  costs = costs,
+                  planning_depth = d) for d in range(1,trials+1)]
 
-cat = torch.distributions.Categorical(probs = torch.ones(na))
-outcomes = torch.zeros(runs, trials+1, 2)
-responses = torch.zeros(runs, trials)
-outcomes[:,0] = ms.sample_outcomes(0)
-res = None
+outcomes = torch.zeros(trials, runs, trials+1, 2)
+responses = torch.zeros(trials, runs, trials)
+for d in range(trials):
+    outcomes[d,:,0] = ms[d].sample_outcomes(0)
+    outcomes[d,:,0,0] = 2
+    
 for t in range(1,trials+1):
-    agent1.update_beliefs(t, outcomes[:, t-1], responses = res)
-    agent2.update_beliefs(t, outcomes[:,t-1], responses = res)
-    res = agent1.sample_responses(t) 
-    ms.update_states(t, res)
-    responses[:,t-1] = res
-    outcomes[:, t] = ms.sample_outcomes(t)
-    
+    for d in range(trials):
+        agent[d].update_beliefs(t, outcomes[d,:,t-1])
+        res = agent[d].sample_responses(t)
+        ms[d].update_states(t, res)
+        responses[d,:,t-1] = res
+        outcomes[d, :, t] = ms[d].sample_outcomes(t)
+
 values = torch.arange(-2, 2+1)
-costs = torch.FloatTensor([-.25, -.5])
-reward = torch.zeros(runs)
+reward = torch.zeros(trials, trials+1, runs)
 for t in range(trials+1):
-    reward += values[outcomes[:,t,0].long()]
-    if t>0:
-        reward += costs[responses[:,t-1].long()]
-    
-crew = reward.resize_((100,runs//100)).cumsum(dim = -1)
+    for d in range(trials):
+        reward[d,t] = values[outcomes[d,:,t,0].long()]
+        if t>0:
+            reward[d,t] += costs[responses[d,:,t-1].long()]
+
+rs = reward.sum(dim=1)    
+crew = reward.sum(dim=1).resize_((trials, 100,runs//100)).cumsum(dim = -1)
+
 fig = plt.figure(figsize = (10,6))
-plt.plot(crew.numpy().T, color = 'b', alpha = .1);
+style = ['-', '--', '-.', ':' ]
+color = ['b', 'r', 'g', 'm']
+for d in range(trials):
+    plt.plot(crew[d].numpy().T, color = color[d], alpha = .1);
+    plt.plot(crew[d].mean(dim=0).numpy(), color = 'k', linestyle = style[d])
+
 plt.xlim([0,100])
 plt.ylim([-50, 100])
+#fig.savefig('performance.pdf', dpi = 300)
