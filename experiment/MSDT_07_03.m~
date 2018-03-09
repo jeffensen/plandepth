@@ -42,8 +42,7 @@ line_yellow = imread('Line_yellow.jpg');
 
 % Specify number of MiniBlocks
 
-NoMiniBlocks = 3;
-NoTrials = 3;
+No_MiniBlocks = 3;
 
 % Variable Position Planets
 planet_pos = [[400 500 500 600];
@@ -151,21 +150,16 @@ Priority(topPriorityLevel);
 
 baseRect = [0 0 s1 s2];
 
-% for n = 1:No_MiniBlocks
-%     init_loc = 1;
-%     start_pos = rocket_pos(init_loc);
-%     for t = 1:No_Trials
-%         % animate the movement to a new location
-%         vbl = move_rocket(rocket_pos(i-1,:),... 
-%                     rocket_pos(i,:),...
-%                     window,...
-%                     RocketTexture,... 
-%                     baseRect, ...
-%                     ifi, ...
-%                     vbl);
-%     end
-%     
-% end
+% Loop the animation until a key is pressed
+for i = 2:6
+    vbl = move_rocket(rocket_pos(i-1,:),... 
+                rocket_pos(i,:),...
+                window,...
+                RocketTexture,... 
+                baseRect, ...
+                ifi, ...
+                vbl);
+end
 
 % [secs_1, keyCode_1, deltaSecs_1] = KbPressWait; 
 % 
