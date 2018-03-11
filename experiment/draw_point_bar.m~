@@ -1,0 +1,20 @@
+function draw_point_bar(points, window, xCenter, yCenter)
+    centBar = CenterRectOnPointd([0 0 1000 50], xCenter, yCenter-400);
+    pointBar = centBar;
+    pointBar(3) = points;
+    pointBar(4) = 
+    red = [1 0 0];
+    green = [0 1 0];
+    colors = [.15 .15 .15; red + points*(green-red)/points];
+    
+    yPos = yCenter-400;
+    
+    offset = points/2 - 5;
+    for i=1:2
+        centBar = CenterRectOnPointd(bar(i,:), xCenter - offset*(i-1),...
+                                     yPos);
+        % Draw the bar to the screen
+        Screen('FillRect', window, colors(i,:), centBar);
+    end
+end
+
