@@ -1,3 +1,5 @@
 *.npy
 *.svg
 *.m~
+
+experiment/generate_experimental_parameters.m
