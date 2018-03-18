@@ -16,18 +16,21 @@ import seaborn as sns
 sns.set(context = 'talk', style = 'white', color_codes = True)
 
 runs = 10000
-trials = 4
+trials = 3
 na = 2
 ns = 6
 no = 5
 
-uniq = np.load('outlike_bf_d%d.npy' % trials)
-mnom = torch.distributions.Multinomial(probs = torch.ones(ns, no))
+confs = np.load('confsT%d.npy' % trials)
+starts = np.load('startsT%d.npy' % trials)
+#mnom = torch.multinomial(torch.ones(ns, no), runs)
 
 #outcome_likelihood = mnom.sample((runs,))
-outcome_likelihood = torch.from_numpy(np.tile(uniq[:250], (40,1,1))[np.random.permutation(runs)])
+pers = np.random.permutation(runs)
+outcome_likelihood = torch.from_numpy(np.tile(confs[:50], (200,1,1))[pers])
+starts = torch.from_numpy(np.tile(starts[:50], (200))[pers])
 
-p = .5
+p = .9
 transition_matrix = torch.zeros(na, ns, ns)
 transition_matrix[0, :-1, 1:] = torch.eye(ns-1)
 transition_matrix[0,-1,0] = 1
@@ -43,13 +46,10 @@ ms = [MultiStage(outcome_likelihood,
                 runs = runs, 
                 trials = trials) for x in range(trials)]
 
-for i in range(1,trials):
-    ms[i].states[:,0] = ms[0].states[:,0]
+for i in range(trials):
+    ms[i].states[:,0] = starts
 
-#for trials = 3 set costs to [-.2, -.6]
-#for trials = 4 set costs to [-.1, -.3]
-
-costs = torch.FloatTensor([-.1, -.3])
+costs = torch.FloatTensor([-.2, -.5])
 #agent1 = Random(runs = runs, trials = trials, na = na)
 agent = [Informed(transition_matrix, 
                   outcome_likelihood,
@@ -76,8 +76,8 @@ values = torch.arange(-2, 2+1)
 reward = torch.zeros(trials, trials+1, runs)
 for t in range(trials+1):
     for d in range(trials):
-        reward[d,t] = values[outcomes[d,:,t,0].long()]
         if t>0:
+            reward[d,t] = values[outcomes[d,:,t,0].long()]
             reward[d,t] += costs[responses[d,:,t-1].long()]
 
 rs = reward.sum(dim=1)    
@@ -93,3 +93,27 @@ for d in range(trials):
 plt.xlim([0,100])
 plt.ylim([-50, 100])
 #fig.savefig('performance.pdf', dpi = 300)
+
+#bs = torch.ByteTensor(runs)
+#bs[:] = True
+#for i in range(1, len(ms)):
+#    bs = bs*(rs[i-1] < rs[i])
+#diff = rs[-1] - rs[0]    
+#bss = (diff >= 2)*bs
+#inits = ms[0].states[:, 0][bss].numpy()
+#confs = outcome_likelihood.numpy()[bss.numpy().astype(bool)]
+#uniqs = np.unique(confs, axis = 0)
+#starts = {}
+#for i in range(len(uniqs)):
+#    for j in range(len(confs)):
+#        if np.all(uniqs[i] == confs[j]):
+#            if i in starts.keys():
+#                starts[i].append(inits[j])
+#            else:
+#                starts[i] = [inits[j]]
+#vec = []
+#for i in range(len(uniqs)):
+#    vec.append(np.unique(starts[i])[0])
+#starts = np.array(vec)
+#np.save('startsT%d.npy' % trials, starts)
+#np.save('confsT%d.npy' % trials, confs)

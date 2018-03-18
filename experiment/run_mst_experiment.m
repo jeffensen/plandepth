@@ -45,7 +45,7 @@ waitframes = round(flipSecs / ifi);
 
 % Setup the text type for the window
 Screen('TextFont', window, 'Ariel');
-Screen('TextSize', window, 50);
+Screen('TextSize', window, 30);
 
 % Get the centre coordinate of the window
 [xCenter, yCenter] = RectCenter(windowRect);
@@ -93,19 +93,20 @@ KbStrokeWait;
 
 % Specify number of MiniBlocks
 
-NoMiniBlocks = 10;
+NoMiniBlocks = 100;
 NoTrials = 3;
 
 if NoTrials == 3
     planets = planetsT3;
+    starts = startsT3;
 elseif NoTrials == 4
     planets = planetsT4;
 end
        
 % Initial point and planet specific rewards
-points = 500;
+points = 995;
 planetRewards = [-20, -10, 0, 10, 20];
-actionCost = [-3 -6];
+actionCost = [-2 -5];
 
 % points bar
 bar = [0, 0, 100, 1000];
@@ -152,6 +153,24 @@ end
 % Make the rocket into a texture
 RocketTexture = Screen('MakeTexture', window, rocket);
 
+debrisLoc = 'debris.png';
+
+[debris, ~, dalpha] = imread(debrisLoc);
+
+% Add transparency to the background
+debris(:,:,4) = dalpha;
+
+% Get the size of the debris image
+[d1, d2, ~] = size(debris);
+
+debrisRect = [0 0 d2 d1];
+
+%generate debris locations
+debrisPos = CenterRectOnPointd(debrisRect, xCenter, yCenter);
+
+% Make the debris into a texture
+DebrisTexture = Screen('MakeTexture', window, debris);
+
 % buttons_img_location = ['button1.png'; 'button2.png'];
 % 
 % ButtonsTexture = NaN(2);
@@ -181,6 +200,21 @@ topPriorityLevel = MaxPriority(window);
 Priority(topPriorityLevel);
 
 for n = 1:NoMiniBlocks
+    % current experimental condition
+    cond = conditions.noise{n};
+    NoTrials = conditions.notrials{n};
+    if n > 50
+        loc = n - 50;
+    else
+        loc = n;
+    end
+    if NoTrials == 3
+        start = startsT3(loc);
+        planetList = planetsT3(loc,:);
+    else
+        start = startsT4(loc);
+        planetList = planetsT4(loc,:);
+    end
     
     % mini block transition massage
     DrawFormattedText(window, trans_text,...
@@ -189,6 +223,11 @@ for n = 1:NoMiniBlocks
     Screen('flip', window);
     % Wait for two seconds
     WaitSecs(1.5);
+    
+    if strcmp(cond, 'high')
+        % Draw debris
+        Screen('DrawTexture', window, DebrisTexture, [], debrisPos)
+    end
     
     % draw point bar
     draw_point_bar(points, window, xCenter, yCenter);
@@ -200,11 +239,9 @@ for n = 1:NoMiniBlocks
 %     draw_buttons(window, ButtonsTexture, buttonsPos);
     
     % plot planets for the given mini block
-    planetList = planets(n,:);
     draw_planets(planetList, window, PlanetsTexture, planetsPos);
     
-    start = starts(n);
-    % Draw the rocket at the starting position 
+    % Draw the rocket at the starting position
     Screen('DrawTexture', window, RocketTexture, [], rocketPos(:,start)');
     
     vbl = Screen('flip', window);
@@ -218,17 +255,27 @@ for n = 1:NoMiniBlocks
             next = find(cumsum(p)>=rand,1);
             points = points + actionCost(1);
         elseif strcmp(KbName(keyCode), 'RightArrow')
-            p = state_transition_matrix(2, start, :);
+            if strcmp(cond, 'low')
+                p = state_transition_matrix(3, start, :);
+            else
+                p = state_transition_matrix(4, start, :);
+            end
             next = find(cumsum(p)>=rand,1);
             points = points + actionCost(2);
         end
-        
+        if points < 0
+            break
+        end
         % move the rocket
         md = .5; %movement duration
         time = 0;
         locStart = imagePos(start, :);
         locEnd = imagePos(next, :);
         while time < md
+            if strcmp(cond, 'high')
+                % Draw debris
+                Screen('DrawTexture', window, DebrisTexture, [], debrisPos)
+            end
             draw_point_bar(points, window, xCenter, yCenter);
             draw_remaining_actions(window, t, NoTrials, xCenter, yCenter);
 %             draw_buttons(window, ButtonsTexture, buttonsPos);
@@ -262,6 +309,15 @@ for n = 1:NoMiniBlocks
             s = int2str(reward);
         end
         
+        if points < 0 
+            break
+        end
+        
+        if strcmp(cond, 'high')
+            % Draw debris
+            Screen('DrawTexture', window, DebrisTexture, [], debrisPos)
+        end
+        
         DrawFormattedText(window, s, 'center', yCenter - 100, white);
         draw_point_bar(points, window, xCenter, yCenter);
         draw_remaining_actions(window, t+1, NoTrials, xCenter, yCenter);
@@ -272,14 +328,28 @@ for n = 1:NoMiniBlocks
         vbl = Screen('Flip', window);
     end
     WaitSecs(.5);
+    if points < 0
+        break
+    end
 end
+
 
 %% End screen
 end_msg = ['This is the end of experiment.' ...
            '\n\n Thank you for participating.'];
 
+       
+gameOver = ['Game over' ...
+            '\n\n You have lost all your fuel.' ...
+            '\n\n Thank you for participating'];       
 % Draw all the text in one go
-DrawFormattedText(window, end_msg, 'center', screenYpixels * 0.25, white);       
+if points < 0
+        DrawFormattedText(window, gameOver, 'center', ...
+                        screenYpixels * 0.25, white);     
+else
+    DrawFormattedText(window, end_msg, 'center', ...
+                        screenYpixels * 0.25, white); 
+end
        
 Screen('Flip', window);
 

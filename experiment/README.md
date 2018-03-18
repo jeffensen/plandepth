@@ -2,9 +2,10 @@
 Psychotoolbox implementation of the multi stage task
 
 # Credits
-The graphics used in the epxeriment was downloaded from following sources
+The graphics used in the experiment was downloaded from following sources
 
-https://www.freepik.com/free-vector/rocket-ship-icon-collection_838765.htm 
-Designed by Freepik
+<a href='https://www.freepik.com/free-vector/rocket-ship-icon-collection_838765.htm'>Designed by Freepik</a> 
 
-Free Vector Art by www.vecteezy.com 
+<a href='https://www.freepik.com/free-vector/infographic-about-the-earth_910377.htm'>Designed by Freepik</a>
+
+<a href='https://www.vecteezy.com'>Free Vector Art at Vecteezy</a>
