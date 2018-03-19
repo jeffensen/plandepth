@@ -15,31 +15,40 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 sns.set(context = 'talk', style = 'white', color_codes = True)
 
-runs = 10000
-trials = 2
+runs = 100
+trials = [3,4]
 na = 2
 ns = 6
 no = 5
 
-mnom = torch.distributions.Multinomial(probs = torch.ones(ns, no))
+confs = []
+starts = []
+for T in trials:
+    confs.append(np.load('confsT%d.npy' % T)[:50])
+    starts.append(np.load('startsT%d.npy' % T)[:50])
 
-outcome_likelihood = mnom.sample((runs,))
+pers = np.random.permutation(runs)
+outcome_likelihood = torch.from_numpy(np.vstack(confs))
+starts = torch.from_numpy(np.hstack(starts))
 
-p = 1.
-transition_matrix = torch.zeros(na, ns, ns)
-transition_matrix[0, :-1, 1:] = torch.eye(ns-1)
-transition_matrix[0,-1,0] = 1
-transition_matrix[1, -2:, 0:3] = (1-p)/2; transition_matrix[1, -2:, 1] = p
-transition_matrix[1, 2, 3:6] = (1-p)/2; transition_matrix[1, 2, 4] = p
-transition_matrix[1, 0, 3:6] = (1-p)/2; transition_matrix[1, 0, 4] = p
-transition_matrix[1, 3, 0] = (1-p)/2; transition_matrix[1, 3, -2] = (1-p)/2; transition_matrix[1, 3, -1] = p
-transition_matrix[1, 1, 2:5] = (1-p)/2; transition_matrix[1, 1, 3] = p
+noise = np.tile(np.array([.9, .5, .9, .5]), (25,1)).T.flatten()
+
+for i in range(runs):
+    p = noise[i]
+    transition_matrix = torch.zeros(na, ns, ns)
+    transition_matrix[0, :-1, 1:] = torch.eye(ns-1)
+    transition_matrix[0,-1,0] = 1
+    transition_matrix[1, -2:, 0:3] = (1-p)/2; transition_matrix[1, -2:, 1] = p
+    transition_matrix[1, 2, 3:6] = (1-p)/2; transition_matrix[1, 2, 4] = p
+    transition_matrix[1, 0, 3:6] = (1-p)/2; transition_matrix[1, 0, 4] = p
+    transition_matrix[1, 3, 0] = (1-p)/2; transition_matrix[1, 3, -2] = (1-p)/2; transition_matrix[1, 3, -1] = p
+    transition_matrix[1, 1, 2:5] = (1-p)/2; transition_matrix[1, 1, 3] = p
 
 
-ms = [MultiStage(outcome_likelihood, 
-                transition_matrix, 
-                runs = runs, 
-                trials = trials) for x in range(trials)]
+    ms = [MultiStage(outcome_likelihood, 
+                    transition_matrix, 
+                    runs = runs, 
+                    trials = trials) for x in range(trials)]
 
 for i in range(trials):
     ms[i].states[:,0] = ms[0].states[:,0] #starts
@@ -88,27 +97,3 @@ for d in range(trials):
 plt.xlim([0,100])
 plt.ylim([-50, 100])
 #fig.savefig('performance.pdf', dpi = 300)
-
-bs = torch.ByteTensor(runs)
-bs[:] = True
-for i in range(1, len(ms)):
-    bs = bs*(rs[i-1] < rs[i])
-diff = rs[-1] - rs[0]    
-bss = (diff >= 2.5)*bs
-inits = ms[0].states[:, 0][bss].numpy()
-confs = outcome_likelihood.numpy()[bss.numpy().astype(bool)]
-uniqs = np.unique(confs, axis = 0)
-starts = {}
-for i in range(len(uniqs)):
-    for j in range(len(confs)):
-        if np.all(uniqs[i] == confs[j]):
-            if i in starts.keys():
-                starts[i].append(inits[j])
-            else:
-                starts[i] = [inits[j]]
-vec = []
-for i in range(len(uniqs)):
-    vec.append(np.unique(starts[i])[0])
-starts = np.array(vec)
-np.save('startsT%d.npy' % trials, starts)
-np.save('confsT%d.npy' % trials, confs)
