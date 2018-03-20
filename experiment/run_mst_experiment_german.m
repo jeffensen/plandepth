@@ -1,6 +1,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%   Modify before experiment %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-data = structure;
+data = struct;
  
 %  data.Pbn_ID = ; % fill out
 %  data.Age = ; % fill out
@@ -8,10 +8,12 @@ data = structure;
 %  
 %  
 % 
-%     data.Responses = NaN (100,6)
-    data.PlanetCont = NaN(100,6);
-%    data.States= NaN (100,4)
-    data.Conditions = NaN (100,2); 
+    data.Responses.RT = NaN(100, 4);
+    data.Responses.Keys = NaN(100, 4);
+    data.States = NaN(100, 5);
+    data.PlanetConf = NaN(100,6);
+    data.Conditions.notrials = NaN (100);
+    data.Conditions.noise = {};
 %    
 % 
 %  save(strcat('data_participant_ID', int2str(data.Pbn_ID), '.mat'), data);
@@ -214,6 +216,8 @@ for n = 1:NoMiniBlocks
     % current experimental condition
     cond = conditions.noise{n};
     NoTrials = conditions.notrials{n};
+    data.Conditions.notrials(n)= NoTrials;
+    data.Conditions.noise{n} = cond;
     if n > 50
         loc = n - 50;
     else
@@ -226,6 +230,7 @@ for n = 1:NoMiniBlocks
         start = startsT4(loc);
         planetList = planetsT4(loc,:);
     end
+    data.PlanetConf(n, :)= planetList;
     
     % mini block transition massage
     DrawFormattedText(window, trans_text,...
@@ -259,18 +264,24 @@ for n = 1:NoMiniBlocks
     
     for t = 1:NoTrials
         % Wait for a key press
-        [secs, keyCode, deltaSecs] = KbPressWait;
-        
+        while true
+            [secs, keyCode, deltaSecs] = KbPressWait;
+            Key = KbName(keyCode);
+            if strcmp(Key, 'LeftArrow') ||  strcmp(Key, 'RightArrow')
+                break;
+            end
+        end
         % Save response and response time
-        Key = KbName(keyCode);
-        data.Responses(t,t) = [secs];
-        data.Responses(t,t+1)=[Key];
+        data.States(n,t) = start;
         
-        if strcmp(KbName(keyCode), 'LeftArrow')
+        if strcmp(Key, 'LeftArrow')
             p = state_transition_matrix(1, start, :);
             next = find(cumsum(p)>=rand,1);
             points = points + actionCost(1);
-        elseif strcmp(KbName(keyCode), 'RightArrow')
+            data.Responses.Keys(n,t)= 1;
+            data.Responses.RT(n, t) = secs-vbl;
+
+        elseif strcmp(Key, 'RightArrow')
             if strcmp(cond, 'low')
                 p = state_transition_matrix(3, start, :);
             else
@@ -278,6 +289,8 @@ for n = 1:NoMiniBlocks
             end
             next = find(cumsum(p)>=rand,1);
             points = points + actionCost(2);
+            data.Responses.Keys(n,t)= 2;
+            data.Responses.RT(n, t) = secs-vbl;
         end
         if points < 0
             break
@@ -312,8 +325,6 @@ for n = 1:NoMiniBlocks
 
             % Increment the time
             time = time + ifi;
-            
-            Trial = [cond]
         end
         
         % set start to a new location
@@ -345,6 +356,7 @@ for n = 1:NoMiniBlocks
         
         vbl = Screen('Flip', window);
     end
+    data.States(n,t+1) = start;
     WaitSecs(.5);
     if points < 0
         break
