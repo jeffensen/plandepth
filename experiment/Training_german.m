@@ -19,7 +19,7 @@ PsychDefaultSetup(2);
 load('experimental_variables.mat')
 
 %makes screen transparent for debugging
-PsychDebugWindowConfiguration();
+%PsychDebugWindowConfiguration();
 
 % Screen('Preference', 'SkipSyncTests', 1);
 
@@ -50,7 +50,7 @@ waitframes = round(flipSecs / ifi);
 
 % Setup the text type for the window
 Screen('TextFont', window, 'Ariel');
-Screen('TextSize', window, 20);
+Screen('TextSize', window, 30);
 
 % Set up alpha-blending for smooth (anti-aliased) lines
 Screen('BlendFunction', window, 'GL_SRC_ALPHA', 'GL_ONE_MINUS_SRC_ALPHA');
@@ -77,19 +77,15 @@ md = .5; %movement duration
 
 % Introductory text
 text = ['Hallo Abenteurer!' ...
-        '\n\n'...
-        '\n\n Willkommen im Trainingslager'... 
-        '\n\n '...
-        '\n\n Heute hast du die Chance an einer Reise durch den Weltraum teilzunehmen.'...
-        '\n\n'...         
-        '\n\n Bevor es losgeht, zeige ich dir jedoch wie du im Weltraum Ã¼berleben kannst.' ...
-        '\n\n '];
+        '\n\n\n\n Willkommen im Trainingslager'... 
+        '\n\n\n\n Heute hast du die Chance an einer Reise durch den Weltraum teilzunehmen.'...
+        '\n\n\n\n Bevor es losgeht, zeige ich dir jedoch wie du im Weltraum überleben kannst.'];
      
 % Draw all the text in one go
 DrawFormattedText(window, text, 'center', screenYpixels * 0.25, white);
 
 % Press Key to continue  
-DrawFormattedText(window, 'DrÃ¼cke eine Taste um fortzufahren.', ...
+DrawFormattedText(window, 'Drücke eine Taste um fortzufahren.', ...
                   'center', screenYpixels*0.9);
 
 % Flip to the screen
@@ -103,8 +99,8 @@ KbStrokeWait;
 
 %text 
 text = ['Du wirst durch verschiedene Planetensysteme reisen.' ...
-        '\n Jedes dieser Systeme besteht aus sechs Planeten.' ...
-         '\n\n DrÃ¼cke eine Taste um fortzufahren.'];
+        '\n\n\n\n Jedes dieser Systeme besteht aus sechs Planeten.' ...
+         '\n\n\n\n Drücke eine Taste um fortzufahren.'];
 
 
 % Draw all the text in one go
@@ -148,7 +144,7 @@ planetList = [1, 3, 2, 2, 4, 5];
 draw_planets(planetList, window, PlanetsTexture, planetsPos);
     
 % Press Key to continue  
-DrawFormattedText(window, 'DrÃ¼cke eine Taste um fortzufahren.', ...
+DrawFormattedText(window, 'Drücke eine Taste um fortzufahren.', ...
                   'center', screenYpixels*0.9); 
 
 Screen('flip', window);
@@ -164,17 +160,7 @@ text = ['Ein Raumschiff zeigt dir zu jedem Zeitpunkt deine aktuelle Position an'
 
 % Draw all the text in one go
 DrawFormattedText(window, text,...
-    'center', screenYpixels * 0.25, white);
-
-% Press Key to continue  
-DrawFormattedText(window, 'DrÃ¼cke eine Taste um fortzufahren.', ...
-                  'center', screenYpixels*0.9);
-
-% Flip to the screen
-Screen('Flip', window);
-
-KbStrokeWait;
-
+    'center', screenYpixels * 0.1, white);
 
 %%%%%%%%%%%% SHOW PLANETSYSTEM + ROCKET %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -205,7 +191,7 @@ RocketTexture = Screen('MakeTexture', window, rocket);
 Screen('DrawTexture', window, RocketTexture, [], rocketPos(:,1)');
 
 % Press Key to continue  
-DrawFormattedText(window, 'DrÃ¼cke eine Taste um fortzufahren.', ...
+DrawFormattedText(window, 'Drücke eine Taste um fortzufahren.', ...
                   'center', screenYpixels*0.9);  
 
 Screen('flip', window);
@@ -216,12 +202,10 @@ KbStrokeWait;
 %%%%%%%%%%%% INSTRUCTIONS 3 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-text = ['Um im Weltraum zu Ã¼berleben, musst du versuchen soviel Treibstoff wie mÃ¼glich zu sammeln.' ... 
-        '\n\n Um Treibstoff zu erhalten, reist du von Planet zu Planet.'...
-        '\n\n '...
-        '\n\n Dabei kannst du dich immer zwischen den Kommandos RECHTS und (S)prung entscheiden.'...
-        '\n\n '...
-        '\n\n RECHTS kostet dich dabei immer 2 Treibstoffeinheiten, wÃ¼hrend (S)prung 5 Treibstoffeinheiten verbraucht.']; 
+text = ['Um im Weltraum zu überleben, musst du versuchen soviel Treibstoff wie möglich zu sammeln.' ... 
+        '\n\n\n\n Um Treibstoff zu erhalten, reist du von Planet zu Planet.'...
+        '\n\n\n\n Dabei kannst du dich immer zwischen den Kommandos RECHTS und (S)prung entscheiden.'...
+        '\n\n\n\n RECHTS kostet dich dabei immer 2 Treibstoffeinheiten, während (S)prung 5 Treibstoffeinheiten verbraucht.']; 
 
 
 % Draw all the text in one go
@@ -229,7 +213,7 @@ DrawFormattedText(window, text,...
     'center', screenYpixels * 0.25, white);
 
 % Press Key to continue  
-DrawFormattedText(window, 'DrÃ¼cke eine Taste um fortzufahren.', ...
+DrawFormattedText(window, 'Drücke eine Taste um fortzufahren.', ...
                   'center', screenYpixels*0.9);
 
 % Flip to the screen
@@ -243,8 +227,7 @@ KbStrokeWait;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % text
-text = ['Deinen aktuellen Treibstofflevel kannst du am oberen Bildschirmrand ablesen.' ...
-          '\n '];
+text = ['Deinen aktuellen Treibstofflevel kannst du am oberen Bildschirmrand ablesen.'];
 
 
 % Draw all the text in one go
@@ -252,7 +235,7 @@ DrawFormattedText(window, text,...
     'center', screenYpixels * 0.25, white);
 
 % Press Key to continue  
-DrawFormattedText(window, 'DrÃ¼cke eine Taste um fortzufahren.', ...
+DrawFormattedText(window, 'Drücke eine Taste um fortzufahren.', ...
                   'center', screenYpixels*0.8); 
 
 % Flip to the screen
@@ -266,7 +249,7 @@ KbStrokeWait;
 planets = Practise;
        
 % Initial point and planet specific rewards
-points = 995;
+points = 990;
 % points bar
 bar = [0, 0, 100, 1000];
 
@@ -281,7 +264,7 @@ start = 1;
 Screen('DrawTexture', window, RocketTexture, [], rocketPos(:,start)');
     
 % Press Key to continue  
-DrawFormattedText(window, 'DrÃ¼cke eine Taste um fortzufahren.', ...
+DrawFormattedText(window, 'Drücke eine Taste um fortzufahren.', ...
                   'center', screenYpixels*0.8);
 
 vbl = Screen('flip', window);
@@ -291,9 +274,10 @@ KbStrokeWait;
  
 % %%%%%%%%%%%% PRACTISE JUMPING LEFT  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-text = ['Zuerst schauen wir uns an, was passiert, wenn du RECHTS wÃ¤hlst.' ...
-        '\n RECHTS ermÃ¶glicht es dir im Uhrzeigersinn zum nÃ¤chsten benachbarten Planeten zu reisen.' ...
-        '\n\n Du kannst dies nun ein paar Mal ausprobieren.']; 
+text = ['Zuerst schauen wir uns an, was passiert, wenn du RECHTS wählst.' ...
+        '\n\n\n\n RECHTS ermöglicht es dir im Uhrzeigersinn zum nächsten' ...
+        '\n\n benachbarten Planeten zu reisen.' ...
+        '\n\n\n\n Du kannst dies nun ein paar Mal ausprobieren.']; 
 
 
 % Draw all the text in one go
@@ -301,7 +285,7 @@ DrawFormattedText(window, text,...
     'center', screenYpixels * 0.25, white);
 
 % Press Key to continue  
-DrawFormattedText(window, 'DrÃ¼cke eine Taste um fortzufahren.', ...
+DrawFormattedText(window, 'Drücke eine Taste um fortzufahren.', ...
                   'center', screenYpixels*0.9); 
 
 % Flip to the screen
@@ -311,81 +295,85 @@ KbStrokeWait;
 
 NoMiniBlocks = 1;
 NoTrials = 12;
-points = 995;
-
-% draw fuel tank
-draw_point_bar(points, window, xCenter, screenYpixels);
-   
-% plot planets for the given mini block
-draw_planets(Practise, window, PlanetsTexture, planetsPos);
-
+points = 990;
 start = 1;
-% Draw the rocket at the starting position 
-Screen('DrawTexture', window, RocketTexture, [], rocketPos(:,start)');
-vbl = Screen('flip', window);
-
 for t = 1:NoTrials
-    % Wait for a key press
-    [secs, keyCode, deltaSecs] = KbPressWait;
+    while(true)
 
-    if strcmp(KbName(keyCode), 'RightArrow')
-        p = state_transition_matrix(1, start, :);
-        next = find(cumsum(p)>=rand,1);
+        % draw fuel tank
+        draw_point_bar(points, window, xCenter, screenYpixels);
+   
+        % plot planets for the given mini block
+        draw_planets(Practise, window, PlanetsTexture, planetsPos);
 
-        % move the rocket
-        time = 0;
-        locStart = imagePos(start, :);
-        locEnd = imagePos(next, :);
-        while time < md
+        % Draw the rocket at the starting position 
+        Screen('DrawTexture', window, RocketTexture, [], rocketPos(:,start)');
+        vbl = Screen('flip', window);
 
-            % Position of the square on this frame
-            xpos = locStart(1) + time/md*(locEnd(1) - locStart(1));
-            ypos = locStart(2) + time/md*(locEnd(2) - locStart(2));
+        % Wait for a key press
+        [secs, keyCode, deltaSecs] = KbPressWait;
 
-            % Center the rectangle on the centre of the screen
-            cRect = CenterRectOnPointd(rocketRect, xpos, ypos);
+        if strcmp(KbName(keyCode), 'RightArrow')
+            p = state_transition_matrix(1, start, :);
+            next = find(cumsum(p)>=rand,1);
+
+            % move the rocket
+            time = 0;
+            locStart = imagePos(start, :);
+            locEnd = imagePos(next, :);
+            while time < md
+
+                % Position of the square on this frame
+                xpos = locStart(1) + time/md*(locEnd(1) - locStart(1));
+                ypos = locStart(2) + time/md*(locEnd(2) - locStart(2));
+
+                % Center the rectangle on the centre of the screen
+                cRect = CenterRectOnPointd(rocketRect, xpos, ypos);
+
+                % draw fuel tank
+                draw_point_bar(points, window, xCenter, screenYpixels);
+
+                % draw planets            
+                draw_planets(Practise, window, PlanetsTexture, planetsPos);
+                Screen('DrawTexture', window, RocketTexture, [], cRect);
+                
+                DrawFormattedText(window, '-2', 'center', yCenter-100, white);
+                
+                % Flip to the screen
+                vbl  = Screen('Flip', window, vbl + 0.5*ifi);
+
+                % Increment the time
+                time = time + ifi;
+
+            end
+            points = points + actionCost(1);
+            % set start to a new location
+            start = next;
 
             % draw fuel tank
             draw_point_bar(points, window, xCenter, screenYpixels);
-                        
-            % draw planets            
+
+            % draw planets
             draw_planets(Practise, window, PlanetsTexture, planetsPos);
+
+            % draw_buttons(window, ButtonsTexture, buttonsPos);
             Screen('DrawTexture', window, RocketTexture, [], cRect);
 
-            % Flip to the screen
-            vbl  = Screen('Flip', window, vbl + 0.5*ifi);
-
-            % Increment the time
-            time = time + ifi;
-
+            Screen('Flip', window);
+            break;
+        else
+              DrawFormattedText(window, 'Bitte RECHTS drücken',...
+                                        'center', 'center', white);
+              Screen('Flip', window);
+              WaitSecs(1.);
         end
-        points = points + actionCost(1);
-        % set start to a new location
-        start = next;
-        
-        % draw fuel tank
-        draw_point_bar(points, window, xCenter, screenYpixels);
-        
-        % draw planets
-        draw_planets(Practise, window, PlanetsTexture, planetsPos);
-
-        % draw_buttons(window, ButtonsTexture, buttonsPos);
-        Screen('DrawTexture', window, RocketTexture, [], cRect);
-        
-        DrawFormattedText(window, '-2', 'center', yCenter-100, white);
-
-    else
-          DrawFormattedText(window, 'Bitte RECHTS drÃ¼cken',...
-                                    'center', 'center', white);
-
     end
-    Screen('Flip', window);
 end
 
 %%%%%%% SHORT BREAK%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-DrawFormattedText(window, 'Als nÃ¤chstes zeige ich dir was beim Kommando (S)prung passiert.',...
-                                    'center', 'center', white);
+DrawFormattedText(window, 'Als nächstes zeige ich dir was beim Kommando (S)prung passiert.',...
+                  'center', 'center', white);
                                 
 Screen('flip', window);
 
@@ -395,17 +383,15 @@ WaitSecs(1.);
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 text = [' Wenn du (S)prung wahlst, reist dein Raumschiff zu einem nicht benachbarten Planeten.' ... 
-        '\n\n '...
-        '\n\n Als nachstes kannst du ausprobieren was an jeder Planetenposition passiert, wenn du (S)prung wÃ¤hlst.'...
-        '\n\n '...
-        '\n\n Es ist wichtig, dass du dir das gezeigte Flugmuster gut einprÃ¤gst.']; 
+        '\n\n\n\n Als nachstes kannst du ausprobieren was an jeder Planetenposition passiert, wenn du (S)prung wählst.'...
+        '\n\n\n\n Es ist wichtig, dass du dir das gezeigte Flugmuster gut einpräsgst.']; 
 
 
 % Draw all the text in one go
 DrawFormattedText(window, text,'center', screenYpixels * 0.25, white);
 
 % Press Key to continue  
-DrawFormattedText(window, 'DrÃ¼cke eine Taste um fortzufahren.', ...
+DrawFormattedText(window, 'Drücke eine Taste um fortzufahren.', ...
                   'center', screenYpixels*0.9);
 
 % Flip to the screen
@@ -413,11 +399,11 @@ Screen('Flip', window);
 
 KbStrokeWait;
 
-points = 995;
+points = 990;
 
 for n = 1:NoMiniBlocks
     for t = 1:NoTrials
-        while( true)
+        while(true)
             if t < 7
                 start = t;
             else
@@ -466,7 +452,7 @@ for n = 1:NoMiniBlocks
                     Screen('DrawTexture', window, RocketTexture, [], cRect);
                     % Flip to the screen
 
-                   DrawFormattedText(window, '-5', 'center', yCenter-100, white);
+                    DrawFormattedText(window, '-5', 'center', yCenter-100, white);
                    
                     vbl  = Screen('Flip', window, vbl + 0.5*ifi);
 
@@ -481,7 +467,7 @@ for n = 1:NoMiniBlocks
                WaitSecs(1);
                break;
             else 
-                  DrawFormattedText(window, 'Bitte S drÃ¼cken', 'center', 'center', white);
+                  DrawFormattedText(window, 'Bitte S drücken', 'center', 'center', white);
                   Screen('Flip', window); 
                   WaitSecs(1);                   
             end
@@ -493,17 +479,19 @@ end
 % %%%%%%%%%%%% PRACTISE RIGHT ACTION IN LOW NOISE%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-text_2 = ['Im richtigen Experiment, kann es passieren, dass deine Reise nach (S)prung unzuverlÃ¤ssig ist'...
-          '\n In solchen FÃ¤llen verfehlt das Raumschiff den Zielplaneten und landet stattdessen auf einem Nachbarplaneten des Zielplaneten.' ... 
-           '\n\n Um dir ein GefÃ¼hl dafÃ¼r zu geben, simuliere ich dies im nÃ¤chsten Schritt.'...
-           '\n\n Beachte, dass das Reisemuster dabei gleich bleibt und nur weniger zuverlÃ¤ssig ist.']; 
+text = ['Im richtigen Experiment, kann es passieren, dass deine Reise nach (S)prung unzuverlässig ist'...
+          '\n\n\n\n In solchen Fällen verfehlt das Raumschiff den Zielplaneten'...
+          '\n\n und landet stattdessen auf einem Nachbarplaneten des Zielplaneten.' ... 
+           '\n\n\n\n Um dir ein Gefühl dafür zu geben, simuliere ich dies im nächsten Schritt.'...
+           '\n\n\n\n Beachte, dass das Reisemuster dabei gleich bleibt und'...
+           '\n\n nur weniger zuverlässig ist.']; 
 
 
 % Draw all the text in one go
-DrawFormattedText(window, text_2, 'center', screenYpixels * 0.25, white);
+DrawFormattedText(window, text, 'center', screenYpixels * 0.25, white);
 
 % Press Key to continue  
-DrawFormattedText(window, 'DrÃ¼cke eine Taste um fortzufahren.', ...
+DrawFormattedText(window, 'Drücke eine Taste um fortzufahren.', ...
                   'center', screenYpixels*0.9);
 
 % Flip to the screen
@@ -511,7 +499,7 @@ Screen('Flip', window);
 
 KbStrokeWait;
 
-points = 995;
+points = 990;
 for n = 1:NoMiniBlocks
     for t = 1:NoTrials
         while(true)
@@ -577,7 +565,7 @@ for n = 1:NoMiniBlocks
                WaitSecs(1);
                break;
             else
-               DrawFormattedText(window, 'Bitte S drÃ¼cken', 'center', 'center', white);
+               DrawFormattedText(window, 'Bitte S drücken', 'center', 'center', white);
                Screen('Flip', window); 
                WaitSecs(1);                   
             end
@@ -588,18 +576,19 @@ end
 % %%%%%%%%%%%% PRACTISE RIGHT ACTION IN HIGH NOISE%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-text = ['In manchen Planetensystemen befinden sich auÃŸer den Planeten Asteroiden.'...
-        '\n Unter diesen Bedingungen ist das Kommando (S)prung  hochgradig unzuverlÃ¤ssig.' ... 
-        '\n\n Damit dir auch hierfÃ¼r ein GefÃ¼hl zu geben, simuliere ich auch dies im nÃ¤chsten Schritte .'...
-        '\n\n Beachte dass auch hier das Reisemuster das gleiche bleibt,'...
-        '\n aber dass es wahrscheinlicher wird, dass du den Zielplaneten verfehlst.']; 
+text = ['In manchen Planetensystemen befinden sich außer den Planeten Asteroiden.'...
+        '\n\n\n\n Unter diesen Bedingungen ist das Kommando (S)prung  hochgradig unzuverlässig.' ... 
+        '\n\n\n\n Damit dir auch hierfür ein Gefühl zu geben,'...
+        '\n\n simuliere ich auch dies im nächsten Schritt.'...
+        '\n\n\n\n Beachte dass auch hier das Reisemuster das gleiche bleibt,'...
+        '\n\n aber dass es wahrscheinlicher wird, dass du den Zielplaneten verfehlst.']; 
 
 
 % Draw all the text in one go
 DrawFormattedText(window, text, 'center', screenYpixels * 0.25, white);
 
 % Press Key to continue  
-DrawFormattedText(window, 'DrÃ¼cke eine Taste um fortzufahren.', ...
+DrawFormattedText(window, 'Drücke eine Taste um fortzufahren.', ...
                   'center', screenYpixels*0.9);
 
 % Flip to the screen
@@ -625,7 +614,7 @@ debrisPos = CenterRectOnPointd(debrisRect, xCenter, yCenter);
 % Make the debris into a texture
 DebrisTexture = Screen('MakeTexture', window, debris);
 
-points = 995;
+points = 990;
  
 NoTrials = 12;
 for t = 1:NoTrials
@@ -698,7 +687,7 @@ for t = 1:NoTrials
            WaitSecs(1);
            break;
         else 
-              DrawFormattedText(window, 'Bitte S drÃ¼cken', 'center', 'center', white);
+              DrawFormattedText(window, 'Bitte S drücken', 'center', 'center', white);
               Screen('Flip', window); 
               WaitSecs(1);                   
         end
@@ -709,23 +698,19 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % text
-text = ['Wenn du zwischen Planeten reist kannst unabhÃ¤ngig von den Kosten fÃ¼r RECHTS (-2) und (S)prung (-5)'... 
-         '\n\n zusÃ¤tzlich Treibstoff gewinnen oder verlieren' ... 
-         '\n\n Ob und wieviel du gewinnst oder verlierst hÃ¤ngt davon ab auf was fÃ¼r einem Zielplaneten du landest.'...
-         '\n\n '...
-         '\n\n Um zu Ãœberleben ist es wichtig, dass du versuchst soviel Treibstoff wie mÃ¶glich zu sammeln'...
-         '\n\n '...
-         '\n\n Damit du das kannst, zeige ich dir im nÃ¤chsten Schritt' ...
-         '\n\n welche Planeten gute und welche schlechte Treibstoffquellen sind.'...   
-         '\n\n '...
-         '\n\n '];
+text = ['Zusätzlich zu dem Treibstoff, das dich das Reisen kostet,' ...
+        '\n\n kann dich die Landung auf einem Planeten auch Treibstoff kosten, aber du kannst dort auch Treibstoff finden.'
+        '\n\n\n\n Ob und wieviel du gewinnst oder verlierst hängt davon ab auf was für einem Zielplaneten du landest.'...
+        '\n\n\n\n Um zu Überleben ist es wichtig, dass du versuchst soviel Treibstoff wie möglich zu sammeln.'...
+        '\n\n\n\n Damit du das kannst, zeige ich dir im nächsten Schritt' ...
+        '\n\n welche Planeten gute und welche schlechte Treibstoffquellen sind.'];
 
 % Draw all the text in one go
 DrawFormattedText(window, text,...
     'center', screenYpixels * 0.25, white);
 
 % Press Key to continue  
-DrawFormattedText(window, 'DrÃ¼cke eine Taste um fortzufahren.', ...
+DrawFormattedText(window, 'Drücke eine Taste um fortzufahren.', ...
                   'center', screenYpixels*0.9);
               
 % Flip to the screen
@@ -770,11 +755,11 @@ Screen('DrawText', window, ...
 Screen('DrawText', window, ...
     '+20', xCenter+575, yCenter+150); 
     
-DrawFormattedText(window, 'Bitte merke dir die Treibstoffbelohnung fÃ¼r jeden Planeten: ', ...
+DrawFormattedText(window, 'Bitte merke dir die Treibstoffbelohnung für jeden Planeten: ', ...
                   'center',  screenYpixels*0.25, white); 
 
 % Press Key to continue  
-DrawFormattedText(window, 'DrÃ¼cke eine Taste um fortzufahren.', ...
+DrawFormattedText(window, 'Drücke eine Taste um fortzufahren.', ...
                   'center', screenYpixels*0.8); 
 
 % Flip to the screen
@@ -787,10 +772,10 @@ KbStrokeWait;
 
 % text
 text = ['Wennn du in einem neuen Planetensystem ankommst hast du' ...
-          '\n 3 oder 4 Reisen um soviel Treibstoff wie mÃ¶glich zu sammeln.'...
-         'n\n Bevor du zum nÃ¤chsten Planetensystem gehen kannst, musst du alle Reisen verwenden.' ...
-         '\n\n Die Anzahl an grÃ¼nen Quadraten zeigt dir an wieviele Reisen du Ã¼brig hast' ...
-         '\n bevor du zum nÃ¤chsten Planetensystem gesendet wirst.'];
+         '\n\n 3 oder 4 Reisen um soviel Treibstoff wie möglich zu sammeln.'...
+         'n\n\n\n Bevor du zum nächsten Planetensystem gehen kannst, musst du alle Reisen verwenden.' ...
+         '\n\n\n\n Die Anzahl an grünen Quadraten zeigt dir an wieviele Reisen du übrig hast' ...
+         '\n\n bevor du zum nächsten Planetensystem geschickt wirst.'];
 
 
 % Draw all the text in one go
@@ -798,7 +783,7 @@ DrawFormattedText(window, text,...
     'center', screenYpixels * 0.25, white);
 
 % Press Key to continue  
-DrawFormattedText(window, 'DrÃ¼cke eine Taste um fortzufahren.', ...
+DrawFormattedText(window, 'Drücke eine Taste um fortzufahren.', ...
                   'center', screenYpixels*0.8); 
 
 % Flip to the screen
@@ -818,7 +803,7 @@ NoTrials = 3;
 
        
 % Initial point and planet specific rewards
-points = 995;
+points = 990;
 % points bar
 bar = [0, 0, 100, 1000];
 
@@ -862,7 +847,7 @@ start = 1;
 Screen('DrawTexture', window, RocketTexture, [], rocketPos(:,start)');
     
 % Press Key to continue  
-DrawFormattedText(window, 'DrÃ¼cke eine Taste um fortzufahren.', ...
+DrawFormattedText(window, 'Drücke eine Taste um fortzufahren.', ...
                   'center', screenYpixels*0.8);
 
 vbl = Screen('flip', window);
@@ -875,9 +860,7 @@ KbStrokeWait;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % text
-text = ['Du kannst die Aufgabe nun ein paar Mal Ã¼ben' ... 
-         '\n\n '...
-         '\n\n '];
+text = ['Du kannst die Aufgabe nun ein paar Mal üben'];
 
 
 % Draw all the text in one go
@@ -885,7 +868,7 @@ DrawFormattedText(window, text,...
     'center', screenYpixels * 0.25, white);
 
 % Press Key to continue  
-DrawFormattedText(window, 'DrÃ¼cke eine Taste um fortzufahren.', ...
+DrawFormattedText(window, 'Drücke eine Taste um fortzufahren.', ...
                   'center', screenYpixels*0.8);
 
 % Flip to the screen
@@ -907,7 +890,7 @@ starts = startsPractise;
 
 for n = 1:NoMiniBlocks
     
-    text = ['In KÃ¼rze erreichst du ein neues Planetensystem...'];
+    text = ['In Kürze erreichst du ein neues Planetensystem...'];
     
     % Draw all the text in one go
     DrawFormattedText(window, text,...
@@ -1036,7 +1019,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % text
-text = ['GlÃ¼ckwunsch!' ... 
+text = ['Glückwunsch!' ... 
          '\n\n '...
          '\n\n Du bist nun bereit dein Weltraumabenteuer zu beginnen' ...
          '\n\n '...
