@@ -1,6 +1,7 @@
 *.npy
 *.svg
 *.m~
+*.mat
 
 .ipynb_checkpoints/
 __pycache__/

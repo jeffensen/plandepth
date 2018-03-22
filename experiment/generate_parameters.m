@@ -12,15 +12,9 @@ confs = readNPY('confsExp1.npy');
 startsExp = readNPY('startsExp1.npy')+1;
 [~, planetsExp] = max(confs, [], 3);
 
-confsT2 = readNPY('confsT2.npy');
-startsT2 = readNPY('startsT2.npy')+1;
-[~, planetsT2] = max(confsT2, [], 3);
-
-confsT3 = readNPY('confsT3.npy');
-startsT3 = readNPY('startsT3.npy')+1;
-[~, planetsT3] = max(confsT3, [], 3);
-planetsPractise = [planetsT2(end-9:end,:); planetsT3(end-9:end,:)];
-startsPractise = [startsT2(end-9:end,:); startsT3(end-9:end,:)];
+confs= readNPY('confsPractise1.npy');
+startsPractise = readNPY('startsPractise1.npy')+1;
+[~, planetsPractise] = max(confs, [], 3);
 
 conditionsPractise = struct;
 conditionsPractise.noise = cell(4, 5);
