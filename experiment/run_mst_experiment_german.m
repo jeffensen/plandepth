@@ -8,18 +8,18 @@ clear all;
 %%%%%%%%%%%%%%%   Modify before experiment %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 data = struct;
  
- Pbn_ID = 1; % fill out
- data.Age = 22; % fill out
- data.Gender = 0 ; % 0 = male; 1 = female
+Pbn_ID = 1; % fill out
+data.Age = 22; % fill out
+data.Gender = 0 ; % 0 = male; 1 = female
 %  
 %  
 % 
-    data.Responses.RT = NaN(100, 4);
-    data.Responses.Keys = NaN(100, 4);
-    data.States = NaN(100, 5);
-    data.PlanetConf = NaN(100,6);
-    data.Conditions.notrials = NaN (100);
-    data.Conditions.noise = {};
+data.Responses.RT = NaN(100, 3);
+data.Responses.Keys = NaN(100, 3);
+data.States = NaN(100, 4);
+data.PlanetConf = NaN(100,6);
+data.Conditions.notrials = NaN (100);
+data.Conditions.noise = {};
 %    
 file_name = strcat('part_', int2str(Pbn_ID),'_', date, '.mat');
 
@@ -88,21 +88,23 @@ Screen('BlendFunction', window, 'GL_SRC_ALPHA', 'GL_ONE_MINUS_SRC_ALPHA');
 
 % Some introductory text
 text = ['Hallo!' ... 
-         '\n Dein Weltraumabenteuer kann nun beginnen.' ... 
-         '\n\n In Kürze erreichst du ein neues Planetensystem...'];
+         '\n Dein Weltraumabenteuer kann nun beginnen.'];
 
 % Some block transition text     
-trans_text = ['In Kürze erreichst du ein neues Planetensystem......'];
+trans_text = ['In Kï¿½rze erreichst du ein neues Planetensystem......'];
 
 % Some brake text
-break_text = ['Pause...'];
+break_text = ['Bitte nimm dir etwas Zeit zum Ausruhen, wenn du dich mÃ¼de fÃ¼hlst.'];
 
 % Draw all the text in one go
 DrawFormattedText(window, text,...
     'center', screenYpixels * 0.25, white);
 
-% Flip to the screen
-Screen('Flip', window);
+% Press Key to continue  
+DrawFormattedText(window, 'DrÃ¼cke eine Taste um fortzufahren.', ...
+                  'center', screenYpixels*0.8);
+
+vbl = Screen('flip', window);
 
 KbStrokeWait;
 
@@ -113,11 +115,10 @@ KbStrokeWait;
 %% Variables
 
 % Specify number of MiniBlocks
-
-NoMiniBlocks = 2;
+NoMiniBlocks = 100;
        
 % Initial point and planet specific rewards
-points = 995;
+points = 500;
 planetRewards = [-20, -10, 0, 10, 20];
 actionCost = [-2 -5];
 
@@ -184,52 +185,35 @@ debrisPos = CenterRectOnPointd(debrisRect, xCenter, yCenter);
 % Make the debris into a texture
 DebrisTexture = Screen('MakeTexture', window, debris);
 
-% buttons_img_location = ['button1.png'; 'button2.png'];
-% 
-% ButtonsTexture = NaN(2);
-% for i=1:2
-%   [button, ~, balpha] = imread(buttons_img_location(i, :)); 
-%   % Add transparency to the background
-%   button(:,:,4) = balpha;
-%   % Make the planets into a texture
-%   ButtonsTexture(i) = Screen('MakeTexture', window, button);
-% end
-% 
-% % Get the size of the planet image
-% [b1, b2, b3] = size(planet);
-% 
-% buttonRect = [0 0 b1 b2];
-% 
-% %generate planet locations
-% buttonsPos = NaN(4, 2);
-% xPos = [-800, 800];
-% for i=1:2
-%     buttonsPos(:,i) = CenterRectOnPointd(buttonRect, xCenter + xPos(i), yCenter+300);
-% end
-
-
 % Maximum priority level
 topPriorityLevel = MaxPriority(window);
 Priority(topPriorityLevel);
 
 for n = 1:NoMiniBlocks
+    
+    if mod(n, 25) == 0
+       %make a brake
+       DrawFormattedText(window, break_text,...
+                 'center', screenYpixels * 0.25, white);
+             
+       % Press Key to continue  
+       DrawFormattedText(window, 'DrÃ¼cke eine Taste um fortzufahren.', ...
+                  'center', screenYpixels*0.8);
+              
+       Screen('flip', window);
+
+       KbStrokeWait;
+    end
+    
     % current experimental condition
-    cond = conditions.noise{n};
-    NoTrials = conditions.notrials{n};
+    cond = conditionsExp.noise{n};
+    NoTrials = conditionsExp.notrials(n);
+    start = startsExp(n);
+    planetList = planetsExp(n, :);
+
+    %save data
     data.Conditions.notrials(n)= NoTrials;
     data.Conditions.noise{n} = cond;
-    if n > 50
-        loc = n - 50;
-    else
-        loc = n;
-    end
-    if NoTrials == 3
-        start = startsT3(loc);
-        planetList = planetsT3(loc,:);
-    else
-        start = startsT4(loc);
-        planetList = planetsT4(loc,:);
-    end
     data.PlanetConf(n, :)= planetList;
     
     % mini block transition massage
@@ -251,9 +235,6 @@ for n = 1:NoMiniBlocks
     % draw remaining action counter
     draw_remaining_actions(window, 1, NoTrials, xCenter, yCenter);
     
-    % draw buttons
-%     draw_buttons(window, ButtonsTexture, buttonsPos);
-    
     % plot planets for the given mini block
     draw_planets(planetList, window, PlanetsTexture, planetsPos);
     
@@ -267,30 +248,31 @@ for n = 1:NoMiniBlocks
         while true
             [secs, keyCode, deltaSecs] = KbPressWait;
             Key = KbName(keyCode);
-            if strcmp(Key, 'LeftArrow') ||  strcmp(Key, 'RightArrow')
+            if strcmp(Key, 's') ||  strcmp(Key, 'RightArrow')
                 break;
             end
         end
         % Save response and response time
         data.States(n,t) = start;
+        data.Responses.RT(n, t) = secs-vbl;
         
-        if strcmp(Key, 'LeftArrow')
+        if strcmp(Key, 'RightArrow')
             p = state_transition_matrix(1, start, :);
             next = find(cumsum(p)>=rand,1);
-            points = points + actionCost(1);
+            ac = actionCost(1);
+            points = points + ac;
             data.Responses.Keys(n,t)= 1;
-            data.Responses.RT(n, t) = secs-vbl;
 
-        elseif strcmp(Key, 'RightArrow')
+        elseif strcmp(Key, 's')
             if strcmp(cond, 'low')
                 p = state_transition_matrix(3, start, :);
             else
                 p = state_transition_matrix(4, start, :);
             end
             next = find(cumsum(p)>=rand,1);
-            points = points + actionCost(2);
+            ac = actionCost(2);
+            points = points + ac;
             data.Responses.Keys(n,t)= 2;
-            data.Responses.RT(n, t) = secs-vbl;
         end
         if points < 0
             break
@@ -319,6 +301,10 @@ for n = 1:NoMiniBlocks
 
             % Draw the rect to the screen
             Screen('DrawTexture', window, RocketTexture, [], cRect);
+            
+            % Draw action cost
+            DrawFormattedText(window, int2str(ac), 'center', yCenter - 100, white);
+
 
             % Flip to the screen
             vbl  = Screen('Flip', window, vbl + 0.5*ifi);
@@ -351,7 +337,6 @@ for n = 1:NoMiniBlocks
         draw_point_bar(points, window, xCenter, yCenter);
         draw_remaining_actions(window, t+1, NoTrials, xCenter, yCenter);
         draw_planets(planetList, window, PlanetsTexture, planetsPos);
-%         draw_buttons(window, ButtonsTexture, buttonsPos);
         Screen('DrawTexture', window, RocketTexture, [], cRect);
         
         vbl = Screen('Flip', window);
@@ -361,23 +346,24 @@ for n = 1:NoMiniBlocks
     if points < 0
         break
     end
-     save('tmpdata.mat', 'data');
+    save('tmpdata.mat', 'data');
 end
 
-delete('tmpdata.mat')
 save(file_name, 'data');
+delete('tmpdata.mat');
 
 %% End screen
 end_msg = ['Ende des Experiments.' ...
-           '\n\n Danke für deine Teilnahme.'];
+           '\n\n Danke fï¿½r deine Teilnahme.'];
 
        
 gameOver = ['Game over' ...
             '\n\n Deine Treibstoffreserven sind aufgebraucht.' ...
-            '\n\n Danke für deine Teilnahme'];       
-% Draw all the text in one go
+            '\n\n Danke fï¿½r deine Teilnahme'];       
+
+% Draw the text
 if points < 0
-        DrawFormattedText(window, gameOver, 'center', ...
+    DrawFormattedText(window, gameOver, 'center', ...
                         screenYpixels * 0.25, white);     
 else
     DrawFormattedText(window, end_msg, 'center', ...
@@ -390,7 +376,3 @@ WaitSecs(2);
 
 % clear the screen
 sca;
-
-
-
-%%%%
