@@ -1,10 +1,16 @@
+%% Prepare Matlab for experiment
+sca;
+close all;
+clear all;
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%   Modify before experiment %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 data = struct;
  
-%  data.Pbn_ID = ; % fill out
-%  data.Age = ; % fill out
-%  data.Gender = ; % 0 = male; 1 = female
+ Pbn_ID = 1; % fill out
+ data.Age = 22; % fill out
+ data.Gender = 0 ; % 0 = male; 1 = female
 %  
 %  
 % 
@@ -15,16 +21,10 @@ data = struct;
     data.Conditions.notrials = NaN (100);
     data.Conditions.noise = {};
 %    
-% 
-%  save(strcat('data_participant_ID', int2str(data.Pbn_ID), '.mat'), data);
+file_name = strcat('part_', int2str(Pbn_ID),'_', date, '.mat');
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
-%% Prepare Matlab for experiment
-sca;
-close all;
-clear all;
 
 
 % Here we call some default settings for setting up Psychtoolbox
@@ -114,7 +114,7 @@ KbStrokeWait;
 
 % Specify number of MiniBlocks
 
-NoMiniBlocks = 100;
+NoMiniBlocks = 2;
        
 % Initial point and planet specific rewards
 points = 995;
@@ -361,8 +361,11 @@ for n = 1:NoMiniBlocks
     if points < 0
         break
     end
+     save('tmpdata.mat', 'data');
 end
 
+delete('tmpdata.mat')
+save(file_name, 'data');
 
 %% End screen
 end_msg = ['Ende des Experiments.' ...
