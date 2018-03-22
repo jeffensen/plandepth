@@ -30,7 +30,7 @@ def make_transition_matrix(transition_probability):
     return transition_matrix
 
 runs = 100
-N = 3
+N = 4
 trials = [N-1, N]
 na = 2
 ns = 6
@@ -40,11 +40,16 @@ confs = []
 starts = []
 for T in trials:
     perms = np.random.permutation(50)
-    confs.append(np.load('confsT%d.npy' % T)[:50])
-    starts.append(np.load('startsT%d.npy' % T)[:50])
+    confs.append(np.load('confsT%d.npy' % T)[:50][perms])
+    starts.append(np.load('startsT%d.npy' % T)[:50][perms])
 
+#np.save('confsExp1.npy', np.vstack(confs))
+#np.save('startsExp1.npy', np.hstack(starts))
+    
 outcome_likelihood = torch.from_numpy(np.vstack(confs))
 starts = torch.from_numpy(np.hstack(starts))
+
+
 
 noise = np.tile(np.array([.9, .5, .9, .5]), (25,1)).T.flatten()
 
@@ -107,7 +112,7 @@ for n in range(N):
     plt.plot(np.arange(1, runs+1), crew[n].numpy().T, color = color[n], alpha = .1);
     plt.plot(np.arange(1, runs+1), crew[n].mean(dim=0).numpy(), color = 'k', linestyle = style[n])
 plt.xlim([1,100])
-plt.ylim([-60, 40])
+plt.ylim([-80, 20])
 
 
 #fig.savefig('performance.pdf', dpi = 300)
