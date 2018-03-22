@@ -92,17 +92,19 @@ text = ['Hallo!' ...
          '\n Dein Weltraumabenteuer kann nun beginnen.'];
 
 % Some block transition text     
-trans_text = ['In Kï¿½rze erreichst du ein neues Planetensystem......'];
+trans_text = ['In Kürze erreichst du ein neues Planetensystem......'];
 
 % Some brake text
-break_text = ['Bitte nimm dir etwas Zeit zum Ausruhen, wenn du dich mï¿½de fï¿½hlst.'];
+break_text = ['Bitte nimm dir etwas Zeit zum Ausruhen, wenn du dich müde fühlst.'];
+
+anykey_text = ['Drücke eine Taste um fortzufahren.'];
 
 % Draw all the text in one go
 DrawFormattedText(window, text,...
     'center', screenYpixels * 0.25, white);
 
 % Press Key to continue  
-DrawFormattedText(window, 'Drï¿½cke eine Taste um fortzufahren.', ...
+DrawFormattedText(window, anykey_text, ...
                   'center', screenYpixels*0.8);
 
 vbl = Screen('flip', window);
@@ -119,7 +121,7 @@ KbStrokeWait;
 NoMiniBlocks = 100;
        
 % Initial point and planet specific rewards
-points = 500;
+points = 990;
 planetRewards = [-20, -10, 0, 10, 20];
 actionCost = [-2 -5];
 
@@ -198,7 +200,7 @@ for n = 1:NoMiniBlocks
                  'center', screenYpixels * 0.25, white);
              
        % Press Key to continue  
-       DrawFormattedText(window, 'Drï¿½cke eine Taste um fortzufahren.', ...
+       DrawFormattedText(window, anykey_text, ...
                   'center', screenYpixels*0.8);
               
        Screen('flip', window);
@@ -357,12 +359,12 @@ delete('tmpdata.mat');
 
 %% End screen
 end_msg = ['Ende des Experiments.' ...
-           '\n\n Danke fï¿½r deine Teilnahme.'];
+           '\n\n Danke für deine Teilnahme.'];
 
        
 gameOver = ['Game over' ...
             '\n\n Deine Treibstoffreserven sind aufgebraucht.' ...
-            '\n\n Danke fï¿½r deine Teilnahme'];       
+            '\n\n Danke für deine Teilnahme'];       
 
 % Draw the text
 if points < 0
