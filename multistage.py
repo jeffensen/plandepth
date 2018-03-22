@@ -15,8 +15,8 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 sns.set(context = 'talk', style = 'white', color_codes = True)
 
-runs = 10000
-trials = 2
+runs = 100000
+trials = 4
 na = 2
 ns = 6
 no = 5
@@ -111,4 +111,4 @@ for i in range(len(uniqs)):
     vec.append(np.unique(starts[i])[0])
 starts = np.array(vec)
 np.save('startsT%d.npy' % trials, starts)
-np.save('confsT%d.npy' % trials, confs)
+np.save('confsT%d.npy' % trials, uniqs)
