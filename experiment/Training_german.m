@@ -377,7 +377,7 @@ DrawFormattedText(window, 'Als nächstes zeige ich dir was beim Kommando (S)prung
                                 
 Screen('flip', window);
 
-WaitSecs(1.);
+WaitSecs(3.);
 
 % %%%%%%%%%%%% PRACTISE JUMPING Right %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -699,7 +699,7 @@ end
 
 % text
 text = ['Zusätzlich zu dem Treibstoff, das dich das Reisen kostet,' ...
-        '\n\n kann dich die Landung auf einem Planeten auch Treibstoff kosten, aber du kannst dort auch Treibstoff finden.'
+        '\n\n kann dich die Landung auf einem Planeten auch Treibstoff kosten, aber du kannst dort auch Treibstoff finden.' ...
         '\n\n\n\n Ob und wieviel du gewinnst oder verlierst hängt davon ab auf was für einem Zielplaneten du landest.'...
         '\n\n\n\n Um zu Überleben ist es wichtig, dass du versuchst soviel Treibstoff wie möglich zu sammeln.'...
         '\n\n\n\n Damit du das kannst, zeige ich dir im nächsten Schritt' ...
@@ -1033,6 +1033,6 @@ DrawFormattedText(window, text,...
 % Flip to the screen
 Screen('Flip', window);
 
-WaitSecs(2)
+WaitSecs(5)
 
 sca
