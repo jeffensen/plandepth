@@ -2,9 +2,7 @@
 *.svg
 *.m~
 *.mat
+*.asv
 
 .ipynb_checkpoints/
 __pycache__/
-
-
-experiment/generate_experimental_parameters.m
