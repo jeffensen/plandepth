@@ -383,7 +383,7 @@ WaitSecs(3.);
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 text = [' Wenn du (S)prung wahlst, reist dein Raumschiff zu einem nicht benachbarten Planeten.' ... 
-        '\n\n\n\n Als nachstes kannst du ausprobieren was an jeder Planetenposition passiert, wenn du (S)prung wählst.'...
+        '\n\n\n\n Als nächstes kannst du ausprobieren was an jeder Planetenposition passiert, wenn du (S)prung wählst.'...
         '\n\n\n\n Es ist wichtig, dass du dir das gezeigte Flugmuster gut einpräsgst.']; 
 
 
@@ -474,6 +474,15 @@ for n = 1:NoMiniBlocks
         end
     end
 end
+
+%%%%%%% SHORT BREAK%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+DrawFormattedText(window, 'Als nächstes zeige ich dir eine Besonderheit des Kommandos (S)prung.',...
+                  'center', 'center', white);
+                                
+Screen('flip', window);
+
+WaitSecs(3.);
 
 
 % %%%%%%%%%%%% PRACTISE RIGHT ACTION IN LOW NOISE%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -572,11 +581,23 @@ for n = 1:NoMiniBlocks
         end
     end
 end
+
+%%%%%%% SHORT BREAK%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+text= ['Als nächstes zeige ich dir was bei Kommando (S)prung passiert, ' ...
+    '\n\n wenn sich Asteroiden im Planetensystem befinden.'];
+
+DrawFormattedText(window, text, 'center', 'center', white);
+                                
+Screen('flip', window);
+
+WaitSecs(3.);
  
 % %%%%%%%%%%%% PRACTISE RIGHT ACTION IN HIGH NOISE%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 text = ['In manchen Planetensystemen befinden sich außer den Planeten Asteroiden.'...
+        '\n\n\n\n Ob du dich in einem Planetensystem mit Asteroiden befindest,'...
+        '\n\n kannst du immer am Hintergrund erkennen'...
         '\n\n\n\n Unter diesen Bedingungen ist das Kommando (S)prung  hochgradig unzuverlässig.' ... 
         '\n\n\n\n Damit dir auch hierfür ein Gefühl zu geben,'...
         '\n\n simuliere ich auch dies im nächsten Schritt.'...
@@ -585,7 +606,7 @@ text = ['In manchen Planetensystemen befinden sich außer den Planeten Asteroiden
 
 
 % Draw all the text in one go
-DrawFormattedText(window, text, 'center', screenYpixels * 0.25, white);
+DrawFormattedText(window, text, 'center', screenYpixels * 0.15, white);
 
 % Press Key to continue  
 DrawFormattedText(window, 'Drücke eine Taste um fortzufahren.', ...
