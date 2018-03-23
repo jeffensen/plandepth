@@ -194,20 +194,6 @@ Priority(topPriorityLevel);
 
 for n = 1:NoMiniBlocks
     
-    if mod(n, 25) == 0
-       %make a brake
-       DrawFormattedText(window, break_text,...
-                 'center', screenYpixels * 0.25, white);
-             
-       % Press Key to continue  
-       DrawFormattedText(window, anykey_text, ...
-                  'center', screenYpixels*0.8);
-              
-       Screen('flip', window);
-
-       KbStrokeWait;
-    end
-    
     % current experimental condition
     cond = conditionsExp.noise{n};
     NoTrials = conditionsExp.notrials(n);
@@ -352,6 +338,19 @@ for n = 1:NoMiniBlocks
         break
     end
     save('tmpdata.mat', 'data');
+    if mod(n, 25) == 0
+       %make a brake
+       DrawFormattedText(window, break_text,...
+                 'center', screenYpixels * 0.25, white);
+             
+       % Press Key to continue  
+       DrawFormattedText(window, anykey_text, ...
+                  'center', screenYpixels*0.8);
+              
+       Screen('flip', window);
+
+       KbStrokeWait;
+    end
 end
 
 save(file_name, 'data');
