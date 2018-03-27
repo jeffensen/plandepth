@@ -68,7 +68,7 @@ imagePos = [[xCenter-500, yCenter];
             [xCenter-200, yCenter+250]];
 
 
-        
+jumps = [5 4 5 6 2 2];        
 md = .5; %movement duration
         
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -79,7 +79,7 @@ md = .5; %movement duration
 text = ['Hallo Abenteurer!' ...
         '\n\n\n\n Willkommen im Trainingslager'... 
         '\n\n\n\n Heute hast du die Chance an einer Reise durch den Weltraum teilzunehmen.'...
-        '\n\n\n\n Um möglichst viele Punkte zu sammeln, ist es wichtig, dass du deine Reisen im Voraus planst.'...        
+        '\n\n\n\n Um möglichst viele Punkte zu sammeln, ist es wichtig, dass du deine Reisen immer im Voraus planst.'...        
         '\n\n\n\n Bevor es losgeht, zeige ich dir jedoch wie du im Weltraum überleben kannst.'];
      
 % Draw all the text in one go
@@ -266,7 +266,7 @@ Screen('DrawTexture', window, RocketTexture, [], rocketPos(:,start)');
     
 % Press Key to continue  
 DrawFormattedText(window, 'Drücke eine Taste um fortzufahren.', ...
-                  'center', screenYpixels*0.8);
+                  'center', screenYpixels*0.9);
 
 vbl = Screen('flip', window);
     
@@ -295,7 +295,7 @@ Screen('Flip', window);
 KbStrokeWait;
 
 NoMiniBlocks = 1;
-NoTrials = 12;  %change again to 12
+NoTrials = 1;  %change again to 12
 points = 990;
 start = 1;
 for t = 1:NoTrials
@@ -479,7 +479,7 @@ end
 % %%%%%%%%%%%% SHOW REISEMUSTER FOR  JUMPING Right %%%%%%%%%%%%%%%%%%%%%%%%%
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-text = [' Hier siehst du das Reisemuster nocheinmal im Ganzen' ... 
+text = [' Hier siehst du das Flugmuster nocheinmal im Ganzen' ... 
         '\n\n\n\n ']; 
 
     
@@ -506,7 +506,7 @@ KbStrokeWait;
 
 text = [' Um dir zu helfen das Muster noch mehr zu verinnerlichen, spielen wir jetzt ein kleines Spiel.' ... 
         '\n\n\n\n Ich zeige dir verschiedene Startposition und du kannst mit den Tasten 1-6 sagen'...
-        '\n\n\n auf welchem Zielplaneten du landest wenn du (S)prung wählst.'...
+        '\n\n\n auf welchem Zielplaneten du landest, wenn du (S)prung wählst.'...
         '\n\n\n\n Anschließend bekommst du ein Feedback ob du richtig geantwortet hast.']; 
 
 
@@ -526,7 +526,7 @@ KbStrokeWait;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%   Training_S_Test %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-NoTrials=18;
+NoTrials=5;
 
 points = 990;
 TestStarts= [1,2,3,4,5,6,2,5,1,6,3,4,3,6,4,1,5,2];
@@ -538,7 +538,7 @@ for n = 1:NoMiniBlocks
      
     for t = 1:NoTrials
 
-            start=TestStarts(t)
+            start=TestStarts(t);
             
             % draw fuel tank
             draw_point_bar(points, window, xCenter, screenYpixels);
@@ -570,13 +570,13 @@ for n = 1:NoMiniBlocks
 
             if Resp == RightAnswer(t)
                
-                DrawFormattedText(window, 'Richtig', xCenter-100, yCenter)
+                DrawFormattedText(window, 'Richtig', xCenter-100, yCenter, white)
                Screen('flip', window);
                WaitSecs(0.5);
 
                 
             else
-                DrawFormattedText(window, 'Falsch, schau dir nochmal die richtige Antwort an:', xCenter-700, yCenter);
+                DrawFormattedText(window, 'Falsch, schau dir nochmal die richtige Antwort an:', xCenter-700, yCenter, white);
                 
                 Screen('flip', window);
                 
@@ -635,7 +635,7 @@ for n = 1:NoMiniBlocks
                Screen('Flip', window);
                WaitSecs(1);
 
-        end 
+    end 
  end
     
 
@@ -677,7 +677,7 @@ KbStrokeWait;
 
 text = ['Das Bild soll dir nocheinmal verdeutlichen was das bedeutet.'...
         '\n\n Die durchgezogene rote Linie zeigt den Sprung zum erwarteten Zielplaneten, '...
-          '\n\n\n\n die gestrichelten Linien zeigen dir wo dein Raumschiff landen kann, wenn es den Zielplaneten verfehlt'];
+          '\n\n die gestrichelten Linien zeigen dir wo dein Raumschiff landen kann, wenn es den Zielplaneten verfehlt'];
 
           
 Reisemuster= imread ('Reisemuster_Vorlage_3.jpg');
@@ -685,7 +685,7 @@ ReiseTexture= Screen('MakeTexture', window, Reisemuster);
 Screen('DrawTexture', window, ReiseTexture);
        
 % Draw all the text in one go
-DrawFormattedText(window, text, 'center', screenYpixels * 0.05, white);
+DrawFormattedText(window, text, 'center', screenYpixels * 0.1, white);
 
 % Press Key to continue  
 DrawFormattedText(window, 'Drücke eine Taste um fortzufahren.', ...
@@ -753,6 +753,19 @@ for n = 1:NoMiniBlocks
             if strcmp(KbName(keyCode), 's')
                 p = state_transition_matrix(3, start, :);
                 next = find(cumsum(p)>=rand,1);
+                if next ~= jumps(start)
+                    missed = 1;
+                else
+                    missed = 0;
+                end
+                
+                if missed == 1
+                    
+               DrawFormattedText(window, 'Zielplanet verfehlt', 'center', 'center', [1 0 0]);
+               Screen('Flip', window); 
+               WaitSecs(1);  
+                end     
+                    
                 
                 points = points + actionCost(2);
                 % move the rocket
@@ -884,6 +897,19 @@ for t = 1:NoTrials
         if strcmp(KbName(keyCode), 's')
             p = state_transition_matrix(4, start, :);
             next = find(cumsum(p)>=rand,1);
+            
+                            if next ~= jumps(start)
+                    missed = 1;
+                else
+                    missed = 0;
+                end
+                
+                if missed == 1
+                    
+               DrawFormattedText(window, 'Zielplanet verfehlt', 'center', 'center', [1 0 0 ]);
+               Screen('Flip', window); 
+               WaitSecs(1);  
+                end     
 
             % Move the rocket
             time = 0;
@@ -1012,7 +1038,7 @@ KbStrokeWait;
 % text
 text = ['Wennn du in einem neuen Planetensystem ankommst hast du' ...
          '\n\n 2 oder 3 Reisen um soviel Treibstoff wie möglich zu sammeln.'...
-         'n\n\n\n Bevor du zum nächsten Planetensystem gehen kannst, musst du alle Reisen verwenden.' ...
+         '\n\n Bevor du zum nächsten Planetensystem gehen kannst, musst du alle Reisen verwenden.' ...
          '\n\n\n\n Die Anzahl an grünen Quadraten zeigt dir an wieviele Reisen du übrig hast' ...
          '\n\n bevor du zum nächsten Planetensystem geschickt wirst.'];
 
@@ -1087,7 +1113,7 @@ Screen('DrawTexture', window, RocketTexture, [], rocketPos(:,start)');
     
 % Press Key to continue  
 DrawFormattedText(window, 'Drücke eine Taste um fortzufahren.', ...
-                  'center', screenYpixels*0.8);
+                  'center', screenYpixels*0.9);
 
 vbl = Screen('flip', window);
     
