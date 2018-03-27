@@ -89,13 +89,18 @@ Screen('BlendFunction', window, 'GL_SRC_ALPHA', 'GL_ONE_MINUS_SRC_ALPHA');
 
 % Some introductory text
 text = ['Hallo!' ... 
-         '\n Dein Weltraumabenteuer kann nun beginnen.'];
+         '\n\n\n\n Dein Weltraumabenteuer kann nun beginnen.'];
 
 % Some block transition text     
 trans_text = ['In Kürze erreichst du ein neues Planetensystem......'];
 
 % Some brake text
-break_text = ['Bitte nimm dir etwas Zeit zum Ausruhen, wenn du dich müde fühlst.'];
+break_text1 = ['Bitte nimm dir etwas Zeit zum Ausruhen, wenn du dich müde fühlst.'...
+                '\n\n\n\n Achtung, als nächstes reist du in Planetensysteme mit Asteroiden!'];
+
+ 
+break_text2 = ['Bitte nimm dir etwas Zeit zum Ausruhen, wenn du dich müde fühlst.'...
+                '\n\n\n\n Achtung, die Anzahl deiner Reiseschritte verändert sich!'];
 
 anykey_text = ['Drücke eine Taste um fortzufahren.'];
 
@@ -340,16 +345,25 @@ for n = 1:NoMiniBlocks
     save('tmpdata.mat', 'data');
     if mod(n, 25) == 0
        %make a brake
-       DrawFormattedText(window, break_text,...
+       if n < 100
+        if n == 25 || n == 75
+ 
+           DrawFormattedText(window, break_text1,... 
                  'center', screenYpixels * 0.25, white);
-             
-       % Press Key to continue  
-       DrawFormattedText(window, anykey_text, ...
+ 
+        else
+ 
+           DrawFormattedText(window, break_text2,... 
+                 'center', screenYpixels * 0.25, white);
+ 
+        end
+        % Press Key to continue  
+        DrawFormattedText(window, anykey_text, ... 
                   'center', screenYpixels*0.8);
-              
-       Screen('flip', window);
-
-       KbStrokeWait;
+        Screen('flip', window);
+        KbStrokeWait;
+ 
+       end
     end
 end
 
