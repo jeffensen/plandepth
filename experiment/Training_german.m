@@ -295,7 +295,7 @@ Screen('Flip', window);
 KbStrokeWait;
 
 NoMiniBlocks = 1;
-NoTrials = 1;  %change again to 12
+NoTrials = 12;  %change to 12
 points = 990;
 start = 1;
 for t = 1:NoTrials
@@ -526,7 +526,7 @@ KbStrokeWait;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%   Training_S_Test %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-NoTrials=5;
+NoTrials=18; %change to 18
 
 points = 990;
 TestStarts= [1,2,3,4,5,6,2,5,1,6,3,4,3,6,4,1,5,2];
@@ -567,25 +567,43 @@ for n = 1:NoMiniBlocks
             
             Resp= KbName(keyCode);
             Resp = str2double(Resp(1));
+            
+            % draw fuel tank
+            draw_point_bar(points, window, xCenter, screenYpixels);
+            
+            % plot planets for the given mini block
+            planetList = Practise;
+            draw_planets(planetList, window, PlanetsTexture, planetsPos);
+            
+
+            
+            % Draw numbers
+            DrawFormattedText(window, '1', xCenter-520, yCenter+30);
+            DrawFormattedText(window, '2', xCenter-220, yCenter-220);
+            DrawFormattedText(window, '3', xCenter+180, yCenter-220);
+            DrawFormattedText(window, '4', xCenter+480, yCenter+30);
+            DrawFormattedText(window, '5', xCenter+180, yCenter+280);
+            DrawFormattedText(window, '6', xCenter-220, yCenter+280);
+
+
+            % Draw the rocket at the starting position 
+            Screen('DrawTexture', window, RocketTexture, [], rocketPos(:,start)');
 
             if Resp == RightAnswer(t)
                
-                DrawFormattedText(window, 'Richtig', xCenter-100, yCenter, white)
-               Screen('flip', window);
-               WaitSecs(0.5);
+                DrawFormattedText(window, 'Richtig', 'center', 'center', white)
+                vbl = Screen('flip', window);
+                WaitSecs(0.5);
 
                 
             else
-                DrawFormattedText(window, 'Falsch, schau dir nochmal die richtige Antwort an:', xCenter-700, yCenter, white);
+                DrawFormattedText(window, 'Falsch, schau dir nochmal die richtige Antwort an!', 'center', 'center', white);
                 
-                Screen('flip', window);
+                vbl = Screen('flip', window);
                 
                 WaitSecs(1);
                 
             end  
-            
-
-               
                 p = state_transition_matrix(2, start, :);
                 next = find(cumsum(p)>=rand,1);
 
@@ -725,7 +743,7 @@ KbStrokeWait;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-NoTrials = 12;
+NoTrials = 12; %change to 12
 points = 990;
 for n = 1:NoMiniBlocks
     for t = 1:NoTrials
@@ -759,11 +777,19 @@ for n = 1:NoMiniBlocks
                     missed = 0;
                 end
                 
-                if missed == 1
-                    
-               DrawFormattedText(window, 'Zielplanet verfehlt', 'center', 'center', [1 0 0]);
-               Screen('Flip', window); 
-               WaitSecs(1);  
+                if missed
+                    % draw fuel tank
+                    draw_point_bar(points, window, xCenter, screenYpixels);
+
+                    % plot planets for the given mini block
+                    planetList = Practise;
+                    draw_planets(planetList, window, PlanetsTexture, planetsPos);
+
+                    % Draw the rocket at the starting position 
+                    Screen('DrawTexture', window, RocketTexture, [], rocketPos(:,start)');
+                    DrawFormattedText(window, 'Zielplanet verfehlt', 'center', 'center', [1 0 0]);
+                    vbl = Screen('Flip', window); 
+                    WaitSecs(1);  
                 end     
                     
                 
@@ -898,17 +924,29 @@ for t = 1:NoTrials
             p = state_transition_matrix(4, start, :);
             next = find(cumsum(p)>=rand,1);
             
-                            if next ~= jumps(start)
+                if next ~= jumps(start)
                     missed = 1;
                 else
                     missed = 0;
                 end
                 
-                if missed == 1
+                if missed                    
+                    % Draw debris
+                    Screen('DrawTexture', window, DebrisTexture, [], debrisPos)
+        
+                    % draw fuel tank
+                    draw_point_bar(points, window, xCenter, screenYpixels);
+
+                    % Draw planets for the given mini block
+                    planetList = Practise;
+                    draw_planets(planetList, window, PlanetsTexture, planetsPos);
+
+                    % Draw the rocket at the starting position 
+                    Screen('DrawTexture', window, RocketTexture, [], rocketPos(:,start)');
                     
-               DrawFormattedText(window, 'Zielplanet verfehlt', 'center', 'center', [1 0 0 ]);
-               Screen('Flip', window); 
-               WaitSecs(1);  
+                    DrawFormattedText(window, 'Zielplanet verfehlt', 'center', 'center', [1 0 0 ]);
+                    vbl= Screen('Flip', window); 
+                    WaitSecs(1);  
                 end     
 
             % Move the rocket
