@@ -212,7 +212,7 @@ for n = 1:NoMiniBlocks
     
     % current experimental condition
     cond = conditionsExp.noise{n};
-    NoTrials = conditionsExp.notrials(n);q
+    NoTrials = conditionsExp.notrials(n);
     start = startsExp(n);
     planetList = planetsExp(n, :);
 
