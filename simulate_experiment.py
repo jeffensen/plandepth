@@ -31,33 +31,40 @@ def make_transition_matrix(transition_probability):
 
 runs = 100
 N = 3
-trials = [N-1, N]
+trials = [N, N-1]
 na = 2
 ns = 6
 no = 5
 
-confs = []
-pconfs = []
-starts = []
-pstarts = []
-for T in trials:
-    perms = np.random.permutation(60)
-    arrays = np.load('confsT%d.npy' % T)
-    confs.append(arrays[perms][:50])
-    pconfs.append(arrays[perms][50:])
-    
-    arrays = np.load('startsT%d.npy' % T)
-    starts.append(arrays[perms][:50])
-    pstarts.append(arrays[perms][50:])
+#confs = []
+#pconfs = []
+#starts = []
+#pstarts = []
+#for T in trials:
+#    perms = np.random.permutation(60)
+#    arrays = np.load('confsT%d.npy' % T)
+#    confs.append(arrays[perms][:50])
+#    pconfs.append(arrays[perms][50:])
+#    
+#    arrays = np.load('startsT%d.npy' % T)
+#    starts.append(arrays[perms][:50])
+#    pstarts.append(arrays[perms][50:])
 
-np.save('confsExp1.npy', np.vstack(confs))
-np.save('startsExp1.npy', np.hstack(starts))
+#np.save('confsExp1.npy', np.vstack(confs))
+#np.save('startsExp1.npy', np.hstack(starts))
+#
+#np.save('confsPractise1.npy', np.vstack(pconfs))
+#np.save('startsPractise1.npy', np.hstack(pstarts))
 
-np.save('confsPractise1.npy', np.vstack(pconfs))
-np.save('startsPractise1.npy', np.hstack(pstarts))
+vect = np.load('confsExp1.npy')
+#outcome_likelihood = torch.from_numpy(vect)
+outcome_likelihood = torch.from_numpy(np.vstack([vect[50:], vect[:50]]))
+vect = np.load('startsExp1.npy')
+#starts = torch.from_numpy(vect)
+starts = torch.from_numpy(np.hstack([vect[50:], vect[:50]]))
     
-outcome_likelihood = torch.from_numpy(np.load('confsExp1.npy'))
-starts = torch.from_numpy(np.load('startsExp1.npy'))
+#outcome_likelihood = torch.from_numpy(np.vstack(confs))
+#starts = torch.from_numpy(np.hstack(starts))
 
 noise = np.tile(np.array([.9, .5, .9, .5]), (25,1)).T.flatten()
 
@@ -85,7 +92,7 @@ for i in range(runs):
         ms[n].states[:,0] = starts[i]
 
 #agent1 = Random(runs = runs, trials = trials, na = na)
-    agent = [Informed(transition_matrix, 
+    agent = [Informed(make_transition_matrix(.9), 
                       out_like,
                       runs = n_subs,
                       trials = T,
@@ -119,39 +126,67 @@ color = ['b', 'r', 'g', 'm']
 for n in range(N):
     plt.plot(np.arange(1, runs+1), crew[n].numpy().T, color = color[n], alpha = .1);
     plt.plot(np.arange(1, runs+1), crew[n].mean(dim=0).numpy(), color = 'k', linestyle = style[n])
-plt.xlim([1,100])
-plt.ylim([-80, 50])
+    
 
+filepath = '/home/markovic/Dropbox/Experiments/Data/Plandepth/'
+#filenames = ['part_1_23-Mar-2018.mat',
+#             'part_2_23-Mar-2018.mat',
+#             'part_3_27-Mar-2018.mat',
+#             'part_4_27-Mar-2018.mat',
+#             'part_5_27-Mar-2018.mat',
+#             'part_6_27-Mar-2018.mat',
+#             'part_7_27-Mar-2018.mat',
+#             'part_8_27-Mar-2018.mat',
+#             'part_9_28-Mar-2018.mat',
+#             'part_10_28-Mar-2018.mat']
 
-#fig.savefig('performance.pdf', dpi = 300)
+filenames = ['part_11_28-Mar-2018.mat',
+             'part_12_28-Mar-2018.mat',
+             'part_13_28-Mar-2018.mat',
+             'part_14_28-Mar-2018.mat',
+             'part_15_28-Mar-2018.mat',
+             'part_16_28-Mar-2018.mat',
+             'part_17_29-Mar-2018.mat',
+             'part_18_29-Mar-2018.mat',
+             'part_19_29-Mar-2018.mat',
+             'part_20_29-Mar-2018.mat']
 
 import scipy as scp
-tmp = scp.io.loadmat('part_1_22-Mar-2018.mat')
-responses = tmp['data'][0][0][2]['Keys'][0,0]
-states = tmp['data'][0][0][3]
-confs = tmp['data'][0][0][4]
 
-points = np.zeros(runs)
-for i in range(runs):
-    for n in range(N):
-        res = responses[i,n] - 1
-        if not np.isnan(res):
-            points[i] += costs[res]
-            loc = int(states[i, n+1])-1
-            tip = int(confs[i, loc])-1
-            points[i] += values[tip]
-            
-fig = plt.figure(figsize = (10,6))
-style = ['-', '--', '-.', ':' ]
-color = ['b', 'r', 'g', 'm']
-for n in range(N):
-    plt.plot(np.arange(1, runs+1), crew[n].numpy().T, color = color[n], alpha = .1);
-    plt.plot(np.arange(1, runs+1), crew[n].mean(dim=0).numpy(), color = 'k', linestyle = style[n])
+for f in filenames:
+    tmp = scp.io.loadmat(filepath+f)
+    points = (tmp['data'][0][0][4]-990)/10
+    nans = np.isnan(points[:,-1])
+    points[:, -1][nans] = points[:,1][nans]
+    points = points[:,-1]
 
-plt.plot(np.arange(1, runs+1), points.cumsum(), color = 'm', linewidth = 3)
+    plt.plot(np.arange(1, len(points)+1), points, color = 'm', linewidth = 3)
+
 plt.xlim([1,100])
-plt.ylim([-80, 50])
+plt.ylim([-100, 50])
+plt.savefig('experiment.pdf')
 
+for i in range(4):
+    fig = plt.figure(figsize = (10,6))
+    style = ['-', '--', '-.', ':' ]
+    color = ['b', 'r', 'g', 'm']
+    crew = rewards[:,:, i*25:(i+1)*25].cumsum(dim = -1)
+    for n in range(N):
+        plt.plot(np.arange(i*25+1, (i+1)*25+1), 
+                 crew[n].numpy().T, color = color[n], alpha = .1);
+        plt.plot(np.arange(i*25+1, (i+1)*25+1), 
+                 crew[n].mean(dim=0).numpy(), color = 'k', linestyle = style[n])
+    for f in filenames:
+        tmp = scp.io.loadmat(filepath+f)
+        points = (tmp['data'][0][0][4]-990)/10
+        nans = np.isnan(points[:,-1])
+        points[:, -1][nans] = points[:,1][nans]
+        points = np.diff(np.hstack([0, points[:,-1]]))[i*25:(i+1)*25].cumsum()
 
+        plt.plot(np.arange(i*25+1, (i+1)*25+1), points, color = 'm', linewidth = 3)
+    
+    plt.xlim([i*25+1, (i+1)*25])
+    plt.ylim([-40, 20])
+    plt.savefig('phase%d.pdf' % i)
         
  
