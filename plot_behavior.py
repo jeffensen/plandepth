@@ -98,8 +98,14 @@ y = data.log_rt.values
 X = np.ones((len(data),1))
 X = np.hstack([X, np.log(data.index+1).values[:,None]])
 
-for phase in [1,2,3,4]:
-    X = np.hstack([X, (data.Phase == phase).values[:,None]]) 
+max_reward = np.load('max_reward.npy')
+reward_diff = np.load('reward_diff.npy')
+model_matrix = np.load('model_matrix.npy')
+
+#for phase in [1,2,3,4]:
+#    X = np.hstack([X, (data.Phase == phase).values[:,None]]) 
+
+X = np.hstack([X[:,1:],max_reward.reshape(-1)[~nans][:, None],reward_diff.reshape(-1)[~nans][:,None]])
     
 linreg = BayesLinRegress(X, y, sub_idx)
 
