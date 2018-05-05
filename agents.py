@@ -166,7 +166,7 @@ class Informed(object):
         if costs is not None:
             self.costs = costs.view(na, 1, 1)
         else:
-            self.costs = ftype([-.5, -1.]).view(na, 1, 1)
+            self.costs = ftype([-2, -5]).view(na, 1, 1)
 
         # expected state value
         self.Vs = ftype(runs, planning_depth, ns)
@@ -176,7 +176,12 @@ class Informed(object):
         self.D = ftype(runs, planning_depth, ns)
         
         # response probability
-        self.prob = ftype(na, trials, runs).zero_()
+        self.prob = ftype(runs, trials, na).zero_()
+        
+        if responses is not None:
+            self.responses = var(responses).view(-1)
+            self.notnans = btype((~np.isnan(responses.numpy())).astype(int)).view(-1)
+            self.states = var(states)
         
 #        self.compute_state_values()
             
@@ -212,24 +217,25 @@ class Informed(object):
         tm = self.tm #transition matrix
         depth = self.depth #planning depth
         
-        R = torch.stack([torch.bmm(tm[:,i], self.Vs[:,0][:,:,None]).squeeze()\
+        R = torch.stack([tm[:,i].bmm(self.Vs[:,0][:,:,None]).squeeze()\
                          for i in range(self.na)])
-        
+    
         Q = R + acosts        
         for d in range(1,depth):
             #compute Q value differences for different actions
             self.D[:, d-1] = Q[0] - Q[1]
             
             #compute response probability
-            p = 1/(1+torch.exp(self.D[:,d-1])/tau)
+            p = 1/(1+torch.exp(self.D[:,d-1]/tau))
             
             #set state value
             self.Vs[:, d] = p*Q[1] + (1-p)*Q[0]
             
-            if d < depth - 1:
-                Q = torch.stack([torch.bmm(tm[:,i], self.Vs[:,d][:,:,None]).squeeze()\
-                                 for i in range(self.na)])
-                Q += R + acosts
+            Q = torch.stack([tm[:,i].bmm(self.Vs[:,d][:,:,None]).squeeze()\
+                             for i in range(self.na)])
+            Q += R + acosts
+        
+        self.D[:, -1] = Q[0] - Q[1]
                 
         
     def update_beliefs(self, trial, outcomes, responses = None):
@@ -238,42 +244,55 @@ class Informed(object):
         
         self.planning(states, trial)
         
-    def planning(self, states, trial):
-        runs = self.prob.shape[0]
-        T = self.prob.shape[1]
-        d = min(T-trial+1, self.depth)
-#        d=self.depth
-        
-        #get state value
-        if d > 1:
-            value = self.Rs[0] + self.Rs[d-1]
+    def planning(self, states, trial, *args):
+        if not args:
+            noise = ones(self.runs,1)*1e-10
+            depth = self.depth*ones(self.runs, dtype = torch.long)
         else:
-            value = self.Rs[0]
+            depth = args[0]
+            if len(args) > 1:
+                noise = args[1]
+            else:
+                noise = ones(self.runs,1)*1e-10
         
-        R = torch.matmul(self.tm, value)
-        R += self.costs
-        for i,s in enumerate(states):
-            self.prob[:,trial-1, i] = R[:,s,i]
+        runs = itype(range(self.runs))
+        
+        remaining_trials = ones(self.runs, dtype=torch.long)*(self.trials-trial)
+        d = torch.min(remaining_trials, depth)
+        
+        #get the probability of jump action
+        p = 1/(1+torch.exp(self.D[runs,d-1]/noise))        
+        
+        probs = p[runs, states]
+        self.prob[:, trial, 1] = probs
+        self.prob[:, trial, 0] = 1 - probs
                     
     def sample_responses(self, trial):
         _, choices = self.prob[:,trial-1,:].max(dim = 0)
         
         return choices
     
-    def model(self):
-        
-        depth = pyro.sample('depth', 
-                            dist.categorical, 
-                            ones(self.runs*self.blocks, 3)/3)
+    def compute_response_probabilities(self, depth):
+        self.compute_state_values()
+        for trial in range(self.trials):
+            self.planning(self.states[:,trial], trial, depth)
+    
+    def model(self, *depth):
+        if not depth: 
+            depth = pyro.sample('depth', 
+                                dist.Categorical(probs = ones(self.runs, 3)/3))
+        else:
+            depth = ones(self.runs, dtype = torch.long)*depth[0]
         
         #subject specific response probability
-        p = self.get_response_probabilities(depth)
+        self.compute_response_probabilities(depth)
+        probs = self.prob.view(-1,2)[self.notnans]
         
-        return pyro.sample('responses', dist.categorical, p)
+        return pyro.sample('responses', dist.Categorical(probs = probs))
     
     def guide(self):
         
-        probs = pyro.param('probs', ones(self.runs*self.blocks, 3)/3, constraint = constraints.simplex)
+        probs = pyro.param('probs', ones(self.runs, 3)/3, constraint = constraints.simplex)
         depth = pyro.sample('depth', dist.categorical, probs)
         
         return depth
@@ -285,7 +304,7 @@ class Informed(object):
             xrange = range(n_iterations)
         
         pyro.clear_param_store()
-        data = self.responses[self.notnans]
+        data = self.responses.view(-1)[self.notnans]
         condition = pyro.condition(self.model, data = {'responses': data})
         svi = SVI(model=condition,
                   guide=self.guide,
