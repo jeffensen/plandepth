@@ -597,11 +597,11 @@ for n = 1:NoMiniBlocks
 
                 
             else
-                DrawFormattedText(window, 'Falsch, schau dir nochmal die richtige Antwort an!', 'center', 'center', white);
+                DrawFormattedText(window, 'Falsch, schau dir die richtige Antwort an!', 'center', 'center', white);
                 
                 vbl = Screen('flip', window);
                 
-                WaitSecs(1);
+                WaitSecs(2);
                 
             end  
                 p = state_transition_matrix(2, start, :);
@@ -1157,6 +1157,107 @@ vbl = Screen('flip', window);
     
 KbStrokeWait;       
 
+%%%%%%%%%%% SUMMARY %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Summary text
+text = ['Ich fasse noch einmal alles für dich zusammen:' ...
+        '\n\n\n\n Deine Aufgabe ist es möglichst viel Treibstoff zu sammeln indem du von Planet zu Planet reist.'... 
+        '\n\n Du kannst immer entweder einen Planeten nach Rechts reisen, das kostet dich 2 Treibstoffeinheiten'...
+        '\n\n oder für 5 Treibstoffeinheiten Springen. Je nachdem auf was für einem Planeten du landest,'...
+        '\n\n gewinnst oder verlierst du Treibstoff.'... 
+        '\n\n\n\n Der blaue Balken am oberen Rand zeigt dir deinen aktuellen Treibstoffstand.'...     
+        '\n\n\n\n Manchmal passiert es beim Springen, das du, statt auf dem erwarteten Zielplaneten,'...
+        '\n\n auf einem seiner Nachparplaneten landest. Das passiert besonders häufig in Planetensystemen'...
+        '\n\n mit Asteroiden, kann aber auch (selten)in den anderen Planetesystemen passieren.'];
+     
+% Draw all the text in one go
+DrawFormattedText(window, text, 'center', screenYpixels * 0.1, white);
+
+% Press Key to continue  
+DrawFormattedText(window, 'Drücke eine Taste um fortzufahren.', ...
+                  'center', screenYpixels*0.9);
+
+% Flip to the screen
+Screen('Flip', window);
+
+KbStrokeWait;
+
+
+%%%%%%%%%%% TIPP %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Introductory text
+text = ['Hier noch ein kleiner Tipp:' ...
+        '\n\n\n\n Es hilft dir bei der Aufgabe wenn du mehrere Schritte im Voraus planst'... 
+        '\n\n\n\n Ich zeige dir das an einem Beispiel:'...
+        '\n\n\n\n '];
+     
+% Draw all the text in one go
+DrawFormattedText(window, text, 'center', screenYpixels * 0.25, white);
+
+% Press Key to continue  
+DrawFormattedText(window, 'Drücke eine Taste um fortzufahren.', ...
+                  'center', screenYpixels*0.9);
+
+% Flip to the screen
+Screen('Flip', window);
+
+KbStrokeWait;
+
+%%%%%%%%%%% TIPP 2 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+text = [' Wenn du nur einen Schritt voraus planst, würdest du wahrscheinlich direkt zum blauen Planeten springen' ...
+        '\n\n\n Danach wärst du jedoch gezwungen auf einen der roten Planeten zu springen'...
+        'n\n\n\n Insgesamt würdest du so mindestens 17 Treibstoffeinheiten verlieren (-5 +10 -2 -20)'...
+        '\n\n\n\n ']; 
+
+    
+Tip= imread ('Tipp_1.jpg');
+ReiseTexture= Screen('MakeTexture', window, Tip);
+Screen('DrawTexture', window, ReiseTexture);
+
+
+% Draw all the text in one go
+DrawFormattedText(window, text,'center', screenYpixels * 0.10, white);
+
+
+% Press Key to continue  
+DrawFormattedText(window, 'Drücke eine Taste um fortzufahren.', ...
+                  'center', screenYpixels*0.9);
+
+% Flip to the screen
+Screen('Flip', window);
+
+KbStrokeWait;
+
+%%%%%%%%%%% TIPP 2 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+text = [' In diesem Planetensystem wäre es also besser gewesen, erst wenige Punkte zu verlieren,' ...
+        '\n\n\n um erst danach zum blauen Planeten zu reisen'...
+        'n\n\n\n Insgesamt hättest du so nur 4 Treibstoffeinheiten verloren (-2 -10 +10 -2)'...
+        '\n\n\n\n ']; 
+
+    
+Tip= imread ('Tipp_2.jpg');
+ReiseTexture= Screen('MakeTexture', window, Tip);
+Screen('DrawTexture', window, ReiseTexture);
+
+
+% Draw all the text in one go
+DrawFormattedText(window, text,'center', screenYpixels * 0.10, white);
+
+% Press Key to continue  
+DrawFormattedText(window, 'Drücke eine Taste um fortzufahren.', ...
+                  'center', screenYpixels*0.9);
+
+
+% Flip to the screen
+Screen('Flip', window);
+
+KbStrokeWait;
 
 
 %%%%%%%%%%% INSTRUCTIONS 6 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
