@@ -268,6 +268,7 @@ for n = 1:NoMiniBlocks
             points = points + ac;
             data.Responses.Keys(n,t)= 2;
         end
+        
         if points < 0
             break
         end

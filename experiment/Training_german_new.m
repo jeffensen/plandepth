@@ -295,7 +295,7 @@ Screen('Flip', window);
 KbStrokeWait;
 
 NoMiniBlocks = 1;
-NoTrials = 12;  %change to 12
+NoTrials = 1;  %change to 12
 points = 990;
 start = 1;
 for t = 1:NoTrials
@@ -526,7 +526,7 @@ KbStrokeWait;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%   Training_S_Test %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-NoTrials=18; %change to 18
+NoTrials=1; %change to 18
 
 points = 990;
 TestStarts= [1,2,3,4,5,6,2,5,1,6,3,4,3,6,4,1,5,2];
@@ -597,11 +597,11 @@ for n = 1:NoMiniBlocks
 
                 
             else
-                DrawFormattedText(window, 'Falsch, schau dir nochmal die richtige Antwort an!', 'center', 'center', white);
+                DrawFormattedText(window, 'Falsch, schau dir die richtige Antwort an!', 'center', 'center', white);
                 
                 vbl = Screen('flip', window);
                 
-                WaitSecs(1);
+                WaitSecs(2);
                 
             end  
                 p = state_transition_matrix(2, start, :);
@@ -743,7 +743,7 @@ KbStrokeWait;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-NoTrials = 12; %change to 12
+NoTrials = 1; %change to 12
 points = 990;
 for n = 1:NoMiniBlocks
     for t = 1:NoTrials
@@ -894,7 +894,7 @@ DebrisTexture = Screen('MakeTexture', window, debris);
 
 points = 990;
  
-NoTrials = 12;
+NoTrials = 1;  %% change to 12 
 for t = 1:NoTrials
     while(true)
         if t < 7
@@ -1160,18 +1160,19 @@ KbStrokeWait;
 %%%%%%%%%%% SUMMARY %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% Introductory text
+% Summary text
 text = ['Ich fasse noch einmal alles für dich zusammen:' ...
-        '\n\n\n\n Deine Aufgabe ist es möglichst viel Treibstoff zu sammeln indem du von Planet zu Planet reist'... 
-        '\n\n\n\n Du kannst immer entweder einen Planeten nach Rechts reisen, das kostet dich 2 Treibstoffeinheiten'...
-        '\n\n\n\n oder für 5 Treibstoffeinheiten Springen.'...           
-        '\n\n\n\n Je nachdem auf was für einem Planeten du landest, gewinnst oder verlierst du Treibstoff.'... 
+        '\n\n\n\n Deine Aufgabe ist es möglichst viel Treibstoff zu sammeln indem du von Planet zu Planet reist.'... 
+        '\n\n Du kannst immer entweder einen Planeten nach Rechts reisen, das kostet dich 2 Treibstoffeinheiten'...
+        '\n\n oder für 5 Treibstoffeinheiten Springen. Je nachdem auf was für einem Planeten du landest,'...
+        '\n\n gewinnst oder verlierst du Treibstoff.'... 
         '\n\n\n\n Der blaue Balken am oberen Rand zeigt dir deinen aktuellen Treibstoffstand.'...     
-        '\n\n\n\n Manchmal passiert es beim Springen, das du, statt auf dem erwarteten Zielplaneten, auf einem seiner Nachparplaneten landest.'...
-        '\n\n\n\n Das passiert besonders häufig in Planetensystemen mit Asteroiden, kann aber auch (selten)in den anderen Planetesystemen passieren.'];
+        '\n\n\n\n Manchmal passiert es beim Springen, das du, statt auf dem erwarteten Zielplaneten,'...
+        '\n\n auf einem seiner Nachparplaneten landest. Das passiert besonders häufig in Planetensystemen'...
+        '\n\n mit Asteroiden, kann aber auch (selten)in den anderen Planetensystemen passieren.'];
      
 % Draw all the text in one go
-DrawFormattedText(window, text, 'center', screenYpixels * 0.25, white);
+DrawFormattedText(window, text, 'center', screenYpixels * 0.1, white);
 
 % Press Key to continue  
 DrawFormattedText(window, 'Drücke eine Taste um fortzufahren.', ...
@@ -1231,6 +1232,7 @@ Screen('Flip', window);
 
 KbStrokeWait;
 
+
 %%%%%%%%%%% TIPP 2 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -1263,7 +1265,8 @@ KbStrokeWait;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % text
-text = ['Du kannst die Aufgabe nun ein paar Mal üben'];
+text = ['Du kannst die Aufgabe nun ein paar Mal üben'...
+        '\n\n versuche dabei so voraus zu planen, dass du insgesamt den bestmöglichen Reiseweg nimmst'];
 
 
 % Draw all the text in one go
@@ -1287,12 +1290,18 @@ KbStrokeWait;
 
 % Specify number of MiniBlocks
 
-NoMiniBlocks = 20;
-planets = planetsPractise;
-starts = startsPractise;
+NoMiniBlocks = 4;
+planets = Planet_Feedback;
+starts = Feedback_starts;
+x=1;
+y=1;
 
-for n = 1:NoMiniBlocks
+  for n = 1:NoMiniBlocks
     
+      
+   while x==1
+    
+        
     text = ['In Kürze erreichst du ein neues Planetensystem...'];
     
     % Draw all the text in one go
@@ -1304,7 +1313,7 @@ for n = 1:NoMiniBlocks
     WaitSecs(1.5);
     
     cond = conditionsPractise.noise{n};
-    NoTrials = conditionsPractise.notrials(n);
+    NoTrials = conditionsFeedback(n);
     
     if strcmp(cond, 'high')
         % Draw debris
@@ -1316,10 +1325,7 @@ for n = 1:NoMiniBlocks
     
     % draw remaining action counter
     draw_remaining_actions(window, 1, NoTrials, xCenter, yCenter);
-    
-    % draw buttons
-    % draw_buttons(window, ButtonsTexture, buttonsPos);
-    
+      
     % plot planets for the given mini block
     planetList = planets(n,:);
     draw_planets(planetList, window, PlanetsTexture, planetsPos);
@@ -1337,6 +1343,11 @@ for n = 1:NoMiniBlocks
             if strcmp(Key, 'RightArrow') || strcmp(Key, 's')
                 break;
             end
+        end
+        
+        if strcmp(Key, 'RightArrow')      
+             Test_Key(t,:)=1
+        else Test_Key(t,:)=0
         end
         
         if strcmp(Key, 'RightArrow')
@@ -1411,21 +1422,80 @@ for n = 1:NoMiniBlocks
 %         draw_buttons(window, ButtonsTexture, buttonsPos);
         Screen('DrawTexture', window, RocketTexture, [], cRect);
         
-        vbl = Screen('Flip', window);
+        vbl = Screen('Flip', window);                  
     end
-    WaitSecs(.5);
-end
+    
+    %% TEST FOR OPTIMAL TRAVEL PATH AND CREATE FEEDBACK %%
+        if n == 1
+            if Test_Key(1,1)==0 & Test_Key(2,1)==1
+                 x=0
+                 y=y+1
+                 text = ['Sehr gut, du hast den optimalen Reiseweg gewählt'];
+            else
+                x=1
+                text = ['Guter Versuch, allerdings gibt es noch einen besseren Weg, versuch es noch einmal...']; 
+                
+            end
+        end
+        
+        if n == 2          	
+            if Test_Key(1,1)==0 & Test_Key(2,1)==1
+            x=0;
+            y=y+1
+            text = ['Sehr gut, du hast den optimalen Reiseweg gewählt'];
+            
+            else
+            x=1;
+            text = ['Guter Versuch, allerdings gibt es noch einen besseren Weg, versuch es noch einmal...'];      
+            end
+        end   
+        
+        if n == 3           	
+            if Test_Key(1,1)==1 & Test_Key(2,1)==0 & Test_Key(3,1)==1  
+            x=0;
+            y=y+1
+            text = ['Sehr gut, du hast den optimalen Reiseweg gewählt'];
+            else
+            x=1;
+            end
+            text = ['Guter Versuch, allerdings gibt es noch einen besseren Weg, versuch es doch noch einmal...'];      
+           
+        end           
 
+        if n == 4
+            if Test_Key(1,1)==0 & Test_Key(2,1)==0 & Test_Key(3,1)==1
+            x=0;
+            y=y+1
+            text = ['Sehr gut, du hast den optimalen Reiseweg gewählt'];
+            else
+            x= 1;
+            text = ['Guter Versuch, allerdings gibt es noch einen besseren Weg, versuch es doch noch einmal...'];      
+           end
+        end        
+        
+        
+    % Draw all the text in one go
+    DrawFormattedText(window, text,...
+    'center', screenYpixels*0.25, white);
+    
+    Screen('Flip', window);
+                 
+    WaitSecs(1);
+    
+    
+   end
+   
+   x=1
+    
+  end
+  
 
 
 %%%%%%%%%%%% END INSTRUCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % text
-text = ['Glückwunsch!' ... 
-         '\n\n '...
-         '\n\n Du bist nun bereit dein Weltraumabenteuer zu beginnen' ...
-         '\n\n '...
+text = ['Glückwunsch! Du hast jetzt alles gelernt was du für dein Weltraumabenteuer wissen musst' ... 
          '\n\n Bitte gib dem Versuchleiter Bescheid.'];
 
 

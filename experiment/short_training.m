@@ -7,6 +7,31 @@ sca;
 close all;
 clear all;
 
+%%%%%%%% MODIFY BEFORE EXPERIMENT %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+data = struct;
+ 
+Pbn_ID = 01; % fill out
+No_Training= 1; % change if more than one training
+data.Age = 22; % fill out
+data.Gender = 0 ; % 0 = male; 1 = female
+%  
+%  
+% 
+data.Responses.RT = NaN(20, 3);
+data.Responses.Keys = NaN(20, 3);
+data.States = NaN(20, 4);
+data.Points = NaN(20, 3);
+data.PlanetConf = NaN(20,6);
+data.Conditions.notrials = NaN (20,1);
+data.Conditions.noise = {};
+%    
+file_name = strcat('Training_part_', int2str(Pbn_ID),'_', int2str(No_Training),'_',date, '.mat');
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %initiate random number generator with a random seed
 rng('shuffle');
 
@@ -121,7 +146,7 @@ end
 RocketTexture = Screen('MakeTexture', window, rocket);
 
 % Initial point and planet specific rewards
-points = 990;
+points = 350;
 % points bar
 bar = [0, 0, 100, 1000];
 
@@ -177,6 +202,10 @@ starts = startsPractise;
 
 for n = 1:NoMiniBlocks
     
+    if points < 0 
+        break
+    end
+   
     text = ['In Kürze erreichst du ein neues Planetensystem...'];
     
     % Draw all the text in one go
@@ -213,6 +242,11 @@ for n = 1:NoMiniBlocks
     Screen('DrawTexture', window, RocketTexture, [], rocketPos(:,start)');
     vbl = Screen('flip', window);
     
+    %save data
+    data.Conditions.notrials(n)= NoTrials;
+    data.Conditions.noise{n} = cond;
+    data.PlanetConf(n, :)= planetList;
+    
     for t = 1:NoTrials
         % Wait for a key press
         while true
@@ -222,6 +256,10 @@ for n = 1:NoMiniBlocks
                 break;
             end
         end
+        
+        % Save response and response time
+        data.States(n,t) = start;
+        data.Responses.RT(n, t) = secs-vbl;
         
         if strcmp(Key, 'RightArrow')
             p = state_transition_matrix(1, start, :);
@@ -237,6 +275,10 @@ for n = 1:NoMiniBlocks
             next = find(cumsum(p)>=rand,1);
             ac = actionCost(2);
             points = min(points + ac, 1000);
+        end
+        
+        if points < 0 
+            break
         end
         
         % move the rocket
@@ -284,6 +326,12 @@ for n = 1:NoMiniBlocks
             s = int2str(reward);
         end
         
+        data.Points(n, t) = points;
+
+         if points < 0 
+            break
+        end
+        
         if strcmp(cond, 'high')
            % Draw debris
            Screen('DrawTexture', window, DebrisTexture, [], debrisPos)
@@ -300,26 +348,40 @@ for n = 1:NoMiniBlocks
     WaitSecs(.5);
 end
 
+save(file_name, 'data');
+delete('tmpdata.mat');
+
+
 
 
 %%%%%%%%%%%% END INSTRUCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-% text
-text = ['Glückwunsch!' ... 
+%% End screen
+end_msg = ['Glückwunsch!' ... 
          '\n\n '...
          '\n\n Du bist nun bereit dein Weltraumabenteuer zu beginnen' ...
          '\n\n '...
          '\n\n Bitte gib dem Versuchleiter Bescheid.'];
 
+       
+gameOver = ['Game over' ...
+            '\n\n Bitte gib dem Versuchsleiter Bescheid.' ...
+            '\n\n '];       
 
-% Draw all the text in one go
-DrawFormattedText(window, text,...
-    'center', screenYpixels * 0.25, white);
-
-% Flip to the screen
+% Draw the text
+if points < 0
+    DrawFormattedText(window, gameOver, 'center', ...
+                        screenYpixels * 0.25, white);     
+else
+    DrawFormattedText(window, end_msg, 'center', ...
+                        screenYpixels * 0.25, white); 
+end
+       
 Screen('Flip', window);
 
-WaitSecs(2)
+WaitSecs(2);
 
-sca
+% clear the screen
+sca;
+
+display(points)
