@@ -1002,7 +1002,8 @@ end
 
 % text
 text = ['Zusätzlich zu dem Treibstoff, der dich das Reisen kostet,' ...
-        '\n\n kann dich die Landung auf einem Planeten auch Treibstoff kosten, aber du kannst dort auch Treibstoff finden.' ...
+        '\n\n kann dich die Landung auf einem Planeten auch Treibstoff kosten,'...
+        '\n\n aber du kannst dort auch Treibstoff finden.'...
         '\n\n\n\n Ob und wieviel du gewinnst oder verlierst hängt davon ab auf was für einem Zielplaneten du landest.'...
         '\n\n\n\n Um zu Überleben ist es wichtig, dass du versuchst soviel Treibstoff wie möglich zu sammeln.'...
         '\n\n\n\n Damit du das kannst, zeige ich dir im nächsten Schritt' ...
@@ -1189,8 +1190,8 @@ KbStrokeWait;
 
 % Introductory text
 text = ['Hier noch ein kleiner Tipp:' ...
-        '\n\n\n\n Es hilft dir bei der Aufgabe wenn du mehrere Schritte im Voraus planst'... 
-        '\n\n\n\n Ich zeige dir das an einem Beispiel:'...
+        '\n\n Es hilft dir bei der Aufgabe wenn du mehrere Schritte im Voraus planst'... 
+        '\n\n Ich zeige dir das an einem Beispiel:'...
         '\n\n\n\n '];
      
 % Draw all the text in one go
@@ -1209,8 +1210,8 @@ KbStrokeWait;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 text = [' Wenn du nur einen Schritt voraus planst, würdest du wahrscheinlich direkt zum blauen Planeten springen' ...
-        '\n\n\n Danach wärst du jedoch gezwungen auf einen der roten Planeten zu springen'...
-        'n\n\n\n Insgesamt würdest du so mindestens 17 Treibstoffeinheiten verlieren (-5 +10 -2 -20)'...
+        '\n\n Danach wärst du jedoch gezwungen auf einen der roten Planeten zu springen'...
+        'n\n Insgesamt würdest du so mindestens 17 Treibstoffeinheiten verlieren (-5 +10 -2 -20)'...
         '\n\n\n\n ']; 
 
     
@@ -1237,8 +1238,8 @@ KbStrokeWait;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 text = [' In diesem Planetensystem wäre es also besser gewesen, erst wenige Punkte zu verlieren,' ...
-        '\n\n\n um erst danach zum blauen Planeten zu reisen'...
-        'n\n\n\n Insgesamt hättest du so nur 4 Treibstoffeinheiten verloren (-2 -10 +10 -2)'...
+        '\n\n um erst danach zum blauen Planeten zu reisen'...
+        'n\n Insgesamt hättest du so nur 4 Treibstoffeinheiten verloren (-2 -10 +10 -2)'...
         '\n\n\n\n ']; 
 
     
@@ -1292,202 +1293,154 @@ KbStrokeWait;
 
 NoMiniBlocks = 4;
 planets = Planet_Feedback;
-starts = Feedback_starts;
-x=1;
-y=1;
+starts = conditionsFeedback.starts;
 
-  for n = 1:NoMiniBlocks
+correctResponses = [[0 1 0]; [0 1 0]; [1 0 1]; [0 0 1]];
+
+for n = 1:NoMiniBlocks
+    while true
+        text = ['In Kürze erreichst du ein neues Planetensystem...'];
     
-      
-   while x==1
-    
-        
-    text = ['In Kürze erreichst du ein neues Planetensystem...'];
-    
-    % Draw all the text in one go
-    DrawFormattedText(window, text,...
+        % Draw all the text in one go
+        DrawFormattedText(window, text,...
                       'center', screenYpixels * 0.25, white);
 
-    % Flip to the screen
-    Screen('Flip', window);
-    WaitSecs(1.5);
+        % Flip to the screen
+        Screen('Flip', window);
+        WaitSecs(1.5);
     
-    cond = conditionsPractise.noise{n};
-    NoTrials = conditionsFeedback(n);
+        cond = conditionsFeedback.noise{n};
+        NoTrials = conditionsFeedback.notrials(n);
     
-    if strcmp(cond, 'high')
-        % Draw debris
-        Screen('DrawTexture', window, DebrisTexture, [], debrisPos)
-    end
-    
-    % draw point bar
-    draw_point_bar(points, window, xCenter, yCenter);
-    
-    % draw remaining action counter
-    draw_remaining_actions(window, 1, NoTrials, xCenter, yCenter);
-      
-    % plot planets for the given mini block
-    planetList = planets(n,:);
-    draw_planets(planetList, window, PlanetsTexture, planetsPos);
-    
-    start = starts(n);
-    % Draw the rocket at the starting position 
-    Screen('DrawTexture', window, RocketTexture, [], rocketPos(:,start)');
-    vbl = Screen('flip', window);
-    
-    for t = 1:NoTrials
-        % Wait for a key press
-        while true
-            [secs, keyCode, deltaSecs] = KbPressWait;
-            Key = KbName(keyCode);
-            if strcmp(Key, 'RightArrow') || strcmp(Key, 's')
-                break;
-            end
-        end
-        
-        if strcmp(Key, 'RightArrow')      
-             Test_Key(t,:)=1
-        else Test_Key(t,:)=0
-        end
-        
-        if strcmp(Key, 'RightArrow')
-            p = state_transition_matrix(1, start, :);
-            next = find(cumsum(p)>=rand,1);
-            ac = actionCost(1);
-            points = min(points + ac, 1000);
-        elseif strcmp(Key, 's')
-            if strcmp(cond, 'low')
-                p = state_transition_matrix(3, start, :);
-            else
-                p = state_transition_matrix(4, start, :);
-            end
-            next = find(cumsum(p)>=rand,1);
-            ac = actionCost(2);
-            points = min(points + ac, 1000);
-        end
-        
-        % move the rocket
-        md = .5; %movement duration
-        time = 0;
-        locStart = imagePos(start, :);
-        locEnd = imagePos(next, :);
-        while time < md
-            if strcmp(cond, 'high')
-                % Draw debris
-                Screen('DrawTexture', window, DebrisTexture, [], debrisPos)
-            end
-            draw_point_bar(points, window, xCenter, yCenter);
-            draw_remaining_actions(window, t, NoTrials, xCenter, yCenter);
-%             draw_buttons(window, ButtonsTexture, buttonsPos);
-            draw_planets(planetList, window, PlanetsTexture, planetsPos);
-
-            % Position of the square on this frame
-            xpos = locStart(1) + time/md*(locEnd(1) - locStart(1));
-            ypos = locStart(2) + time/md*(locEnd(2) - locStart(2));
-        
-            % Center the rectangle on the centre of the screen
-            cRect = CenterRectOnPointd(rocketRect, xpos, ypos);
-
-            % Draw the rect to the screen
-            Screen('DrawTexture', window, RocketTexture, [], cRect);
-            
-            DrawFormattedText(window, int2str(ac), 'center', yCenter-100, white);
-
-            % Flip to the screen
-            vbl  = Screen('Flip', window, vbl + 0.5*ifi);
-
-            % Increment the time
-            time = time + ifi;
-        end
-        
-        % set start to a new location
-        start = next;
-        reward = planetRewards(planetList(next));
-        points = min(points + reward, 1000);
-        
-        if reward > 0
-            s = strcat('+', int2str(reward));
-        else
-            s = int2str(reward);
-        end
-        
         if strcmp(cond, 'high')
-           % Draw debris
-           Screen('DrawTexture', window, DebrisTexture, [], debrisPos)
+            % Draw debris
+            Screen('DrawTexture', window, DebrisTexture, [], debrisPos)
         end
-        DrawFormattedText(window, s, 'center', yCenter - 100, white);
+    
+        % draw point bar
         draw_point_bar(points, window, xCenter, yCenter);
-        draw_remaining_actions(window, t+1, NoTrials, xCenter, yCenter);
-        draw_planets(planetList, window, PlanetsTexture, planetsPos);
-%         draw_buttons(window, ButtonsTexture, buttonsPos);
-        Screen('DrawTexture', window, RocketTexture, [], cRect);
-        
-        vbl = Screen('Flip', window);                  
-    end
     
-    %% TEST FOR OPTIMAL TRAVEL PATH AND CREATE FEEDBACK %%
-        if n == 1
-            if Test_Key(1,1)==0 & Test_Key(2,1)==1
-                 x=0
-                 y=y+1
-                 text = ['Sehr gut, du hast den optimalen Reiseweg gewählt'];
-            else
-                x=1
-                text = ['Guter Versuch, allerdings gibt es noch einen besseren Weg, versuch es noch einmal...']; 
-                
+        % draw remaining action counter
+        draw_remaining_actions(window, 1, NoTrials, xCenter, yCenter);
+      
+        % plot planets for the given mini block
+        planetList = planets(n,:);
+        draw_planets(planetList, window, PlanetsTexture, planetsPos);
+    
+        start = starts(n);
+        % Draw the rocket at the starting position 
+        Screen('DrawTexture', window, RocketTexture, [], rocketPos(:,start)');
+        vbl = Screen('flip', window);
+        
+        TestKey = zeros(1,3);
+        for t = 1:NoTrials
+            % Wait for a key press
+            while true
+                [secs, keyCode, deltaSecs] = KbPressWait;
+                Key = KbName(keyCode);
+                if strcmp(Key, 'RightArrow') || strcmp(Key, 's')
+                    break;
+                end
             end
+        
+            if strcmp(Key, 'RightArrow')
+                p = state_transition_matrix(1, start, :);
+                next = find(cumsum(p)>=rand,1);
+                ac = actionCost(1);
+                points = min(points + ac, 1000);
+                TestKey(t) = 1;
+            elseif strcmp(Key, 's')
+                if strcmp(cond, 'low')
+                    p = state_transition_matrix(3, start, :);
+                else
+                    p = state_transition_matrix(4, start, :);
+                end
+                next = find(cumsum(p)>=rand,1);
+                ac = actionCost(2);
+                points = min(points + ac, 1000);
+                TestKey(t) = 0;
+            end
+
+            % move the rocket
+            md = .5; %movement duration
+            time = 0;
+            locStart = imagePos(start, :);
+            locEnd = imagePos(next, :);
+            while time < md
+                if strcmp(cond, 'high')
+                    % Draw debris
+                    Screen('DrawTexture', window, DebrisTexture, [], debrisPos)
+                end
+                draw_point_bar(points, window, xCenter, yCenter);
+                draw_remaining_actions(window, t, NoTrials, xCenter, yCenter);
+    %             draw_buttons(window, ButtonsTexture, buttonsPos);
+                draw_planets(planetList, window, PlanetsTexture, planetsPos);
+
+                % Position of the square on this frame
+                xpos = locStart(1) + time/md*(locEnd(1) - locStart(1));
+                ypos = locStart(2) + time/md*(locEnd(2) - locStart(2));
+
+                % Center the rectangle on the centre of the screen
+                cRect = CenterRectOnPointd(rocketRect, xpos, ypos);
+
+                % Draw the rect to the screen
+                Screen('DrawTexture', window, RocketTexture, [], cRect);
+
+                DrawFormattedText(window, int2str(ac), 'center', yCenter-100, white);
+
+                % Flip to the screen
+                vbl  = Screen('Flip', window, vbl + 0.5*ifi);
+
+                % Increment the time
+                time = time + ifi;
+            end
+
+            % set start to a new location
+            start = next;
+            reward = planetRewards(planetList(next));
+            points = min(points + reward, 1000);
+
+            if reward > 0
+                s = strcat('+', int2str(reward));
+            else
+                s = int2str(reward);
+            end
+
+            if strcmp(cond, 'high')
+               % Draw debris
+               Screen('DrawTexture', window, DebrisTexture, [], debrisPos)
+            end
+            DrawFormattedText(window, s, 'center', yCenter - 100, white);
+            draw_point_bar(points, window, xCenter, yCenter);
+            draw_remaining_actions(window, t+1, NoTrials, xCenter, yCenter);
+            draw_planets(planetList, window, PlanetsTexture, planetsPos);
+    %         draw_buttons(window, ButtonsTexture, buttonsPos);
+            Screen('DrawTexture', window, RocketTexture, [], cRect);
+
+            vbl = Screen('Flip', window);                  
+        end
+    
+        %% TEST FOR OPTIMAL TRAVEL PATH AND CREATE FEEDBACK %%
+        if all(TestKey == correctResponses(n,:))
+            text = ['Sehr gut, du hast den optimalen Reiseweg gewählt'];
+            correct = 1;
+        else
+            text = ['Guter Versuch, allerdings gibt es noch einen besseren Weg, versuch es noch einmal...'];
+            correct = 0;
         end
         
-        if n == 2          	
-            if Test_Key(1,1)==0 & Test_Key(2,1)==1
-            x=0;
-            y=y+1
-            text = ['Sehr gut, du hast den optimalen Reiseweg gewählt'];
-            
-            else
-            x=1;
-            text = ['Guter Versuch, allerdings gibt es noch einen besseren Weg, versuch es noch einmal...'];      
-            end
-        end   
-        
-        if n == 3           	
-            if Test_Key(1,1)==1 & Test_Key(2,1)==0 & Test_Key(3,1)==1  
-            x=0;
-            y=y+1
-            text = ['Sehr gut, du hast den optimalen Reiseweg gewählt'];
-            else
-            x=1;
-            end
-            text = ['Guter Versuch, allerdings gibt es noch einen besseren Weg, versuch es doch noch einmal...'];      
-           
-        end           
+        % Draw all the text in one go
+        DrawFormattedText(window, text,...
+                          'center', screenYpixels*0.25, white);
 
-        if n == 4
-            if Test_Key(1,1)==0 & Test_Key(2,1)==0 & Test_Key(3,1)==1
-            x=0;
-            y=y+1
-            text = ['Sehr gut, du hast den optimalen Reiseweg gewählt'];
-            else
-            x= 1;
-            text = ['Guter Versuch, allerdings gibt es noch einen besseren Weg, versuch es doch noch einmal...'];      
-           end
-        end        
-        
-        
-    % Draw all the text in one go
-    DrawFormattedText(window, text,...
-    'center', screenYpixels*0.25, white);
-    
-    Screen('Flip', window);
-                 
-    WaitSecs(1);
-    
-    
-   end
-   
-   x=1
-    
-  end
+        Screen('Flip', window);
+
+        WaitSecs(2);
+        if correct
+            break;
+        end
+    end
+end
   
 
 
