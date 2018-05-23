@@ -172,7 +172,7 @@ DebrisTexture = Screen('MakeTexture', window, debris);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % text
-text = ['Du kannst die Aufgabe wieder Ã¼ben'];
+text = ['Du kannst die Aufgabe nun ein paar Mal üben'];
 
 
 % Draw all the text in one go
@@ -180,7 +180,7 @@ DrawFormattedText(window, text,...
     'center', screenYpixels*0.25, white);
 
 % Press Key to continue  
-DrawFormattedText(window, 'DrÃ¼cke eine Taste um fortzufahren.', ...
+DrawFormattedText(window, 'Drücke eine Taste um fortzufahren.', ...
                   'center', screenYpixels*0.8);
 
 % Flip to the screen
@@ -206,7 +206,7 @@ for n = 1:NoMiniBlocks
         break
     end
    
-    text = ['In KÃ¼rze erreichst du ein neues Planetensystem...'];
+    text = ['In Kürze erreichst Du ein neues Planetensystem...'];
     
     % Draw all the text in one go
     DrawFormattedText(window, text,...
