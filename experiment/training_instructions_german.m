@@ -7,9 +7,6 @@ sca;
 close all;
 clear all;
 
-%initiate random number generator with a random seed
-rng('shuffle');
-
 % Here we call some default settings for setting up Psychtoolbox
 PsychDefaultSetup(2);
 
@@ -229,7 +226,7 @@ KbStrokeWait;
 
 % text
 text = ['Der Balken am oberen Bildschirmrand zeigt Dir deinen aktuellen Treibstofflevel an.'...
-        '\n\n\n Wenn dein Treibstofflevel gefährlich niedrig ist, ändert sich die Balkenfarbe.']
+        '\n\n\n Wenn dein Treibstofflevel gefährlich niedrig ist, ändert sich die Balkenfarbe.'];
   
 
 
@@ -297,7 +294,7 @@ Screen('Flip', window);
 KbStrokeWait;
 
 NoMiniBlocks = 1;
-NoTrials = 12;  %change to 12
+NoTrials = 1;  %change to 12
 points = 990;
 start = 1;
 for t = 1:NoTrials
@@ -529,18 +526,14 @@ KbStrokeWait;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%   Training_S_Test %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-NoTrials=18; %change to 18
+NoTrials=1; %change to 18
 
 points = 990;
 TestStarts= [1,2,3,4,5,6,2,5,1,6,3,4,3,6,4,1,5,2];
 RightAnswer=[5,4,5,6,2,2,4,2,5,2,5,6,5,2,6,5,2,4];
 
-
 for n = 1:NoMiniBlocks
-    
-     
     for t = 1:NoTrials
-
             start=TestStarts(t);
             
             % draw fuel tank
@@ -672,7 +665,7 @@ Screen('flip', window);
 WaitSecs(3.);
 
 
-% %%%%%%%%%%%% PRACTISE RIGHT ACTION IN LOW NOISE%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% %%%%%%%%%%%% PRACTISE JUMP ACTION IN LOW NOISE%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 text = ['Im richtigen Experiment kann es passieren, dass deine Reise nach (S)prung unzuverlässig ist.'...
@@ -720,7 +713,6 @@ KbStrokeWait;
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 % %%%%%%%%%%%% SHOW REISEMUSTER FOR  JUMPING Right %%%%%%%%%%%%%%%%%%%%%%%%%
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -750,7 +742,7 @@ KbStrokeWait;
 text = ['Wir fangen mit Planetensystemen ohne Asteroiden an.'...
         '\n\n Hier landest Du, wenn du S(prung) wählst, fast immer auf dem erwarteten Zielplaneten.'...
         '\n\n Merke, die Häufigkeit mit der Du in dieser Bedingung deinen Zielplaneten verfehlst'...
-        '\n\n ist über das gesamte Experiment konstant.']
+        '\n\n ist über das gesamte Experiment konstant.'];
 
 
 % Draw all the text in one go
@@ -766,8 +758,9 @@ KbStrokeWait;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
-NoTrials = 12; %change to 12
+rnd_val = [0.2320    0.7325    0.9631    0.6932    0.8595    0.8387  ...
+    0.0786    0.0716    0.0324    0.9084    0.6857    0.0666];
+NoTrials = 1; %change to 12
 points = 990;
 for n = 1:NoMiniBlocks
     for t = 1:NoTrials
@@ -794,7 +787,7 @@ for n = 1:NoMiniBlocks
 
             if strcmp(KbName(keyCode), 's')
                 p = state_transition_matrix(3, start, :);
-                next = find(cumsum(p)>=rand,1);
+                next = find(cumsum(p)>=rnd_val(t),1);
                 if next ~= jumps(start)
                     missed = 1;
                 else
@@ -908,9 +901,11 @@ debrisPos = CenterRectOnPointd(debrisRect, xCenter, yCenter);
 % Make the debris into a texture
 DebrisTexture = Screen('MakeTexture', window, debris);
 
+rng(54321);
 points = 990;
- 
-NoTrials = 12;  %% change to 12 
+rnd_val = [0.9116    0.6238    0.7918    0.4298    0.5430    0.4135    0.0856 ...
+    0.7776    0.4889    0.0505    0.5384    0.0415];
+NoTrials = 1;  %% change to 12 
 for t = 1:NoTrials
     while(true)
         if t < 7
@@ -938,7 +933,7 @@ for t = 1:NoTrials
 
         if strcmp(KbName(keyCode), 's')
             p = state_transition_matrix(4, start, :);
-            next = find(cumsum(p)>=rand,1);
+            next = find(cumsum(p)>=rnd_val(t),1);
             
                 if next ~= jumps(start)
                     missed = 1;
@@ -1182,7 +1177,7 @@ KbStrokeWait;
 % Summary text
 text = ['Ich fasse noch einmal alles für dich zusammen:' ...
         '\n\n\n\n Deine Aufgabe ist es möglichst viel Treibstoff zu sammeln, indem Du von Planet zu Planet reist.'... 
-        'n\n\n  Du hast entweder 2 oder 3 Reisen pro Planetensystem.'...
+        '\n\n\n  Du hast entweder 2 oder 3 Reisen pro Planetensystem.'...
         '\n\n Du kannst immer entweder einen Planeten nach Rechts reisen, das kostet dich 2 Treibstoffeinheiten'...
         '\n\n oder für 5 Treibstoffeinheiten Springen. Je nachdem auf was für einem Planeten Du landest,'...
         '\n\n gewinnst oder verlierst Du Treibstoff.'... 
@@ -1198,7 +1193,7 @@ DrawFormattedText(window, text, 'center', screenYpixels * 0.1, white);
 
 % Press Key to continue  
 DrawFormattedText(window, 'Drücke eine Taste um fortzufahren.', ...
-                  'center', screenYpixels*0.9);
+                  'center', screenYpixels*0.95);
 
 % Flip to the screen
 Screen('Flip', window);
@@ -1329,13 +1324,7 @@ for n = 1:NoMiniBlocks
         Screen('Flip', window);
         WaitSecs(1.5);
     
-        cond = conditionsFeedback.noise{n};
         NoTrials = conditionsFeedback.notrials(n);
-    
-        if strcmp(cond, 'high')
-            % Draw debris
-            Screen('DrawTexture', window, DebrisTexture, [], debrisPos)
-        end
     
         % draw point bar
         draw_point_bar(points, window, xCenter, yCenter);
@@ -1370,11 +1359,7 @@ for n = 1:NoMiniBlocks
                 points = min(points + ac, 1000);
                 TestKey(t) = 1;
             elseif strcmp(Key, 's')
-                if strcmp(cond, 'low')
-                    p = state_transition_matrix(3, start, :);
-                else
-                    p = state_transition_matrix(4, start, :);
-                end
+                p = state_transition_matrix(2, start, :);
                 next = find(cumsum(p)>=rand,1);
                 ac = actionCost(2);
                 points = min(points + ac, 1000);
@@ -1387,13 +1372,9 @@ for n = 1:NoMiniBlocks
             locStart = imagePos(start, :);
             locEnd = imagePos(next, :);
             while time < md
-                if strcmp(cond, 'high')
-                    % Draw debris
-                    Screen('DrawTexture', window, DebrisTexture, [], debrisPos)
-                end
                 draw_point_bar(points, window, xCenter, yCenter);
                 draw_remaining_actions(window, t, NoTrials, xCenter, yCenter);
-    %             draw_buttons(window, ButtonsTexture, buttonsPos);
+                % draw_buttons(window, ButtonsTexture, buttonsPos);
                 draw_planets(planetList, window, PlanetsTexture, planetsPos);
 
                 % Position of the square on this frame
@@ -1426,15 +1407,10 @@ for n = 1:NoMiniBlocks
                 s = int2str(reward);
             end
 
-            if strcmp(cond, 'high')
-               % Draw debris
-               Screen('DrawTexture', window, DebrisTexture, [], debrisPos)
-            end
             DrawFormattedText(window, s, 'center', yCenter - 100, white);
             draw_point_bar(points, window, xCenter, yCenter);
             draw_remaining_actions(window, t+1, NoTrials, xCenter, yCenter);
             draw_planets(planetList, window, PlanetsTexture, planetsPos);
-    %         draw_buttons(window, ButtonsTexture, buttonsPos);
             Screen('DrawTexture', window, RocketTexture, [], cRect);
 
             vbl = Screen('Flip', window);                  

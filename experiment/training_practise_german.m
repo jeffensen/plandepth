@@ -201,7 +201,15 @@ planets = planetsPractise;
 starts = startsPractise;
 
 for n = 1:NoMiniBlocks
-    
+    if n == 1
+        rng(123);
+    elseif n == 6
+        rng(456);
+    elseif n == 11
+        rng(789);
+    elseif n == 16
+        rng(111);
+    end
     if points < 0 
         break
     end
@@ -263,7 +271,7 @@ for n = 1:NoMiniBlocks
         
         if strcmp(Key, 'RightArrow')
             p = state_transition_matrix(1, start, :);
-            next = find(cumsum(p)>=rand,1);
+            next = find(cumsum(p)>=0.5,1);
             ac = actionCost(1);
             points = min(points + ac, 1000);
         elseif strcmp(Key, 's')
@@ -293,7 +301,6 @@ for n = 1:NoMiniBlocks
             end
             draw_point_bar(points, window, xCenter, yCenter);
             draw_remaining_actions(window, t, NoTrials, xCenter, yCenter);
-%             draw_buttons(window, ButtonsTexture, buttonsPos);
             draw_planets(planetList, window, PlanetsTexture, planetsPos);
 
             % Position of the square on this frame
@@ -340,7 +347,6 @@ for n = 1:NoMiniBlocks
         draw_point_bar(points, window, xCenter, yCenter);
         draw_remaining_actions(window, t+1, NoTrials, xCenter, yCenter);
         draw_planets(planetList, window, PlanetsTexture, planetsPos);
-%         draw_buttons(window, ButtonsTexture, buttonsPos);
         Screen('DrawTexture', window, RocketTexture, [], cRect);
         
         vbl = Screen('Flip', window);
@@ -357,7 +363,7 @@ delete('tmpdata.mat');
 %%%%%%%%%%%% END INSTRUCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% End screen
-end_msg = ['GlÃ¼ckwunsch!' ... 
+end_msg = ['Glückwunsch!' ... 
          '\n\n '...
          '\n\n Du bist nun bereit dein Weltraumabenteuer zu beginnen' ...
          '\n\n '...
