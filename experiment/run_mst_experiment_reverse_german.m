@@ -210,6 +210,17 @@ startsExp(1:50) = startsExp(51:end);
 startsExp(51:end) = startsTmp;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+% Prevent spilling of keystrokes into console:
+ListenChar(-1);
+
+% Wait for the "s" and the "RightArrow" key with KbQueueWait.
+deviceIndex=[];
+keysOfInterest=zeros(1,256);
+keysOfInterest(KbName('s'))=1;
+keysOfInterest(KbName('RightArrow'))=1;
+keysOfInterest(KbName('Escape'))=1;
+KbQueueCreate(deviceIndex, keysOfInterest);
+
 for n = 1:NoMiniBlocks
     
     % current experimental condition
@@ -249,19 +260,24 @@ for n = 1:NoMiniBlocks
     Screen('DrawTexture', window, RocketTexture, [], rocketPos(:,start)');
     
     vbl = Screen('flip', window);
+    KbQueueStart(deviceIndex);
     
     for t = 1:NoTrials
-        % Wait for a key press
+       % Wait for a key press
+        secs = GetSecs;
         while true
-            [secs, keyCode, deltaSecs] = KbPressWait;
-            Key = KbName(keyCode);
-            if strcmp(Key, 's') ||  strcmp(Key, 'RightArrow')
-                break;
+            [pressed, firstPress] = KbQueueCheck(deviceIndex);
+            press_secs = firstPress(find(firstPress));
+            if pressed
+                Key = KbName(min(find(firstPress)));
+                break
             end
         end
+        KbQueueStop(deviceIndex);	% Stop delivering events to the queue
+        
         % Save response and response time
         data.States(n,t) = start;
-        data.Responses.RT(n, t) = secs-vbl;
+        data.Responses.RT(n, t) = press_secs-secs;
         
         if strcmp(Key, 'RightArrow')
             p = state_transition_matrix(1, start, :);
@@ -280,6 +296,9 @@ for n = 1:NoMiniBlocks
             ac = actionCost(2);
             points = points + ac;
             data.Responses.Keys(n,t)= 2;
+        else
+            %stop the experiment if escape was pressed
+            points = -1;
         end
         if points < 0
             break
@@ -296,7 +315,6 @@ for n = 1:NoMiniBlocks
             end
             draw_point_bar(points, window, xCenter, yCenter);
             draw_remaining_actions(window, t, NoTrials, xCenter, yCenter);
-%             draw_buttons(window, ButtonsTexture, buttonsPos);
             draw_planets(planetList, window, PlanetsTexture, planetsPos);
 
             % Position of the square on this frame
@@ -349,7 +367,9 @@ for n = 1:NoMiniBlocks
         Screen('DrawTexture', window, RocketTexture, [], cRect);
         
         vbl = Screen('Flip', window);
+        KbQueueStart(deviceIndex);
     end
+    KbQueueStop(deviceIndex);
     data.States(n,t+1) = start;
     WaitSecs(.5);
     if points < 0
@@ -379,6 +399,9 @@ for n = 1:NoMiniBlocks
        end
     end
 end
+
+KbQueueRelease(deviceIndex);
+ListenChar(0);
 
 save(file_name, 'data');
 delete('tmpdata.mat');
