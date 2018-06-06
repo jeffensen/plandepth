@@ -2,6 +2,7 @@
 %%%%%%%%%%%%%%%%%%%%%   TRAINING  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
 %% Prepare Matlab for experiment
 sca;
 close all;
@@ -18,7 +19,7 @@ load('experimental_variables.mat')
 %makes screen transparent for debugging
 %PsychDebugWindowConfiguration();
 
-% Screen('Preference', 'SkipSyncTests', 1);
+Screen('Preference', 'SkipSyncTests', 1);
 
 screen_number = max(Screen('Screens'));
 
@@ -668,9 +669,9 @@ WaitSecs(3.);
 % %%%%%%%%%%%% PRACTISE JUMP ACTION IN LOW NOISE%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-text = ['Im richtigen Experiment kann es passieren, dass deine Reise nach (S)prung unzuverlässig ist.'...
+text = ['Im richtigen Experiment kann es passieren, dass deine Reise mit(S)prung unzuverlässig ist.'...
           '\n\n\n\n In solchen Fällen verfehlt das Raumschiff den Zielplaneten'...
-          '\n\n und landet stattdessen auf einem Nachbarplaneten des Zielplaneten.'];
+          '\n\n und landet stattdessen auf einem der beiden Nachbarplaneten des Zielplaneten.'];
 
       
 % Draw all the text in one go
@@ -741,7 +742,7 @@ KbStrokeWait;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 text = ['Wir fangen mit Planetensystemen ohne Asteroiden an.'...
         '\n\n Hier landest Du, wenn du S(prung) wählst, fast immer auf dem erwarteten Zielplaneten.'...
-        '\n\n Merke, die Häufigkeit mit der Du in dieser Bedingung deinen Zielplaneten verfehlst'...
+        '\n\n Merke: die Häufigkeit mit der Du in dieser Bedingung deinen Zielplaneten verfehlst'...
         '\n\n ist über das gesamte Experiment konstant.'];
 
 

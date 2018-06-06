@@ -265,15 +265,20 @@ for n = 1:NoMiniBlocks
             end
         end
         
+           
+        
         % Save response and response time
         data.States(n,t) = start;
         data.Responses.RT(n, t) = secs-vbl;
         
+       
         if strcmp(Key, 'RightArrow')
             p = state_transition_matrix(1, start, :);
             next = find(cumsum(p)>=0.5,1);
             ac = actionCost(1);
             points = min(points + ac, 1000);
+            data.Responses.Keys(n,t)=1;
+            
         elseif strcmp(Key, 's')
             if strcmp(cond, 'low')
                 p = state_transition_matrix(3, start, :);
@@ -283,6 +288,7 @@ for n = 1:NoMiniBlocks
             next = find(cumsum(p)>=rand,1);
             ac = actionCost(2);
             points = min(points + ac, 1000);
+            data.Responses.Keys(n,t)=2;
         end
         
         if points < 0 
