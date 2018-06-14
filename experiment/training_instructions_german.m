@@ -295,7 +295,7 @@ Screen('Flip', window);
 KbStrokeWait;
 
 NoMiniBlocks = 1;
-NoTrials = 1;  %change to 12
+NoTrials = 12;  %change to 12
 points = 990;
 start = 1;
 for t = 1:NoTrials
@@ -386,7 +386,7 @@ WaitSecs(3.);
 text = [' Wenn Du (S)prung wählst, reist dein Raumschiff zu einem nicht benachbarten Planeten.' ... 
         '\n\n\n\n Als nächstes kannst Du ausprobieren was an jeder Planetenposition passiert,'...
         '\n\n wenn Du (S)prung wählst.'...
-        '\n\n\n\n Es ist wichtig, dass Du Dir das gezeigte Flugmuster gut einpräsgst.']; 
+        '\n\n\n\n Es ist wichtig, dass Du Dir das gezeigte Flugmuster gut einprägst.']; 
 
 
 % Draw all the text in one go
@@ -527,7 +527,7 @@ KbStrokeWait;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%   Training_S_Test %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-NoTrials=1; %change to 18
+NoTrials=18; %change to 18
 
 points = 990;
 TestStarts= [1,2,3,4,5,6,2,5,1,6,3,4,3,6,4,1,5,2];
@@ -761,7 +761,7 @@ KbStrokeWait;
 
 rnd_val = [0.2320    0.7325    0.9631    0.6932    0.8595    0.8387  ...
     0.0786    0.0716    0.0324    0.9084    0.6857    0.0666];
-NoTrials = 1; %change to 12
+NoTrials = 12; %change to 12
 points = 990;
 for n = 1:NoMiniBlocks
     for t = 1:NoTrials
@@ -906,7 +906,7 @@ rng(54321);
 points = 990;
 rnd_val = [0.9116    0.6238    0.7918    0.4298    0.5430    0.4135    0.0856 ...
     0.7776    0.4889    0.0505    0.5384    0.0415];
-NoTrials = 1;  %% change to 12 
+NoTrials = 12;  %% change to 12 
 for t = 1:NoTrials
     while(true)
         if t < 7
