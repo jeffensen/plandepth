@@ -27,7 +27,7 @@ data.PlanetConf = NaN(20,6);
 data.Conditions.notrials = NaN (20,1);
 data.Conditions.noise = {};
 %    
-file_name = strcat('Training_part_', int2str(Pbn_ID),'_', int2str(No_Training),'_',date, '.mat');
+file_name = strcat('Training_part_', int2str(Pbn_ID),'_', int2str(No_Training),'_',date,'_',datestr(now,'HH-MM'), '.mat');
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
