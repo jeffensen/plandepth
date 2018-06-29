@@ -29,7 +29,7 @@ def map_noise_to_values(strings, blocks):
         a[i] = value(s)
     return a
 
-path = '/home/markovic/Dropbox/Experiments/Data/Plandepth/'
+path = '/home/markovic/Dropbox/Experiments/Data/Plandepth/Pilot/'
 filenames = ['part_1_23-Mar-2018.mat',
              'part_2_23-Mar-2018.mat',
              'part_3_27-Mar-2018.mat',
@@ -179,35 +179,35 @@ ax[0].plot(model_ent[10:, 50:].mean(axis = 0), label = '2')
 ax[1].plot(model_ent[:10, 50:].mean(axis = 0), label = '1')
 ax[1].plot(model_ent[10:, :50].mean(axis = 0), label = '2')
 
-model_matrix = np.empty_like(model_prob)
-for n in range(n_subjects):
-    model_matrix[n] = (model_prob[n] > 0.01).astype(int)
-    if n > 10:
-        model_matrix[n, 50:, -1] = 0
-    else:
-        model_matrix[n, :50, -1] = 0
-np.save('model_matrix.npy', model_matrix)
-
-no_trials = torch.LongTensor(notrials.reshape(-1)[~nans].astype(int)-1)
-max_reward = np.zeros((n_subjects, blocks))
-max_reward = max_reward.reshape(-1)
-max_reward[~nans] = agent.Vs[range(1950), no_trials, states[:,0]].numpy()
-max_reward = max_reward.reshape(n_subjects, blocks)
-
-np.save('max_reward.npy', max_reward)
-
-reward_diff = np.zeros((n_subjects, blocks))
-reward_diff = reward_diff.reshape(-1)
-count = 0
-for i in range(len(reward_diff)):
-    if not nans[i]:
-        notr = no_trials[count]
-        state = states[count,0]
-        if notr == 2:
-            reward_diff[i] = agent.Vs[count,1, state] - agent.Vs[count,0,state]
-        else:
-            reward_diff[i] = agent.Vs[count,2,state] - agent.Vs[count,1,state]
-        count += 1
-reward_diff = reward_diff.reshape(n_subjects, -1)
-
-np.save('reward_diff.npy', reward_diff)
+#model_matrix = np.empty_like(model_prob)
+#for n in range(n_subjects):
+#    model_matrix[n] = (model_prob[n] > 0.01).astype(int)
+#    if n > 10:
+#        model_matrix[n, 50:, -1] = 0
+#    else:
+#        model_matrix[n, :50, -1] = 0
+#np.save('model_matrix.npy', model_matrix)
+#
+#no_trials = torch.LongTensor(notrials.reshape(-1)[~nans].astype(int))
+#max_reward = np.zeros((n_subjects, blocks))
+#max_reward = max_reward.reshape(-1)
+#max_reward[~nans] = agent.Vs[range(1950), no_trials, states[:,0]].numpy()
+#max_reward = max_reward.reshape(n_subjects, blocks)
+#
+#np.save('max_reward.npy', max_reward)
+#
+#reward_diff = np.zeros((n_subjects, blocks))
+#reward_diff = reward_diff.reshape(-1)
+#count = 0
+#for i in range(len(reward_diff)):
+#    if not nans[i]:
+#        notr = no_trials[count]
+#        state = states[count,0]
+#        if notr == 2:
+#            reward_diff[i] = agent.Vs[count,1, state] - agent.Vs[count,0,state]
+#        else:
+#            reward_diff[i] = agent.Vs[count,2,state] - agent.Vs[count,1,state]
+#        count += 1
+#reward_diff = reward_diff.reshape(n_subjects, -1)
+#
+#np.save('reward_diff.npy', reward_diff)

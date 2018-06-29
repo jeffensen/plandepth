@@ -16,7 +16,7 @@ sns.set(context = 'talk', style = 'white', color_codes = True)
 
 from bayesian_linear_regression import BayesLinRegress
 
-path = '/home/markovic/Dropbox/Experiments/Data/Plandepth/'
+path = '../../../Dropbox/Experiments/Data/Plandepth/'
 fnames = ['part_1_23-Mar-2018.mat',
           'part_2_23-Mar-2018.mat',
           'part_3_27-Mar-2018.mat',
@@ -39,7 +39,6 @@ fnames = ['part_1_23-Mar-2018.mat',
           'part_20_29-Mar-2018.mat']
 
 import scipy as scp
-import statsmodels.api as sm
 
 data = pd.DataFrame(columns = ['log_rt', 'Gain', 'Subject', 'Phase', 'Order'])
 
@@ -63,6 +62,8 @@ for i,f in enumerate(fnames):
     
     df['Gain']= np.diff(np.hstack([990, points]))
     
+    df['Points'] = np.hstack([990, points])[:-1]
+    
     df['log_rt']= np.log(rts[:,:3].sum(axis=-1))
 
     df['Subject'] = i
@@ -82,14 +83,6 @@ for i,f in enumerate(fnames):
                 
     data = data.append(df)
     
-#    if df.loc[0, 'Order'] == 1:
-#        plt.plot(trials, points, color = 'm', linewidth = 2, alpha = 0.5);
-#    else:
-#        plt.plot(trials, points, color = 'y', linewidth = 2, alpha = 0.5);
-#
-#plt.xlim([1,100]);
-#plt.ylim([0, 1060]);
-
 nans = data.Gain.isnull()
 data = data[~nans]
 
@@ -98,53 +91,51 @@ y = data.log_rt.values
 X = np.ones((len(data),1))
 X = np.hstack([X, np.log(data.index+1).values[:,None]])
 
-max_reward = np.load('max_reward.npy')
-reward_diff = np.load('reward_diff.npy')
-model_matrix = np.load('model_matrix.npy')
-
-#for phase in [1,2,3,4]:
-#    X = np.hstack([X, (data.Phase == phase).values[:,None]]) 
-
-X = np.hstack([X[:,1:],max_reward.reshape(-1)[~nans][:, None],reward_diff.reshape(-1)[~nans][:,None]])
+for phase in [1,2,3,4]:
+    X = np.hstack([X, (data.Phase == phase).values[:,None]])
+    
+X = np.hstack([X, data.Points.values[:,None]/990])
     
 linreg = BayesLinRegress(X, y, sub_idx)
 
-mu_t, sigma_t,\
-mu_f, sigma_f,\
-mu_s, sigma_s,\
-mu_l, sigma_l,\
-mu_w, sigma_w = linreg.fit(n_iterations=40000)
+results = linreg.fit(n_iterations=40000)
+mu_w = results['mean_beta']
+sigma_w = results['sigma_beta']
 
+
+#plot convergence
+plt.plot(linreg.loss[-10000:]);
+plt.axhline(y = np.mean(linreg.loss[-1000:]), xmin=0, xmax = 10000, c ='r');
 
 #plot results
 fig, ax = plt.subplots(2, 2, figsize = (10, 5), sharey = True, sharex = True)
 
 for i in range(len(color)):
     ax[0,0].errorbar(mu_w[i,2], mu_w[i,3], 
-      xerr = np.sqrt(sigma_w[i,2]), 
-      yerr=np.sqrt(sigma_w[i,3]), 
+      xerr=sigma_w[i,2], 
+      yerr=sigma_w[i,3], 
       fmt='o',
       elinewidth = 1,
       c = color[i],
       alpha = .8);
     ax[0,1].errorbar(mu_w[i,5], mu_w[i,3], 
-      xerr = np.sqrt(sigma_w[i,4]), 
-      yerr=np.sqrt(sigma_w[i,5]), 
+      xerr=sigma_w[i,5], 
+      yerr=sigma_w[i,3], 
       fmt='o',
       elinewidth = 1,
       c = color[i],
       alpha = .8);
       
     ax[1,0].errorbar(mu_w[i,2], mu_w[i,4], 
-      xerr = np.sqrt(sigma_w[i,2]), 
-      yerr=np.sqrt(sigma_w[i,4]), 
+      xerr=sigma_w[i,2], 
+      yerr=sigma_w[i,4], 
       fmt='o',
       elinewidth = 1,
       c = color[i],
       alpha = .8);
     ax[1,1].errorbar(mu_w[i,5], mu_w[i,4], 
-      xerr = np.sqrt(sigma_w[i,3]), 
-      yerr= np.sqrt(sigma_w[i,5]), 
+      xerr=sigma_w[i,5], 
+      yerr=sigma_w[i,4], 
       fmt='o',
       elinewidth = 1,
       c = color[i],

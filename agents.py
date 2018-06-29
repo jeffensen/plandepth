@@ -169,7 +169,7 @@ class Informed(object):
             self.costs = ftype([-2, -5]).view(na, 1, 1)
 
         # expected state value
-        self.Vs = ftype(runs, planning_depth, ns)
+        self.Vs = ftype(runs, self.depth+1, ns)
         self.Vs[:,0] = torch.stack([self.utility[self.pc[i]] for i in range(runs)])
         
         # action value difference
@@ -221,7 +221,7 @@ class Informed(object):
                          for i in range(self.na)])
     
         Q = R + acosts        
-        for d in range(1,depth):
+        for d in range(1,depth+1):
             #compute Q value differences for different actions
             self.D[:, d-1] = Q[0] - Q[1]
             
@@ -242,9 +242,9 @@ class Informed(object):
         points = outcomes[:,0]
         states = outcomes[:,1].long()
         
-        self.planning(states, trial)
+        self.planning(states, points, trial)
         
-    def planning(self, states, trial, *args):
+    def planning(self, states, points, trial, *args):
         if not args:
             noise = ones(self.runs,1)*1e-10
             depth = self.depth*ones(self.runs, dtype = torch.long)
