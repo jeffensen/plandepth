@@ -4,6 +4,8 @@ close all;
 clear all;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+rng('shuffle');
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%   Modify before experiment %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 data = struct;
@@ -22,11 +24,10 @@ data.PlanetConf = NaN(100,6);
 data.Conditions.notrials = NaN (100,1);
 data.Conditions.noise = {};
 %    
-file_name = strcat('part_', int2str(Pbn_ID),'_', date, '.mat');
+file_name = strcat('part_', int2str(Pbn_ID),'_', date,'_', datestr(now,'HH-MM'), '.mat');
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 
 % Here we call some default settings for setting up Psychtoolbox
 PsychDefaultSetup(2);
@@ -92,14 +93,14 @@ text = ['Hallo!' ...
          '\n\n\n\n Dein Weltraumabenteuer kann nun beginnen.'];
 
 % Some block transition text     
-trans_text = ['In Kürze erreichst du ein neues Planetensystem......'];
+trans_text = ['In Kürze erreichst Du ein neues Planetensystem......'];
 
 % Some brake text
-break_text1 = ['Bitte nimm dir etwas Zeit zum Ausruhen, wenn du dich müde fühlst.'...
-                '\n\n\n\n Achtung, als nächstes reist du in Planetensysteme mit Asteroiden!'];
+break_text1 = ['Bitte nimm Dir etwas Zeit zum Ausruhen, falls Du dich müde fühlst.'...
+                '\n\n\n\n Achtung, als nächstes reist Du in Planetensysteme mit Asteroiden!'];
 
  
-break_text2 = ['Bitte nimm dir etwas Zeit zum Ausruhen, wenn du dich müde fühlst.'...
+break_text2 = ['Bitte nimm Dir etwas Zeit zum Ausruhen, falls Du dich müde fühlst.'...
                 '\n\n\n\n Achtung, die Anzahl deiner Reiseschritte verändert sich!'];
 
 anykey_text = ['Drücke eine Taste um fortzufahren.'];
@@ -197,6 +198,18 @@ DebrisTexture = Screen('MakeTexture', window, debris);
 topPriorityLevel = MaxPriority(window);
 Priority(topPriorityLevel);
 
+
+% Prevent spilling of keystrokes into console:
+ListenChar(-1);
+
+% Wait for the "s" and the "RightArrow" key with KbQueueWait.
+deviceIndex=[];
+keysOfInterest=zeros(1,256);
+keysOfInterest(KbName('s'))=1;
+keysOfInterest(KbName('RightArrow'))=1;
+keysOfInterest(KbName('Escape'))=1;
+KbQueueCreate(deviceIndex, keysOfInterest);
+
 for n = 1:NoMiniBlocks
     
     % current experimental condition
@@ -236,19 +249,24 @@ for n = 1:NoMiniBlocks
     Screen('DrawTexture', window, RocketTexture, [], rocketPos(:,start)');
     
     vbl = Screen('flip', window);
+    KbQueueStart(deviceIndex);
     
     for t = 1:NoTrials
         % Wait for a key press
+        secs = GetSecs;
         while true
-            [secs, keyCode, deltaSecs] = KbPressWait;
-            Key = KbName(keyCode);
-            if strcmp(Key, 's') ||  strcmp(Key, 'RightArrow')
-                break;
+            [pressed, firstPress] = KbQueueCheck(deviceIndex);
+            press_secs = firstPress(find(firstPress));
+            if pressed
+                Key = KbName(min(find(firstPress)));
+                break
             end
         end
+        KbQueueStop(deviceIndex);	% Stop delivering events to the queue
+        
         % Save response and response time
         data.States(n,t) = start;
-        data.Responses.RT(n, t) = secs-vbl;
+        data.Responses.RT(n, t) = press_secs-secs;
         
         if strcmp(Key, 'RightArrow')
             p = state_transition_matrix(1, start, :);
@@ -265,9 +283,13 @@ for n = 1:NoMiniBlocks
             end
             next = find(cumsum(p)>=rand,1);
             ac = actionCost(2);
-            points = points + ac;
+            points = points + ac;       
             data.Responses.Keys(n,t)= 2;
+        else
+            %stop the experiment if escape was pressed
+            points = -1;
         end
+        
         if points < 0
             break
         end
@@ -283,7 +305,6 @@ for n = 1:NoMiniBlocks
             end
             draw_point_bar(points, window, xCenter, yCenter);
             draw_remaining_actions(window, t, NoTrials, xCenter, yCenter);
-%             draw_buttons(window, ButtonsTexture, buttonsPos);
             draw_planets(planetList, window, PlanetsTexture, planetsPos);
 
             % Position of the square on this frame
@@ -309,6 +330,8 @@ for n = 1:NoMiniBlocks
         
         % set start to a new location
         start = next;
+        
+        %compute reward
         reward = planetRewards(planetList(next));
         points = points + reward;
         
@@ -336,7 +359,9 @@ for n = 1:NoMiniBlocks
         Screen('DrawTexture', window, RocketTexture, [], cRect);
         
         vbl = Screen('Flip', window);
+        KbQueueStart(deviceIndex);
     end
+    KbQueueStop(deviceIndex);
     data.States(n,t+1) = start;
     WaitSecs(.5);
     if points < 0
@@ -366,6 +391,9 @@ for n = 1:NoMiniBlocks
        end
     end
 end
+
+KbQueueRelease(deviceIndex);
+ListenChar(0);
 
 save(file_name, 'data');
 delete('tmpdata.mat');
