@@ -13,6 +13,8 @@ import torch
 from torch.distributions import Categorical, constraints
 from torch.autograd import Variable
 
+from helpers import make_transition_matrix
+
 import pyro
 import pyro.distributions as dist
 from pyro.infer import SVI
@@ -28,200 +30,82 @@ ftype = torch.FloatTensor
 itype = torch.LongTensor
 btype = torch.ByteTensor
 
-class Informed(object):
-    def __init__(self, 
-                 planet_confs,
-                 transition_probability = ones(1),
-                 responses = None,
-                 states = None, 
-                 runs = 1,
-                 trials = 1, 
-                 na = 2,
-                 ns = 6,
-                 costs = None,
-                 planning_depth = 1):
-        
-                
-        self.runs = runs
-        self.trials = trials
-        
-        self.depth = planning_depth #planning depth
-        self.na = na #number of actions
-        self.ns = ns #number of states
-        
-        self.make_transition_matrix(transition_probability)
-        #matrix containing planet type in each state
-        self.pc = planet_confs
-        self.utility = torch.arange(-20,30,10)
-        if costs is not None:
-            self.costs = costs.view(na, 1, 1)
-        else:
-            self.costs = ftype([-2, -5]).view(na, 1, 1)
+na = 2
+ns = 6
 
-        # expected state value
-        self.Vs = ftype(runs, self.depth+1, ns)
-        self.Vs[:,0] = torch.stack([self.utility[self.pc[i]] for i in range(runs)])
-        
-        # action value difference
-        self.D = ftype(runs, planning_depth, ns)
-        
-        # response probability
-        self.prob = ftype(runs, trials, na).zero_()
-        
-        if responses is not None:
-            self.responses = var(responses).view(-1)
-            self.notnans = btype((~np.isnan(responses.numpy())).astype(int)).view(-1)
-            self.states = var(states)
-        
-#        self.compute_state_values()
-            
-    def make_transition_matrix(self, p):
-        # p -> transition probability
-        na = self.na
-        ns = self.ns
-        runs = self.runs
-        
-        if len(p) == 1:
-            p = p.repeat(runs)
-        
-        self.tm = ftype(runs, na, ns, ns).zero_()
-        # certain action 
-        self.tm[:, 0, :-1, 1:] = torch.eye(ns-1).repeat(runs,1,1)
-        self.tm[:, 0,-1,0] = 1
-        # uncertain action
-        self.tm[:, 1, -2:, 0:3] = (1-p[:, None,None].repeat(1,2,3))/2 
-        self.tm[:, 1, -2:, 1] = p[:, None].repeat(1,2)
-        self.tm[:, 1, 2, 3:6] = (1-p[:,None].repeat(1,3))/2 
-        self.tm[:,1, 2, 4] = p
-        self.tm[:,1, 0, 3:6] = (1-p[:,None].repeat(1,3))/2 
-        self.tm[:,1, 0, 4] = p
-        self.tm[:,1, 3, 0] = (1-p)/2; self.tm[:,1, 3, -2] = (1-p)/2
-        self.tm[:,1, 3, -1] = p
-        self.tm[:,1, 1, 2:5] = (1-p[:,None].repeat(1,3))/2 
-        self.tm[:,1, 1, 3] = p
-        
-    def compute_state_values(self, tau = None):
-        if tau is None:
-            tau = ones(self.runs,1)*1e-10
-        acosts = self.costs #action costs
-        tm = self.tm #transition matrix
-        depth = self.depth #planning depth
-        
-        R = torch.stack([tm[:,i].bmm(self.Vs[:,0][:,:,None]).squeeze()\
-                         for i in range(self.na)])
-    
-        Q = R + acosts        
-        for d in range(1,depth+1):
-            #compute Q value differences for different actions
-            self.D[:, d-1] = Q[0] - Q[1]
-            
-            #compute response probability
-            p = 1/(1+torch.exp(self.D[:,d-1]/tau))
-            
-            #set state value
-            self.Vs[:, d] = p*Q[1] + (1-p)*Q[0]
-            
-            Q = torch.stack([tm[:,i].bmm(self.Vs[:,d][:,:,None]).squeeze()\
-                             for i in range(self.na)])
-            Q += R + acosts
-        
-        self.D[:, -1] = Q[0] - Q[1]
-                
-        
-    def update_beliefs(self, trial, outcomes, responses = None):
-        points = outcomes[:,0]
-        states = outcomes[:,1].long()
-        
-        self.planning(states, points, trial)
-        
-    def planning(self, states, points, trial, *args):
-        if not args:
-            noise = ones(self.runs,1)*1e-10
-            depth = self.depth*ones(self.runs, dtype = torch.long)
-        else:
-            depth = args[0]
-            if len(args) > 1:
-                noise = args[1]
-            else:
-                noise = ones(self.runs,1)*1e-10
-        
-        runs = itype(range(self.runs))
-        
-        remaining_trials = ones(self.runs, dtype=torch.long)*(self.trials-trial)
-        d = torch.min(remaining_trials, depth)
-        
-        #get the probability of jump action
-        p = 1/(1+torch.exp(self.D[runs,d-1]/noise))        
-        
-        probs = p[runs, states]
-        self.prob[:, trial, 1] = probs
-        self.prob[:, trial, 0] = 1 - probs
-                    
-    def sample_responses(self, trial):
-        _, choices = self.prob[:,trial-1,:].max(dim = 0)
-        
-        return choices
-    
-    def compute_response_probabilities(self, depth):
-        self.compute_state_values()
-        for trial in range(self.trials):
-            self.planning(self.states[:,trial], trial, depth)
-    
-    def model(self, *depth):
-        if not depth: 
-            depth = pyro.sample('depth', 
-                                dist.Categorical(probs = ones(self.runs, 3)/3))
-        else:
-            depth = ones(self.runs, dtype = torch.long)*depth[0]
-        
-        #subject specific response probability
-        self.compute_response_probabilities(depth)
-        probs = self.prob.view(-1,2)[self.notnans]
-        
-        return pyro.sample('responses', dist.Categorical(probs = probs))
-    
-    def guide(self):
-        
-        probs = pyro.param('probs', ones(self.runs, 3)/3, constraint = constraints.simplex)
-        depth = pyro.sample('depth', dist.categorical, probs)
-        
-        return depth
-    
-    def fit(self, n_iterations = 1000, progressbar = True):
-        if progressbar:
-            xrange = tqdm(range(n_iterations))
-        else:
-            xrange = range(n_iterations)
-        
-        pyro.clear_param_store()
-        data = self.responses.view(-1)[self.notnans]
-        condition = pyro.condition(self.model, data = {'responses': data})
-        svi = SVI(model=condition,
-                  guide=self.guide,
-                  optim=Adam({"lr": 0.01}),
-                  loss="ELBO")
-        losses = []
-        for step in xrange:
-            loss = svi.step()
-            if step % 100 == 0:
-                losses.append(loss)
-        
-        param_names = pyro.get_param_store().get_all_param_names();
-        results = {}
-        for name in param_names:
-            if name[:3] == 'log':
-                results[name[4:]] = softplus(pyro.param(name)).data.numpy()
-            else:
-                results[name] = pyro.param(name).data.numpy()
-        
-        return results
+#state transition matrix
+p = [.9, .5];
+stm_forward = make_transition_matrix(p[0], ns, na)
+stm_backward = stm_forward.transpose(dim0=2,dim1=1)
+stm_backward = stm_backward/stm_backward.sum(dim=-1)[:,:,None]
 
+#for plotting
 colors = np.array(['red', 'pink', 'gray', 'blue', 'green'])
     
 #load single planetary sistem
-vect = np.load('confsExp1.npy')
-outcome_likelihood = vect[0].astype(int)
+#vect = np.load('confsExp1.npy')
+#outcome_likelihood = vect[0].astype(int)
+
+outcomes_likelihood = np.array([[0,0,1.,0,0],[0,0,1.,0,0], [0,0,1.,0,0], [0,0,1.,0,0], [0,0,1.,0,0], [0,0,1.,0,0]])
 
 #load starting condition
-vect = np.load('startsExp1.npy')
-starts = vect[0]
+#vect = np.load('startsExp1.npy')
+#starts = vect[0]
+
+starts = 2
+
+policies = itype([[0,0],[0,1],[1,0],[1,1]])
+npi = len(policies)
+
+p0 = zeros(ns)
+p0[starts] = 1
+
+values = ftype(outcomes_likelihood.argmax(axis = -1)- 2.)
+pT = torch.exp(values-values.max())
+pT /= pT.sum()
+
+for depth in range(1,3):
+    forward_beliefs = zeros(npi, ns, depth+1)
+    forward_beliefs[:,:,0] = p0[None,:]
+    backward_beliefs = zeros(npi, ns, depth+1)
+    backward_beliefs[:,:,-1] = pT[None,:]
+    for tau in range(1,depth+1):
+        a = policies[:,tau-1]
+        forward_beliefs[:,:,tau] = torch.sum(stm_forward[a]*forward_beliefs[:,:,tau-1,None], 1)
+        backward_beliefs[:,:,-tau-1] = torch.sum(stm_backward[a]*backward_beliefs[:,:,-tau, None], 1)
+
+    import seaborn as sns
+    import matplotlib.pyplot as plt
+
+    fig, axes = plt.subplots(2, npi, figsize = (16, 8))
+
+    for i in range(npi):
+        sns.heatmap(data = forward_beliefs[i], ax = axes[0,i], vmax = 1, vmin = 0, cmap = 'viridis')
+        sns.heatmap(data = backward_beliefs[i], ax = axes[1,i], vmax = 1, vmin = 0, cmap = 'viridis')
+
+
+    logp = torch.log(forward_beliefs)/2 + torch.log(backward_beliefs)/2
+
+    q = torch.exp(logp)
+    q /= q.sum(dim=1)[:,None,:]
+
+    qlq = q*torch.log(q)
+    qlq[torch.isnan(qlq)] = 0
+    H = -qlq.reshape(4,-1).sum(dim=-1)
+
+    qlp = q*logp
+    qlp[torch.isnan(qlp)] = 0
+    U = -qlp.reshape(4,-1).sum(dim=-1)
+
+    F = U - H
+    print('preidctive free energy: ', F)
+    
+    flf = forward_beliefs*torch.log(forward_beliefs)
+    flf[torch.isnan(flf)] = 0
+    H = -flf.reshape(4, -1).sum(dim=-1)
+    
+    flb = forward_beliefs*torch.log(backward_beliefs)
+    flb[torch.isnan(flb)] = 0
+    CrossH = -flb.reshape(4,-1).sum(dim=-1)
+    
+    print('expected free energy: ', -H+CrossH)

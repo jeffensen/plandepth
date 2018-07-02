@@ -9,25 +9,13 @@ Created on Thu Feb  8 11:50:01 2018
 import torch
 from tasks import MultiStage
 from agents import Random, Informed
+from helpers import make_transition_matrix
 
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-sns.set(context = 'talk', style = 'white', color_codes = True)
 
-def make_transition_matrix(transition_probability):
-    p = transition_probability
-    transition_matrix = torch.zeros(na, ns, ns)
-    transition_matrix[0, :-1, 1:] = torch.eye(ns-1)
-    transition_matrix[0,-1,0] = 1
-    transition_matrix[1, -2:, 0:3] = (1-p)/2; transition_matrix[1, -2:, 1] = p
-    transition_matrix[1, 2, 3:6] = (1-p)/2; transition_matrix[1, 2, 4] = p
-    transition_matrix[1, 0, 3:6] = (1-p)/2; transition_matrix[1, 0, 4] = p
-    transition_matrix[1, 3, 0] = (1-p)/2; transition_matrix[1, 3, -2] = (1-p)/2; 
-    transition_matrix[1, 3, -1] = p
-    transition_matrix[1, 1, 2:5] = (1-p)/2; transition_matrix[1, 1, 3] = p
-    
-    return transition_matrix
+sns.set(context = 'talk', style = 'white', color_codes = True)
 
 runs = 100
 N = 3
