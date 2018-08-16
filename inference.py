@@ -1,60 +1,56 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+from tqdm import tqdm
+import pandas as pd
+
 import torch
-from torch.distributions import Categorical
 
-import pyro
-import pyro.distributions as dist
-
-zeros = torch.zeros
 ones = torch.ones
-randn = torch.randn
+zeros = torch.zeros
 
-softplus = torch.nn.functional.softplus
-logistic = lambda x: 1/(1+torch.exp(-x))
+import pyro.distributions as dist
+from pyro import sample, param, iarange, irange, clear_param_store
+from pyro.infer import SVI, Trace_ELBO, TraceEnum_ELBO
+from pyro.optim import Adam
+from pyro.contrib.autoguide import AutoDiagonalNormal
 
-ftype = torch.FloatTensor
-itype = torch.LongTensor
-btype = torch.ByteTensor
-
-class Random(object):
+class Inferrer(object):
     def __init__(self,
-                 runs = 1, 
-                 blocks = 100,
-                 na = 2):
+                 agent,
+                 responses, 
+                 mask):
         
-        self.na = na #number of actions
-        self.runs = runs #number of independent runs of the experiment (e.g. number of subjects)
-        self.blocks = blocks #number of blocks in each run
-    
-    def set_params(self, p = None):
-        if p is not None:
-            self.p = p #probability of selecting jump command
-        else:
-            self.p = ones(self.runs)/2
+        self.agent = agent
         
-    def update_beliefs(self, outcomes, responses):
-        self.trials = outcomes[0] #remaining trials
-        self.state = outcomes[1] # current state
-        self.config = outcomes[2] #planet configurations in a given block
-        
-    def plan_behavior(self, depth):
-        pass
-            
-    def sample_responses(self, trial):
-        probs = ones(self.runs, self.na)
-        probs[:, 0] = 1-self.p
-        probs[:, 1] = self.p
-        
-        self.cat = Categorical(probs = probs)
-        return self.cat.sample()
+        self.responses = responses
+        self.mask = mask
     
     def model(self):
-        #hyperprior across subjects
-        tau = pyro.sample('tau', 
-                          dist.halfcauchy, 
-                          Variable(zeros(1)),
-                          Variable(ones(1)))
+        
+        n = self.n #number of subjects
+        agent = self.agent
+        npars = agent.npars #number of parameters
+        
+        #hyperprior group
+        mu_x = sample('mu_x', dist.Cachy(zeros(npars), ones(npars)).independent(1))
+        
+        #prior uncertainty
+        sig_x = sample('sig_x', dist.HalfCauchy(zeros(npars, n), ones(npars, n)). independent(2))
+        x = sample('x', dist.Normal(mu_x*ones(n,npars), sig_x).independent(2))
+        
+        agent.set_params(x)
+        
+        for b in range(self.blocks):
+            trials = self.trials[b]
+            states = self.states[b]
+            config = self.config[b]
+            responses = self.responses[b]
+            for t in range(trials):
+                trials -= t
+                outcomes = [trials, states[t], config]
+                agent.update_beliefs(outcomes, responses[t])
+                agent.plan_behavior(depth[b])
+
         
         #hyperprior subject specific
         lam = pyro.sample('lam',
@@ -71,6 +67,58 @@ class Random(object):
         p = p[self.notnans.repeat(2)].view(-1,2)
         
         return pyro.sample('responses', dist.categorical, p)
+    
+    def guide(self):
+        #hyperprior across subjects
+        mu_t = pyro.param('mu_t', var(zeros(1), requires_grad = True))
+        sigma_t = softplus(pyro.param('log_sigma_t', var(ones(1), requires_grad = True)))
+        tau = pyro.sample('tau', dist.lognormal, mu_t, sigma_t)
+
+        
+        #subject specific hyper prior
+        mu_l = pyro.param('mu_l', var(zeros(self.runs), requires_grad = True))
+        sigma_l = softplus(pyro.param('log_sigma_l', var(ones(self.runs), requires_grad = True)))
+        lam = pyro.sample('lam', dist.lognormal, mu_l, sigma_l)
+        
+        #subject specific response probability
+        alphas = softplus(pyro.param('log_alphas', var(ones(self.runs, self.na), requires_grad = True)))
+        p = pyro.sample('p', dist.dirichlet, alphas)
+        
+        return tau, lam, p
+    
+    def fit(self, n_iterations = 1000, progressbar = True):
+        if progressbar:
+            xrange = tqdm(range(n_iterations))
+        else:
+            xrange = range(n_iterations)
+        
+        pyro.clear_param_store()
+        data = self.responses[self.notnans]
+        condition = pyro.condition(self.model, data = {'responses': data})
+        svi = SVI(model=condition,
+                  guide=self.guide,
+                  optim=Adam({"lr": 0.01}),
+                  loss="ELBO")
+        losses = []
+        for step in xrange:
+            loss = svi.step()
+            if step % 100 == 0:
+                losses.append(loss)
+        
+        fig = plt.figure()        
+        plt.plot(losses)
+        fig.suptitle('ELBO convergence')
+        plt.xlabel('iteration')
+        
+        param_names = pyro.get_param_store().get_all_param_names();
+        results = {}
+        for name in param_names:
+            if name[:3] == 'log':
+                results[name[4:]] = softplus(pyro.param(name)).data.numpy()
+            else:
+                results[name] = pyro.param(name).data.numpy()
+        
+        return results
         
     
 class Informed(object):
