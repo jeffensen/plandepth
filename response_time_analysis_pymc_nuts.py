@@ -31,7 +31,7 @@ def get_failures(states, responses):
     failures[failures < 0] = 0
     return failures
 
-path = '../../../Dropbox/Experiments/Data/Plandepth/Main/'
+path = '../Dropbox/Experiments/Data/Plandepth/Pilot/'
 fnames = []
 for root, dirs, files in os.walk(path):
     fnames.extend(files)
@@ -43,7 +43,7 @@ for f in fnames:
     else:
         files.append(f)
 
-fnames = np.sort(files)
+fnames = np.sort(files)[3:]
     
 from scipy import io
 
@@ -108,7 +108,7 @@ observed = data.log_rt.values
 failures = get_failures(states, responses).reshape(-1)
 success = np.sum(np.nan_to_num(responses), axis = -1).reshape(-1) - failures
 
-max_reward = np.load('max_reward.npy').reshape(-1)
+#max_reward = np.load('max_reward.npy').reshape(-1)
 
 X = data['BlockIndex'].values[:,None].astype(int)
 
@@ -219,19 +219,19 @@ ax[0,1].scatter(mu_group[4], mu_group[2], color = 'k', zorder = 10)
 ax[1,0].scatter(mu_group[1], mu_group[3], color = 'k', zorder = 10)
 ax[1,1].scatter(mu_group[4], mu_group[3], color = 'k', zorder = 10)
 
-ax[0,0].set_ylabel(r'$\ln(rt(II))$')
-ax[1,0].set_xlabel(r'$\ln(rt(I))$')
-ax[1,0].set_ylabel(r'$\ln(rt(III))$')
-ax[1,1].set_xlabel(r'$\ln(rt(IV))$')
+ax[0,0].set_ylabel(r'$\ln(rt[$ two x high $])$')
+ax[1,0].set_xlabel(r'$\ln(rt[$ two x low $])$')
+ax[1,0].set_ylabel(r'$\ln(rt[$ three x low $])$')
+ax[1,1].set_xlabel(r'$\ln(rt[$ three x high $])$')
 
-x1 = np.arange(1., 3., .1)
-x2 = np.arange(0.5, 4.5, .1)
+x1 = np.arange(0., 2.5, .1)
+x2 = np.arange(0., 4., .1)
 ax[0,0].plot(x1, x1, 'k--', lw = 2)
 ax[0,1].plot(x2, x2, 'k--', lw = 2)
 ax[1,0].plot(x1, x1, 'k--', lw = 2)
 ax[1,1].plot(x2, x2, 'k--', lw = 2)
-ax[0,0].set_xlim([1.,3.]); ax[1,0].set_xlim([1.,3.]);
-ax[0,1].set_xlim([.5, 4.5]); ax[1,1].set_xlim([.5, 4.5]);
+ax[0,0].set_xlim([0.5, 2.5]); ax[1,0].set_xlim([0.5,2.5]);
+ax[0,1].set_xlim([.0, 4.]); ax[1,1].set_xlim([.0, 4.]);
 
 fig.savefig('fig1.png', bbox_tight=True, transparent = True)
 
