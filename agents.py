@@ -23,56 +23,46 @@ class Random(object):
                  blocks = 100,
                  na = 2):
         
+        self.npars = 1
+                
         self.na = na #number of actions
         self.runs = runs #number of independent runs of the experiment (e.g. number of subjects)
         self.blocks = blocks #number of blocks in each run
     
-    def set_params(self, p = None):
-        if p is not None:
-            self.p = p #probability of selecting jump command
+    def set_params(self, x = None, max_T=3):
+        if x is not None:
+            self.p = logistic(x[:,0]) #probability of selecting jump command
         else:
             self.p = ones(self.runs)/2
-        
-    def update_beliefs(self, outcomes, responses):
-        self.trials = outcomes[0] #remaining trials
-        self.state = outcomes[1] # current state
-        self.config = outcomes[2] #planet configurations in a given block
-        
-    def plan_behavior(self, depth):
-        pass
             
-    def sample_responses(self, trial):
-        probs = ones(self.runs, self.na)
-        probs[:, 0] = 1-self.p
-        probs[:, 1] = self.p
+        self.probs = ones(self.blocks, self.runs, max_T,2)/2
+
+            
+    def set_context(self, context, max_T):
+        self.states = zeros(self.runs, max_T+1)
+        self.scores = zeros(self.runs, max_T)
         
-        self.cat = Categorical(probs = probs)
+        self.trials = context[0]
+        self.config = context[1]
+        self.condition = context[2]
+        self.states[:,0] = context[3]
+        pass
+                
+    def update_beliefs(self, t, states, scores, responses):
+        t_left = self.trials - t
+        self.states[:,t] = states
+        self.scores[:,t] = scores
+        pass
+        
+    def plan_behavior(self,b,t, depth):
+        self.probs[b,:,t,0] = 1-self.p
+        self.probs[b,:,t,1] = self.p
+        
+    def sample_responses(self, t):
+        self.cat = Categorical(probs = self.probs[t])
         return self.cat.sample()
     
-    def model(self):
-        #hyperprior across subjects
-        tau = pyro.sample('tau', 
-                          dist.halfcauchy, 
-                          Variable(zeros(1)),
-                          Variable(ones(1)))
-        
-        #hyperprior subject specific
-        lam = pyro.sample('lam',
-                          dist.halfcauchy,
-                          Variable(zeros(self.runs)),
-                          tau*Variable(ones(self.runs)))
-        
-        #subject specific response probability
-        p = pyro.sample('p',
-                        dist.dirichlet, 
-                        Variable(ones(self.runs, self.na))/lam[:,None])
-        
-        p = p.repeat(self.blocks, self.trials, 1, 1).view(-1)
-        p = p[self.notnans.repeat(2)].view(-1,2)
-        
-        return pyro.sample('responses', dist.categorical, p)
-        
-    
+
 class Informed(object):
     def __init__(self, 
                  planet_confs,
@@ -211,57 +201,3 @@ class Informed(object):
         self.compute_state_values()
         for trial in range(self.trials):
             self.planning(self.states[:,trial], trial, depth)
-    
-    def model(self, *depth):
-        if not depth: 
-            depth = pyro.sample('depth', 
-                                dist.Categorical(probs = ones(self.runs, 3)/3))
-        else:
-            depth = ones(self.runs, dtype = torch.long)*depth[0]
-            
-        #subject specific response probability
-        self.compute_response_probabilities(depth)
-        probs = self.prob.view(-1,2)[self.notnans]
-                
-        return pyro.sample('responses', dist.Categorical(probs = probs))
-    
-    def guide(self):
-        
-        probs = pyro.param('probs', ones(self.runs, 3)/3, constraint = constraints.simplex)
-        depth = pyro.sample('depth', dist.categorical, probs)
-        
-        return depth
-    
-    def fit(self, n_iterations = 1000, progressbar = True):
-        if progressbar:
-            xrange = tqdm(range(n_iterations))
-        else:
-            xrange = range(n_iterations)
-        
-        pyro.clear_param_store()
-        data = self.responses.view(-1)[self.notnans]
-        condition = pyro.condition(self.model, data = {'responses': data})
-        svi = SVI(model=condition,
-                  guide=self.guide,
-                  optim=Adam({"lr": 0.01}),
-                  loss="ELBO")
-        losses = []
-        for step in xrange:
-            loss = svi.step()
-            if step % 100 == 0:
-                losses.append(loss)
-        
-        fig = plt.figure()        
-        plt.plot(losses)
-        fig.suptitle('ELBO convergence')
-        plt.xlabel('iteration')
-        
-        param_names = pyro.get_param_store().get_all_param_names();
-        results = {}
-        for name in param_names:
-            if name[:3] == 'log':
-                results[name[4:]] = softplus(pyro.param(name)).data.numpy()
-            else:
-                results[name] = pyro.param(name).data.numpy()
-        
-        return results
