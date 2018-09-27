@@ -29,14 +29,16 @@ class Random(object):
         self.runs = runs #number of independent runs of the experiment (e.g. number of subjects)
         self.blocks = blocks #number of blocks in each run
     
-    def set_params(self, x = None):
+    def set_params(self, x = None, max_T=3):
         if x is not None:
             self.p = logistic(x[:,0]) #probability of selecting jump command
         else:
             self.p = ones(self.runs)/2
             
+        self.probs = ones(self.blocks, self.runs, max_T,2)/2
+
+            
     def set_context(self, context, max_T):
-        self.probs = ones(self.runs, max_T,2)/2
         self.states = zeros(self.runs, max_T+1)
         self.scores = zeros(self.runs, max_T)
         
@@ -44,15 +46,17 @@ class Random(object):
         self.config = context[1]
         self.condition = context[2]
         self.states[:,0] = context[3]
+        pass
                 
     def update_beliefs(self, t, states, scores, responses):
         t_left = self.trials - t
         self.states[:,t] = states
         self.scores[:,t] = scores
+        pass
         
-    def plan_behavior(self, t, depth):
-        self.probs[:,t,0] = 1-self.p
-        self.probs[:,t,1] = self.p
+    def plan_behavior(self,b,t, depth):
+        self.probs[b,:,t,0] = 1-self.p
+        self.probs[b,:,t,1] = self.p
         
     def sample_responses(self, t):
         self.cat = Categorical(probs = self.probs[t])
