@@ -45,26 +45,12 @@ class Inferrer(object):
             states = self.states[b]
             config = self.config[b]
             responses = self.responses[b]
-            for t in range(trials):
+            for t in range(trials.max().item()):
                 trials -= t
                 outcomes = [trials, states[t], config]
                 agent.update_beliefs(outcomes, responses[t])
                 agent.plan_behavior(depth[b])
 
-        
-        #hyperprior subject specific
-        lam = pyro.sample('lam',
-                          dist.halfcauchy,
-                          Variable(zeros(self.runs)),
-                          tau*Variable(ones(self.runs)))
-        
-        #subject specific response probability
-        p = pyro.sample('p',
-                        dist.dirichlet, 
-                        Variable(ones(self.runs, self.na))/lam[:,None])
-        
-        p = p.repeat(self.blocks, self.trials, 1, 1).view(-1)
-        p = p[self.notnans.repeat(2)].view(-1,2)
         
         return pyro.sample('responses', dist.categorical, p)
     
