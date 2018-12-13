@@ -124,5 +124,5 @@ for loc in range(6):
         confs.append(outlikes[pos])
         inits.append(loc)
 
-np.save('startsT%d.npy' % trials, np.array(inits))
-np.save('confsT%d.npy' % trials, np.array(confs))
+# np.save('startsT%d.npy' % trials, np.array(inits))
+# np.save('confsT%d.npy' % trials, np.array(confs))
