@@ -14,9 +14,11 @@ softmax = torch.nn.functional.softmax
 from torch.distributions import constraints
 
 import pyro.distributions as dist
-from pyro import sample, param, iarange, irange, clear_param_store, get_param_store
+from pyro import sample, param, plate, markov, poutine, clear_param_store, get_param_store
 from pyro.infer import SVI, Trace_ELBO, TraceEnum_ELBO
 from pyro.optim import Adam
+from pyro.contrib.autoguide import AutoDiagonalNormal, AutoDelta
+
 
 class Inferrer(object):
     def __init__(self,
@@ -26,95 +28,135 @@ class Inferrer(object):
                  mask):
         
         self.agent = agent
-        self.blocks, self.n = responses.shape[:2] 
+        self.nsub, self.nblk = responses.shape[:2] 
         
         self.responses = responses
         self.mask = mask
-        self.N = mask.sum().item()
+        self.N = mask.sum(dim=0)
         
-        self.trials = stimuli['trials']
         self.states = stimuli['states']
-        self.configs = stimuli['config']
-        self.scores = stimuli['scores']
+        self.configs = stimuli['configs']
         self.conditions = stimuli['conditions']
     
-    def model(self, depth):
+    def model(self):
         
-        n = self.n #number of subjects
         agent = self.agent
-        npars = agent.npars #number of parameters
+        np = agent.np  # number of parameters
         
-        #prior uncertainty
-        sig0 = sample('sig0', dist.HalfCauchy(zeros(n,npars), ones(n,npars)). independent(2))
-        x = sample('x', dist.Normal(zeros(n,npars), sig0).independent(2))
+        nblk =  self.nblk  # number of mini-blocks
+        nsub = self.nsub  # number of subjects
+
+        mu = sample("mu", dist.Normal(0., 10.).expand([np]).to_event(1))
+        sigma = sample("sigma", dist.HalfCauchy(5.).expand([np]).to_event(1))
         
-        agent.set_params(x)
+        probs_prior = torch.tril(ones(3, 3))
+#        nuc1 = sample("nu_c1", dist.HalfCauchy(5.))
+#        probsc1 = sample("probs_c1", dist.Dirichlet(ones(2)*nuc1).expand([nsub]).to_event(1))
+#        
+#        nuc2 = sample("nu_c2", dist.HalfCauchy(5.))
+#        probsc2 = sample("probs_c2", dist.Dirichlet(ones(3)*nuc2).expand([nsub]).to_event(1))
+
+        locs = sample("locs", dist.Normal(mu, sigma).expand([nsub, np]).to_event(2))
+    
+        trans_pars = locs
         
-        for b in range(self.blocks):
-            trials = self.trials[b]
-            configs = self.configs[b]
-            conditions = self.conditions[b]
+        agent.set_parameters(trans_pars)
+        
+        for b in markov(range(nblk)):
+            conditions = self.conditions[..., b]
+            states = self.states[:, b]
+            responses = self.responses[:, b]
+            for t in markov(range(3)):
+                if t == 0:
+                    res = None
+                else:
+                    res = responses[:, t-1]
+                
+                agent.update_beliefs(b, t, states[:, t], conditions, res)
+                agent.plan_actions(b, t)
+                
+                valid = self.mask[:, b, t]
+                N = self.N[b, t]
+
+                logits = agent.logits[-1][:, valid]
+                res = responses[valid, t]
+                
+                max_trials = conditions[-1, valid]
+                probs = probs_prior[max_trials-t-1]
+
+                with plate('responses_{}_{}'.format(b, t), N) as ind:
+                    d = sample('d_{}_{}'.format(b, t),
+                               dist.Categorical(probs[ind]),
+                               infer={"enumerate": "parallel"})
+                    
+                    sample('obs_{}_{}'.format(b, t), 
+                           dist.Bernoulli(logits=logits[d, ind]),
+                           obs=res[ind])
+    
+    def fit(self, num_iterations = 100, num_particles=10, optim_kwargs={'lr':.1}):
+        
+        model = self.model
+        guide = AutoDiagonalNormal(poutine.block(model, 
+                                                 expose=["mu",
+                                                         "sigma",
+                                                         "locs"]))
+        
+        clear_param_store()
+        
+        svi = SVI(model=model,
+                  guide=guide,
+                  optim=Adam(optim_kwargs),
+                  loss=TraceEnum_ELBO(num_particles=num_particles,
+                                      max_plate_nesting=1))
+
+        loss = []
+        pbar = tqdm(range(num_iterations), position=0)
+        for step in pbar:
+            loss.append(svi.step())
+            pbar.set_description("Mean ELBO %6.2f" % torch.Tensor(loss[-20:]).mean())
+        
+        self.mean = param('auto_loc')
+        self.std = param('auto_scale')
+        self.guide = guide        
+        self.loss = loss
+        
+    def sample_from_posterior(self, labels, centered=False, n_samples=10000):
+        
+        import numpy as np
+        nsub = self.nsub
+        npars = self.agent.np
+        assert npars == len(labels)
+        
+        keys = ['mu', 'sigma', 'locs']
+        
+        trans_pars = np.zeros((n_samples, nsub, npars))
+        
+        mean_group = np.zeros((n_samples, npars))
+        sigma_group = np.zeros((n_samples, npars))
+        
+        for i in range(n_samples):
+            sample = self.guide()
+            for key in keys:
+                sample.setdefault(key, ones(1))
+                
+            mu = sample['mu']
+            sigma = sample['sigma']
             
-            states = self.states[b]
-            config = self.config[b]
-            responses = self.responses[b]
-            for t in range(trials.max().item()):
-                trials -= t
-                outcomes = [trials, states[t], config]
-                agent.update_beliefs(outcomes, responses[t])
-                agent.plan_behavior(depth[b])
-
-        
-        return pyro.sample('responses', dist.categorical, p)
-    
-    def guide(self):
-        #hyperprior across subjects
-        mu_t = pyro.param('mu_t', var(zeros(1), requires_grad = True))
-        sigma_t = softplus(pyro.param('log_sigma_t', var(ones(1), requires_grad = True)))
-        tau = pyro.sample('tau', dist.lognormal, mu_t, sigma_t)
-
-        
-        #subject specific hyper prior
-        mu_l = pyro.param('mu_l', var(zeros(self.runs), requires_grad = True))
-        sigma_l = softplus(pyro.param('log_sigma_l', var(ones(self.runs), requires_grad = True)))
-        lam = pyro.sample('lam', dist.lognormal, mu_l, sigma_l)
-        
-        #subject specific response probability
-        alphas = softplus(pyro.param('log_alphas', var(ones(self.runs, self.na), requires_grad = True)))
-        p = pyro.sample('p', dist.dirichlet, alphas)
-        
-        return tau, lam, p
-    
-    def fit(self, n_iterations = 1000, progressbar = True):
-        if progressbar:
-            xrange = tqdm(range(n_iterations))
-        else:
-            xrange = range(n_iterations)
-        
-        pyro.clear_param_store()
-        data = self.responses[self.notnans]
-        condition = pyro.condition(self.model, data = {'responses': data})
-        svi = SVI(model=condition,
-                  guide=self.guide,
-                  optim=Adam({"lr": 0.01}),
-                  loss="ELBO")
-        losses = []
-        for step in xrange:
-            loss = svi.step()
-            if step % 100 == 0:
-                losses.append(loss)
-        
-        fig = plt.figure()        
-        plt.plot(losses)
-        fig.suptitle('ELBO convergence')
-        plt.xlabel('iteration')
-        
-        param_names = pyro.get_param_store().get_all_param_names();
-        results = {}
-        for name in param_names:
-            if name[:3] == 'log':
-                results[name[4:]] = softplus(pyro.param(name)).data.numpy()
+            if centered:
+                pars = sample['locs']
             else:
-                results[name] = pyro.param(name).data.numpy()
+                pars = sample['locs'] * sigma + mu
+            
+            trans_pars[i] = pars.detach().numpy()
+            
+            mean_group[i] = mu.detach().numpy()
+            sigma_group[i] = sigma.detach().numpy()
         
-        return results
+        subject_label = np.tile(range(1, nsub+1), (n_samples, 1)).reshape(-1)
+        tp_df = pd.DataFrame(data=trans_pars.reshape(-1, npars), columns=labels)
+        tp_df['subject'] = subject_label
+        
+        mg_df = pd.DataFrame(data=mean_group, columns=labels)
+        sg_df = pd.DataFrame(data=sigma_group, columns=labels)
+        
+        return (tp_df, mg_df, sg_df)

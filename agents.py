@@ -1,14 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 import torch
-from torch.distributions import Categorical
+from torch.distributions import Categorical, Bernoulli
+from numpy import nan
 
 zeros = torch.zeros
 ones = torch.ones
 randn = torch.randn
-
-softplus = torch.nn.functional.softplus
-logistic = lambda x: 1/(1+torch.exp(-x))
 
 ftype = torch.FloatTensor
 itype = torch.LongTensor
@@ -28,7 +26,7 @@ class Random(object):
     
     def set_params(self, x = None, max_T=3):
         if x is not None:
-            self.p = logistic(x[:,0]) #probability of selecting jump command
+            self.p = x[:,0].sigmoid() #probability of selecting jump command
         else:
             self.p = ones(self.runs)/2
             
@@ -75,6 +73,7 @@ class BackInduction(object):
         self.runs = runs
         self.nmb = mini_blocks
         self.trials = trials
+        self.np = 2  # number of free model parameters
         
         self.depth = planning_depth  # maximal planning depth
         self.na = na  # number of actions
@@ -87,122 +86,154 @@ class BackInduction(object):
             self.costs = costs.view(na, 1, 1)
         else:
             self.costs = ftype([-2, -5]).view(na, 1, 1)
+            
+        self.transitions = torch.tensor([4, 3, 4, 5, 1, 1])
 
     def set_parameters(self, trans_par = None):
         
         if trans_par is not None:
-            self.trans_prob = logistic(trans_par[:, :2])  # transition probabilty for action jump
-            self.beta = trans_par[:, 2]
+            assert trans_par.shape[-1] == self.np
+#            self.tp_mean0 = trans_par[:, :2].sigmoid()  # transition probabilty for action jump
+#            self.tp_scale0 = trans_par[:, 2:4].exp() # precision of beliefs about transition probability
+            self.eps = trans_par[:, 0].sigmoid()
+            self.beta = trans_par[:, 1].exp()
         else:
-            self.trans_prob = torch.tensor([.9, .5])\
+            self.tp_mean0 = torch.tensor([.9, .5])\
                                 .view(1,-1).repeat(self.runs, 1)
+            self.tp_scale0 = 50*ones(self.runs, 2)
             
             self.beta = torch.tensor([1e10]).repeat(self.runs)
-            
+            self.eps = .99 * ones(self.runs)
+        
+        self.tp_mean0 = torch.tensor([.9, .5])\
+                                .view(1,-1).repeat(self.runs, 1)
+        self.tp_scale0 = 50*ones(self.runs, 2)
         self.tau = torch.tensor([1e10]).repeat(self.runs)
+        
+        self.tp_mean = [self.tp_mean0]
+        self.tp_scale = [self.tp_scale0]
+        
+        # state transition matrices
+        self.tm = []
             
         # expected state value
-        self.Vs = zeros(self.runs, self.nmb, self.depth + 1, self.ns)
+        self.Vs = []
         
-        # action value difference
-        self.D = zeros(self.runs, self.nmb, self.depth, self.ns)
+        # action value difference: Q(a=right) - Q(a=jump)
+        self.D = []
         
         # response probability
-        self.prob = ones(self.runs, self.nmb, self.trials, self.na)/self.na 
+        self.logits = [] 
 
     def make_transition_matrix(self, p):
         na = self.na  # number of actions
         ns = self.ns  # number of states
         runs = self.runs  # number of runs
         
-        self.tm = ftype(runs, na, ns, ns).zero_()
+        tm = zeros(runs, na, ns, ns)
         
         # move left action - no tranistion uncertainty
-        self.tm[:, 0, :-1, 1:] = torch.eye(ns-1).repeat(runs,1,1)
-        self.tm[:, 0,-1,0] = 1
+        tm[:, 0, :-1, 1:] = torch.eye(ns-1).repeat(runs,1,1)
+        tm[:, 0,-1,0] = 1
         
         # jump action - with varying levels of transition uncertainty
-        self.tm[:, 1, -2:, 0:3] = (1 - p[:, None, None].repeat(1, 2, 3))/2 
-        self.tm[:, 1, -2:, 1] = p[:, None].repeat(1, 2)
-        self.tm[:, 1, 2, 3:6] = (1 - p[:, None].repeat(1, 3))/2 
-        self.tm[:, 1, 2, 4] = p
-        self.tm[:, 1, 0, 3:6] = (1 - p[:, None].repeat(1, 3))/2 
-        self.tm[:, 1, 0, 4] = p
-        self.tm[:, 1, 3, 0] = (1 - p)/2; self.tm[:, 1, 3, -2] = (1 - p)/2
-        self.tm[:, 1, 3, -1] = p
-        self.tm[:, 1, 1, 2:5] = (1 - p[:,None].repeat(1, 3))/2 
-        self.tm[:, 1, 1, 3] = p
+        tm[:, 1, -2:, 0:3] = (1 - p.reshape(-1, 1, 1).repeat(1, 2, 3))/2 
+        tm[:, 1, -2:, 1] = p.reshape(-1, 1).repeat(1, 2)
+        tm[:, 1, 2, 3:6] = (1 - p.reshape(-1, 1).repeat(1, 3))/2 
+        tm[:, 1, 2, 4] = p
+        tm[:, 1, 0, 3:6] = (1 - p.reshape(-1, 1).repeat(1, 3))/2 
+        tm[:, 1, 0, 4] = p
+        tm[:, 1, 3, 0] = (1 - p)/2; tm[:, 1, 3, -2] = (1 - p)/2
+        tm[:, 1, 3, -1] = p
+        tm[:, 1, 1, 2:5] = (1 - p.reshape(-1, 1).repeat(1, 3))/2 
+        tm[:, 1, 1, 3] = p
         
+        self.tm.append(tm)
+    
     def compute_state_values(self, block):
         
         acosts = self.costs  # action costs
-        tm = self.tm  # transition matrix
+        tm = self.tm[-1]  # transition matrix
         depth = self.depth  # planning depth
         
-        Vs = zeros(self.runs, self.depth+1, self.ns) 
-        Vs[:, 0] = (self.utility*self.pc[:, block]).sum(dim=-1)
+        Vs = [(self.utility*self.pc[:, block]).sum(dim=-1)]
     
-        D = zeros(self.runs, self.depth, self.ns)
+        D = [] #zeros(self.runs, self.depth, self.ns)
         
-        R = torch.stack([tm[:,i].bmm(Vs[:, 0][...,None]).squeeze()
-                         for i in range(self.na)])
+        R = torch.stack([tm[:,i].bmm(Vs[-1][..., None]).squeeze()
+                         for i in range(self.na)]) + acosts
     
-        Q = R + acosts        
+        Q = R
         for d in range(1,depth+1):
             # compute Q value differences for different actions
-            D[:, d-1] = Q[0] - Q[1]
+            D.append(Q[1] - Q[0])
             
             # compute response probability
-            p = 1/(1+torch.exp(D[:,d-1]*self.beta[:,None]))
+            p = (D[-1]*self.tau[:,None]).sigmoid()
             
             # set state value
-            Vs[:, d] = p*Q[1] + (1-p)*Q[0]
+            Vs.append(p * Q[1] + (1-p) * Q[0])
 
             if d < depth:
-                Q = torch.stack([tm[:,i].bmm(Vs[:,d][:,:,None]).squeeze()
+                tmp = torch.stack([tm[:,i].bmm(Vs[-1][:,:,None]).squeeze()
                              for i in range(self.na)])
-                Q += R + acosts
+                Q = tmp + R
         
-        self.Vs[:, block] = Vs
-        self.D[:, block] = D        
+        self.Vs.append(Vs)
+        self.D.append(D)        
         
     def update_beliefs(self, block, trial, states, conditions, responses = None):
-        self.states = states
+        
         self.noise = conditions[0]
         self.max_trials = conditions[1]
         
+        subs = torch.arange(self.runs)
         
         if trial == 0:
             # update_transition_probability
-            tp = self.trans_prob[range(self.runs), self.noise]
-            self.make_transition_matrix(tp)
-        
-        
-    def planning(self, block, trial, *args):
-        if trial == 0:
-            self.compute_state_values(block)
-        
-        if not args:
-            depth = self.depth
-        else:
-            depth = args[0]
+            self.make_transition_matrix(self.tp_mean[-1][subs, self.noise])
             
+        else:
+            # update beliefs update state transitions
+            succesful_transitions = self.transitions[self.states] == states
+            tp_mean = self.tp_mean[-1].clone()
+            
+            tp_scale = self.tp_scale[-1].clone()*self.eps[:, None] + 1-self.eps[:, None]
+            tp_scale[subs, self.noise] += responses
+            
+            tp_mean[subs, self.noise] += \
+                (succesful_transitions.float() - tp_mean[subs, self.noise])\
+                * responses / tp_scale[subs, self.noise]
+        
+            self.tp_mean.append(tp_mean)
+            self.tp_scale.append(tp_scale)
+            
+            self.make_transition_matrix(tp_mean[subs, self.noise])
+            
+        # set beliefs about state to new state observation
+        self.states = states
+        
+    def plan_actions(self, block, trial):
+
+        self.compute_state_values(block)
+        
+        D = torch.stack(self.D[-1])
+
+        self.logits.append(D[:, range(self.runs), self.states] * self.beta)
+ 
+    def sample_responses(self, block, trial):
+        depth = self.depth
+        
         d = self.max_trials-trial
         d[d > depth] = depth
         valid = d > 0
+        d[valid] -= 1
         
-        D = self.D[valid, block]
-        states = self.states[valid]
-        tau = self.tau[valid]
-        value_loc = d[valid]-1
+        logits = self.logits[-1]
         
-        #get the probability of jump action
-        p = 1/(1 + torch.exp(D[range(valid.sum()), value_loc, states] * tau))        
+        cat = Bernoulli(logits=logits[d, range(self.runs)])
         
-        self.prob[valid, block, trial, 1] = p
-        self.prob[valid, block, trial, 0] = 1-p
-                    
-    def sample_responses(self, block, trial):
-        cat = Categorical(probs=self.prob[:, block, trial])
+        res = cat.sample()
+        res[~valid] = nan
         
-        return cat.sample()
+        return res

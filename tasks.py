@@ -85,10 +85,11 @@ class SpaceAdventure(object):
         self.valid = self.rem_actions[:, block] > -1
         self.count = self.valid.sum()
         tm = self.tm[self.valid, block]
-        res = responses[self.valid]
+        res = responses[self.valid].long()
         states = self.states[self.valid, block, trial]
                 
         state_prob = tm[range(self.count), res, states]
+        assert state_prob.shape == (self.count, self.ns)
         cat = Categorical(probs=state_prob)
         
         self.states[self.valid, block, trial+1] = cat.sample()

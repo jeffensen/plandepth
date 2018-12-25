@@ -8,7 +8,7 @@ Created on Thu Feb  8 11:50:01 2018
 
 import torch
 from tasks import SpaceAdventure
-from agents import BackInference
+from agents import BackInduction
 from simulate import Simulator
 
 import numpy as np
@@ -23,12 +23,18 @@ na = 2
 ns = 6
 no = 5
 
-vect = np.load('confsExp1.npy')
+import scipy.io as io
+exp = io.loadmat('./experiment/experimental_variables.mat')
+starts = exp['startsExp'][:, 0] - 1
+planets = exp['planetsExp'] - 1
+vect = np.eye(5)[planets]
+
+
 ol1 = torch.from_numpy(vect)
 ol2 = torch.from_numpy(np.vstack([vect[50:], vect[:50]]))
-vect = np.load('startsExp1.npy')
-starts1 = torch.from_numpy(vect)
-starts2 = torch.from_numpy(np.hstack([vect[50:], vect[:50]]))
+
+starts1 = torch.from_numpy(starts)
+starts2 = torch.from_numpy(np.hstack([starts[50:], starts[:50]]))
     
 noise = np.tile(np.array([0, 1, 0, 1]), (25,1)).T.flatten()
 trials1 = np.tile(np.array([2, 2, 3, 3]), (25,1)).T.flatten()
@@ -39,7 +45,7 @@ fuel = torch.arange(-20., 30., 10.)  # fuel reward of each planet type
 
 confs = torch.stack([ol1, ol2])
 confs = confs.view(2, 1, mini_blocks, ns, no).repeat(1, runs//2, 1, 1, 1)\
-        .reshape(-1, mini_blocks, ns, no)
+        .reshape(-1, mini_blocks, ns, no).float()
 
 starts = torch.stack([starts1, starts2])
 starts = starts.view(2, 1, mini_blocks).repeat(1, runs//2, 1)\
@@ -65,7 +71,7 @@ for i in range(3):
                                   trials=3)
     
     # define the optimal agent, each with a different maximal planning depth
-    agent = BackInference(confs,
+    agent = BackInduction(confs,
                           runs=runs,
                           mini_blocks=mini_blocks,
                           trials=3,
@@ -84,17 +90,23 @@ for i in range(3):
     simulations.append(sim)
     agents.append(agent)
     
-    points = costs[simulations[-1].responses] + fuel[simulations[-1].outcomes]
-    points[simulations[-1].outcomes<0] = 0
+    responses = sim.responses.clone()
+    responses[torch.isnan(responses)] = 0
+    responses = responses.long()
+    
+    outcomes = sim.outcomes
+    
+    points = costs[responses] + fuel[outcomes]
+    points[outcomes<0] = 0
     performance.append(points.sum(dim=-1))
     
 for i in range(3):
     plt.figure()
-    plt.plot(performance[i].numpy().cumsum(axis=-1).T, 'b')
-
+    plt.plot(performance[i].numpy().cumsum(axis=-1).T + 990, 'b')
 
 plt.figure()
 labels = [r'd=1', r'd=2', r'd=3']
 for i in range(3):
-    plt.hist(performance[i].numpy().cumsum(axis=-1)[...,-1], label=labels[i])
+    plt.hist(performance[i].numpy().cumsum(axis=-1)[...,-1] + 990, label=labels[i])
+plt.vlines(0, 0, 30, linestyle='--', lw=3)
 plt.legend()

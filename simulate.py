@@ -18,7 +18,7 @@ class Simulator(object):
         self.nt = trials # number of trials in each mini-block
         
         #container for agents responses
-        self.responses = zeros(self.runs, self.nb, self.nt, dtype = torch.long)-1
+        self.responses = zeros(self.runs, self.nb, self.nt)-1
         self.outcomes = zeros(self.runs, self.nb, self.nt, dtype = torch.long)-1
 
     def simulate_experiment(self):
@@ -33,10 +33,15 @@ class Simulator(object):
                 #update single trial
                 states = self.env.states[:, b, t]
                 
-                self.agent.update_beliefs(b, t, states, conditions)
-                self.agent.planning(b, t)
+                if t == 0:
+                    self.agent.update_beliefs(b, t, states, conditions)
+                else:
+                    self.agent.update_beliefs(b, t, states, conditions, self.responses[:, b, t-1])
+
+                self.agent.plan_actions(b, t)
                 
                 res = self.agent.sample_responses(b, t)
+                
                 self.env.update_environment(b, t, res)
                 
                 self.responses[:, b, t] = res

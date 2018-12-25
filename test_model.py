@@ -17,84 +17,57 @@ import pyro.distributions as dist
 from pyro import sample, param, markov, clear_param_store, get_param_store, plate, poutine
 from pyro.infer import SVI, Trace_ELBO, TraceEnum_ELBO, JitTraceEnum_ELBO
 from pyro.optim import Adam
-from pyro.contrib.autoguide import AutoDiagonalNormal
+from pyro.contrib.autoguide import AutoDiagonalNormal, AutoDelta
 
 from pyro.infer.enum import config_enumerate
 
 import matplotlib.pyplot as plt
 
-import pyro
-
-pyro.set_rng_seed(123)
-torch.manual_seed(123)
-
-n1 = 10
-n2 = 3
-
-n = 100
-
-w = ones(n1,n2)
-w[n1//2:,-1] = 1e-3
-w /= w.sum(dim=-1)[:,None]
-
-logits = dist.Normal(0, 1).sample((n, 2, 3))
-depths = dist.Categorical(logits=ones(n, n1, n2)).sample()
-
-lista = torch.tensor([range(n)]).reshape(-1, 1).repeat(1, n1)
-data = dist.Categorical(logits=logits[lista, :, depths]).sample()
-
-#def model():
-#    #w = sample('group', dist.Dirichlet(ones(n1, n2)).independent(1))
-#    with plate("data", n1):
-#        d = sample('depth', dist.Categorical(logits=zeros(n2)))
-#    print('model d = {}'.format(d))
-    
-#    with iarange('data', n*n1):
-#        l = logits[lista.reshape(-1), :, d.reshape(-1)]
-#        sample('obs', dist.Categorical(logits=l), obs = data.reshape(-1))
-
-#init = ones(n, n1, n2)/n2
-#def guide():
-#    with plate("data", n1):
-#        d = sample('depth', dist.Categorical(logits=zeros(n1, n2)))
-#    print('guide d = {}'.format(d))
-
-#    alphas = param('alphas', ones(n1, n2), constraint=constraints.positive)
-#    sample('group', dist.Dirichlet(alphas).independent(1))
-
 def model(data, num_blocks=90, num_subjects = 50, num_components=3):
-    with plate("subjects", num_subjects):
-        p = sample("p", dist.Dirichlet(ones(3) / 3.))
-
-        scale = sample("scale", dist.Gamma(1., 1.))
-        with plate("components", num_components):
-            loc = sample("loc", dist.Normal(0, 10))
     
-#        with plate("blocks", num_blocks):
-#            x = sample("x", dist.Categorical(p))
-##        print("loc.shape = {}".format(loc.shape))
-##        print("scale.shape = {}".format(scale.shape))
-#            sample("obs", dist.Normal(loc[x[:, ind], ind], scale), obs=data)
+    nu = sample("nu", dist.HalfCauchy(5.))
+    mu = sample("mu", dist.Normal(0., 10.).expand([num_components]).to_event(1))
+    sigma = sample("sigma", dist.HalfCauchy(1.).expand([num_components]).to_event(1))
+    
+    probs = sample("probs", dist.Dirichlet(ones(3)*nu).expand([num_subjects]).to_event(1))
+    
+    scales = sample("scales", dist.Gamma(1., 1.).expand([num_subjects]).to_event(1))
+    
+    locs = sample("locs", dist.Normal(0, 1).expand([num_subjects, num_components]).to_event(2))
+    
+    loc = locs * sigma + mu
+    
     for b in markov(range(num_blocks)):
-        x = pyro.sample("x_{}".format(b), dist.Categorical(p), infer={"enumerate": "parallel"})
-        pyro.sample("y_{}".format(b), dist.Normal(loc[x.squeeze()], scale), obs=data[b])
-        print(x.shape)
-        
-guide = AutoDiagonalNormal(poutine.block(model, expose=["p", "scale", "loc"]))
+        with plate('subject_{}'.format(b), num_subjects) as ind:
+            x = sample("x_{}".format(b), dist.Categorical(probs[ind]), infer={"enumerate": "parallel"})
+            sample("y_{}".format(b), dist.Normal(loc[ind, x], scales[ind]), obs=data[:, b])
+            
+guide = AutoDiagonalNormal(poutine.block(model, expose=["nu", "mu", "sigma", "probs", "scales", "locs"]))
+
+num_subjects = 50
+num_components = 3
 
 m = 5*torch.arange(-1., 1.1, 1)
-s = 0.1*torch.ones(3)
-data = dist.Normal(m, s).sample((50, 30)).reshape(50, -1).transpose(dim0=1, dim1=0)    
-   
+s = 0.1*torch.ones(num_components)
+data = dist.Normal(m, s).sample((50, 30)).reshape(50, -1) 
+
+import pyro
+
+pyro.set_rng_seed(0)
+pyro.enable_validation(True)   
 clear_param_store()
 
 num_particles = 10
-n_iterations = 2000
+n_iterations = 1000
+
+#lengths = torch.tensor([data.shape[-1]]*len(data))
+#data = data.unsqueeze(dim=-1).float()
 
 svi = SVI(model=model,
           guide=guide,
           optim=Adam({'lr':0.1}),
-          loss=TraceEnum_ELBO(num_particles=num_particles, max_plate_nesting=1))
+          loss=TraceEnum_ELBO(num_particles=num_particles, 
+                              max_plate_nesting=1))
 
 losses = []
 with tqdm(total = n_iterations, file = sys.stdout) as pbar:
@@ -108,24 +81,24 @@ pos_sample = {}
 for n in range(n_samples):
     smpl = guide(data)
     for name in smpl:
-        if n == 0:
-            shape = smpl[name].shape
-            tmp = zeros(shape).reshape(1, -1).repeat(n_samples, 1).reshape(-1, *shape)
-            tmp[0] = smpl[name]
-            pos_sample[name] = tmp
-        else:
-            pos_sample[name][n] = smpl[name]
+        pos_sample.setdefault(name, [])
+        pos_sample[name].append(smpl[name])
+
+for name in pos_sample:
+    pos_sample[name] = torch.stack(pos_sample[name])
     
 plt.figure()
 plt.plot(losses[-500:])
 
 plt.figure()
 for i in range(3):
-    plt.hist(pos_sample['p'][:,i].detach().numpy(), bins = 100)
+    plt.hist(pos_sample['probs'][...,i].detach().numpy().reshape(-1), bins = 100)
     
 plt.figure()
+locs = pos_sample['locs'] * pos_sample['sigma'][:, None, :] + pos_sample['mu'][:, None, :]
 for i in range(3):
-    plt.hist(pos_sample['loc'][:,i].detach().numpy(), bins = 100)
+    plt.hist(locs.detach().numpy().reshape(-1), bins = 100)
     
 plt.figure()
-plt.hist(pos_sample['scale'].detach().numpy(), bins = 100);
+plt.hist(pos_sample['scales'].detach().numpy().reshape(-1), bins = 100);
+plt.xlim([0, 1])
