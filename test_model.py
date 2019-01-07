@@ -14,60 +14,84 @@ softmax = torch.nn.functional.softmax
 from torch.distributions import constraints, biject_to
 
 import pyro.distributions as dist
-from pyro import sample, param, markov, clear_param_store, get_param_store, plate, poutine
+from pyro import sample, param, markov, clear_param_store, get_param_store, plate, poutine, iarange
 from pyro.infer import SVI, Trace_ELBO, TraceEnum_ELBO, JitTraceEnum_ELBO
 from pyro.optim import Adam
-from pyro.contrib.autoguide import AutoDiagonalNormal, AutoDelta
+from pyro.contrib.autoguide import AutoDiagonalNormal, AutoDelta, AutoGuideList, AutoMultivariateNormal
 
 from pyro.infer.enum import config_enumerate
 
 import matplotlib.pyplot as plt
+import seaborn as sns
 
-def model(data, num_blocks=90, num_subjects = 50, num_components=3):
+sigma = dist.HalfCauchy(1.).expand([3]).sample()
+mu = dist.Normal(0., 10.).expand([3]).sample()
+locs = dist.Normal(0, 1).expand([10, 3]).sample()
+
+loc = locs * sigma + mu
+
+data = dist.Normal(loc.sum(-1), 1.).sample((100,))
+
+def model(data, num_components=3, num_subjects=10):
     
-    nu = sample("nu", dist.HalfCauchy(5.))
+    N = len(data)
+    
     mu = sample("mu", dist.Normal(0., 10.).expand([num_components]).to_event(1))
-    sigma = sample("sigma", dist.HalfCauchy(1.).expand([num_components]).to_event(1))
-    
-    probs = sample("probs", dist.Dirichlet(ones(3)*nu).expand([num_subjects]).to_event(1))
-    
-    scales = sample("scales", dist.Gamma(1., 1.).expand([num_subjects]).to_event(1))
-    
-    locs = sample("locs", dist.Normal(0, 1).expand([num_subjects, num_components]).to_event(2))
-    
-    loc = locs * sigma + mu
-    
-    for b in markov(range(num_blocks)):
-        with plate('subject_{}'.format(b), num_subjects) as ind:
-            x = sample("x_{}".format(b), dist.Categorical(probs[ind]), infer={"enumerate": "parallel"})
-            sample("y_{}".format(b), dist.Normal(loc[ind, x], scales[ind]), obs=data[:, b])
-            
-guide = AutoDiagonalNormal(poutine.block(model, expose=["nu", "mu", "sigma", "probs", "scales", "locs"]))
 
-num_subjects = 50
-num_components = 3
+    
+    components = plate('components', num_components)
+    subjects = plate("subjects", num_subjects)
+    
+    with components:
+        sigma = sample("sigma", dist.HalfCauchy(1.))
+    
+        with subjects:
+            locs = sample("locs", dist.Normal(0., 1.))
+            assert locs.shape == (num_subjects, num_components)
+    
+    loc = (locs * sigma + mu).sum(-1)
+    assert loc.shape == (num_subjects,)
+    
+    with plate('list', num_subjects) as ind:
+        m = loc[ind]
+        with plate('data', N):
+            sample("y", dist.Normal(m, 1.), obs=data)
 
-m = 5*torch.arange(-1., 1.1, 1)
-s = 0.1*torch.ones(num_components)
-data = dist.Normal(m, s).sample((50, 30)).reshape(50, -1) 
+
+def guide(data, num_components=3, num_subjects=10):
+    
+    m_sigma = param('m_sigma', zeros(num_components))
+    s_sigma = param('s_sigma', ones(num_components), constraint=constraints.positive)
+    
+    m_mu = param('m_mu', zeros(num_components))
+    s_mu = param('s_mu', torch.eye(num_components), constraint=constraints.lower_cholesky)
+    
+    m_locs = param('m_locs', zeros(num_subjects, num_components))
+    s_locs = param('s_locs', ones(num_subjects, num_components), constraint=constraints.positive)
+    
+    mu = sample("mu", dist.MultivariateNormal(m_mu, scale_tril=s_mu))
+
+    with plate('components', num_components, dim=-1):
+        sigma = sample("sigma", dist.LogNormal(m_sigma, s_sigma))
+    
+        with plate('subjects', num_subjects, dim=-2):
+            locs = sample("locs", dist.Normal(m_locs, s_locs))
+    
+    return {"locs": locs, "mu": mu, "sigma": sigma}
 
 import pyro
 
-pyro.set_rng_seed(0)
+pyro.set_rng_seed(123)
 pyro.enable_validation(True)   
 clear_param_store()
 
-num_particles = 10
+num_particles = 20
 n_iterations = 1000
-
-#lengths = torch.tensor([data.shape[-1]]*len(data))
-#data = data.unsqueeze(dim=-1).float()
 
 svi = SVI(model=model,
           guide=guide,
           optim=Adam({'lr':0.1}),
-          loss=TraceEnum_ELBO(num_particles=num_particles, 
-                              max_plate_nesting=1))
+          loss=Trace_ELBO(num_particles=num_particles, max_plate_nesting=3))
 
 losses = []
 with tqdm(total = n_iterations, file = sys.stdout) as pbar:
@@ -83,6 +107,9 @@ for n in range(n_samples):
     for name in smpl:
         pos_sample.setdefault(name, [])
         pos_sample[name].append(smpl[name])
+    
+    pos_sample.setdefault('loc', [])
+    pos_sample['loc'].append(pos_sample['locs'][-1] * pos_sample['sigma'][-1] + pos_sample['mu'][-1])
 
 for name in pos_sample:
     pos_sample[name] = torch.stack(pos_sample[name])
@@ -90,15 +117,28 @@ for name in pos_sample:
 plt.figure()
 plt.plot(losses[-500:])
 
+post_loc = pos_sample['loc']
 plt.figure()
 for i in range(3):
-    plt.hist(pos_sample['probs'][...,i].detach().numpy().reshape(-1), bins = 100)
+    plt.hist(post_loc[...,i].detach().numpy().reshape(-1), bins = 100)
+    plt.vlines(loc[..., i], 0, 50, colors='k', linestyles='--')
     
 plt.figure()
-locs = pos_sample['locs'] * pos_sample['sigma'][:, None, :] + pos_sample['mu'][:, None, :]
 for i in range(3):
-    plt.hist(locs.detach().numpy().reshape(-1), bins = 100)
+    plt.hist(post_loc.sum(-1).detach().numpy(), bins = 100)
+    plt.vlines(loc.sum(-1), 0, 50, colors='k', linestyles='--')
+
+mg_df = pd.DataFrame(data=pos_sample['mu'].detach().numpy())
+
+g = sns.PairGrid(mg_df)
+g = g.map_diag(sns.kdeplot)
+g = g.map_offdiag(plt.scatter)
     
-plt.figure()
-plt.hist(pos_sample['scales'].detach().numpy().reshape(-1), bins = 100);
-plt.xlim([0, 1])
+#plt.figure()
+#locs = pos_sample['locs'] * pos_sample['sigma'][:, None, :] + pos_sample['mu'][:, None, :]
+#for i in range(3):
+#    plt.hist(locs.detach().numpy().reshape(-1), bins = 100)
+#    
+#plt.figure()
+#plt.hist(pos_sample['scales'].detach().numpy().reshape(-1), bins = 100);
+#plt.xlim([0, 1])
