@@ -49,8 +49,8 @@ class BackInduction(object):
             assert trans_par.shape[-1] == self.np
 #            self.tp_mean0 = trans_par[:, :2].sigmoid()  # transition probabilty for action jump
 #            self.tp_scale0 = trans_par[:, 2:4].exp() # precision of beliefs about transition probability
-            self.beta = trans_par[:, 0].relu()
-            self.kappa = trans_par[:, 1].relu().reshape(-1, 1)
+            self.beta = trans_par[:, 0].exp()
+            self.kappa = trans_par[:, 1].exp().reshape(-1, 1)
             self.eps = trans_par[:, 2].sigmoid()
 
         else:

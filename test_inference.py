@@ -81,7 +81,7 @@ agent = BackInduction(confs,
                       planning_depth=planning_depth)
 
 trans_pars = torch.arange(-1, 1, 2/runs).view(-1, 1).repeat(1, 3)\
-            + torch.tensor([2., 2., 3.]).view(1, -1)
+            + torch.tensor([1., 1., 3.]).view(1, -1)
 agent.set_parameters(trans_pars)
 
 # simulate behavior
@@ -106,19 +106,16 @@ agent = BackInduction(confs,
                       planning_depth=3)
 
 infer = Inferrer(agent, stimuli, responses, mask)
-infer.fit(num_iterations=600, centered=False)
+infer.fit(num_iterations=500, parametrisation='horseshoe')
 
 plt.figure()
-plt.plot(infer.loss[-500:])
-
-#labels = [r'$\mu_1$', r'$\mu_2$', r'$\nu_1$', r'$\nu_2$', r'$\epsilon$', r'$\beta$']
+plt.plot(infer.loss[-200:])
 
 labels = [r'$\beta$', r'$\kappa$', r'$\epsilon$']
 
-pars_df, sl_df, mg_df, sg_df = infer.sample_from_posterior(labels)
+pars_df, scales_df, mg_df, sg_df, post_depth = infer.sample_from_posterior(labels)
 
 pars_df = pars_df.melt(id_vars='subject', var_name='parameter')
-sl_df = sl_df.melt(id_vars='subject', var_name='parameter')
 
 g = sns.FacetGrid(pars_df, col="parameter", height=3);
 g = (g.map(sns.lineplot, 'subject', 'value', ci='sd'));
@@ -126,11 +123,6 @@ g = (g.map(sns.lineplot, 'subject', 'value', ci='sd'));
 for i in range(len(labels)):
     g.axes[0,i].plot(np.arange(1,runs+1), trans_pars[:,i].numpy(),'ro', markersize = 4, zorder=0);
     g.axes[0,i].set_ylim([0, 6])
-    
-g = sns.FacetGrid(sl_df, col="parameter", height=3);
-g = (g.map(sns.lineplot, 'subject', 'value', ci='sd'));
-for i in range(len(labels)):
-    g.axes[0,i].set_ylim([0, 10])
     
 g = sns.PairGrid(mg_df)
 g = g.map_diag(sns.kdeplot)
@@ -140,4 +132,11 @@ g = sns.PairGrid(sg_df)
 g = g.map_diag(sns.kdeplot)
 g = g.map_offdiag(plt.scatter)
 
+def posterior_accuracy(labels, df, vals):
+    for i, lbl in enumerate(labels):
+        std = df.loc[df['parameter'] == lbl].groupby(by='subject').std()
+        mean = df.loc[df['parameter'] == lbl].groupby(by='subject').mean()
+        print(lbl, np.sum(((mean+2*std).values[:, 0] > vals[i])*((mean-2*std).values[:, 0] < vals[i]))/runs)
 
+vals = [trans_pars[:,0].numpy(), trans_pars[:, 1].numpy(), trans_pars[:,2].numpy()]
+posterior_accuracy(labels, pars_df, vals)
