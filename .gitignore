@@ -3,6 +3,8 @@
 *.m~
 *.mat
 *.asv
+*.png
+*.pdf
 
 .ipynb_checkpoints/
 __pycache__/

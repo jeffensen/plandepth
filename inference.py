@@ -4,11 +4,7 @@ from tqdm import tqdm
 import pandas as pd
 
 import torch
-
-ones = torch.ones
-zeros = torch.zeros
-
-softmax = torch.nn.functional.softmax
+from torch import ones, zeros, tensor
 
 from torch.distributions import constraints, biject_to
 
@@ -35,6 +31,11 @@ class Inferrer(object):
         self.mask = mask
         self.N = mask.sum(dim=0)
         
+        self.depth_transition = zeros(2, 3, 2, 3)
+        self.depth_transition[0, :, 0] = tensor([1., 0., 0.])
+        self.depth_transition[0, :, 1] = tensor([.5, .5, 0.])
+        self.depth_transition[1] = tensor([1., 0., 0.])
+        
         self.states = stimuli['states']
         self.configs = stimuli['configs']
         self.conditions = stimuli['conditions']
@@ -50,51 +51,64 @@ class Inferrer(object):
         mu = sample("mu", dist.Normal(0., 20.).expand([np]).to_event(1))
         sigma = sample("sigma", dist.HalfCauchy(1.).expand([np]).to_event(1))
         
+        nuc1 = sample("nu_c1", dist.HalfCauchy(5.))
+        nuc2 = sample("nu_c2", dist.HalfCauchy(5.))
+        
         with plate('subjects', nsub):
             locs = sample("locs", dist.Normal(mu, sigma).expand([np]).to_event(1))
-
+            # define priors over planning depth
+            probsc1 = sample("probs_c1", dist.Dirichlet(ones(2)*nuc1))
+            probsc2 = sample("probs_c2", dist.Dirichlet(ones(3)*nuc2))
+            with plate('depths', 3):
+                rho = sample('rho', dist.Dirichlet(ones(3)))
+            
         agent.set_parameters(locs)
         
-        # define prior over planning depth
-        probs_prior = torch.tril(ones(3, 3))
-#        nuc1 = sample("nu_c1", dist.HalfCauchy(5.))
-#        probsc1 = sample("probs_c1", dist.Dirichlet(ones(2)*nuc1).expand([nsub]).to_event(1))
-#        
-#        nuc2 = sample("nu_c2", dist.HalfCauchy(5.))
-#        probsc2 = sample("probs_c2", dist.Dirichlet(ones(3)*nuc2).expand([nsub]).to_event(1))
+        tmp = zeros(nsub, 3)
+        tmp[:, :2] = probsc1
         
+        priors = torch.stack([tmp, probsc2])
+        
+        d = tensor([0]*nsub)
         for b in markov(range(nblk)):
             conditions = self.conditions[..., b]
             states = self.states[:, b]
             responses = self.responses[:, b]
-            for t in markov(range(3)):
-                if t == 0:
-                    res = None
-                else:
-                    res = responses[:, t-1]
+            max_trials = conditions[-1]
+            
+            if b == 0:
+               probs = priors[max_trials - 2, range(nsub)].unsqueeze(0)
+            else:
+               probs = rho
+            
+            tm = self.depth_transition[:, :, max_trials - 2]
+            with plate('responses_{}'.format(b), nsub) as ind:
+                d = sample('d0_{}'.format(b), dist.Categorical(probs[d, ind]))
+                d1 = sample('d1_{}'.format(b), dist.Categorical(tm[0, d, ind]))
+                d2 = sample('d2_{}'.format(b), dist.Categorical(tm[0, d1, ind]))
                 
-                agent.update_beliefs(b, t, states[:, t], conditions, res)
-                agent.plan_actions(b, t)
-                
-                valid = self.mask[:, b, t]
-                N = self.N[b, t]
+                depth = [d, d1, d2]
+            
+                for t in markov(range(3)):
+                    if t == 0:
+                        res = None
+                    else:
+                        res = responses[:, t-1]
+                    
+                    agent.update_beliefs(b, t, states[:, t], conditions, res)
+                    agent.plan_actions(b, t)
+                    
+                    valid = self.mask[:, b, t]
+                    res = responses[valid, t]
 
-                logits = agent.logits[-1][:, valid]
-                res = responses[valid, t]
-                
-                max_trials = conditions[-1, valid]
-                max_depth = max_trials - t - 1
-                probs = probs_prior[max_depth]
-
-                with plate('responses_{}_{}'.format(b, t), N) as ind:
-                    d = sample('d_{}_{}'.format(b, t),
-                               dist.Categorical(probs[ind]),
-                               infer={"enumerate": "parallel"})
-                   
+                    logits = agent.logits[-1][depth[t]]
+                    logits = torch.diag(logits)[valid]
+                    
+                    print(logits.shape)
+                        
                     sample('obs_{}_{}'.format(b, t), 
-                           dist.Bernoulli(logits=logits[d, ind]),
-                           obs=res[ind])
-
+                               dist.Bernoulli(logits=logits),
+                               obs=res)
    
     def model_horseshoe_plus(self):
         
@@ -182,12 +196,27 @@ class Inferrer(object):
         m_locs = param('m_locs', zeros(nsub, npar))
         st_locs = param('s_locs', torch.eye(npar).repeat(nsub, 1, 1), 
                    constraint=constraints.lower_cholesky)
+        
+        
+        l1 = param('l1', zeros(1))
+        s1 = param('s1', ones(1), constraint=constraints.positive)
+        nuc1 = sample("nu_c1", dist.LogNormal(loc=l1, scale=s1))
+        
+        l2 = param('l2', zeros(1))
+        s2 = param('s2', ones(1), constraint=constraints.positive)
+        nuc2 = sample("nu_c2", dist.LogNormal(loc=l2, scale=s2))
+        
+        alpha1 = param('alpha1', ones(nsub, 2), constraint=constraints.positive)
+        alpha2 = param('alpha2', ones(nsub, 3), constraint=constraints.positive)
 
         with plate('subjects', nsub):
             locs = sample("locs", dist.MultivariateNormal(m_locs, scale_tril=st_locs))
+            probsc1 = sample("probs_c1", dist.Dirichlet(alpha1))
+            probsc2 = sample("probs_c2", dist.Dirichlet(alpha2))
         
-        return {'mu': mu, 'sigma': sigma, 'locs': locs}
+        return {'mu': mu, 'sigma': sigma, 'locs': locs, 'pc1': probsc1, 'pc2': probsc2, 'nuc1': nuc1, 'nuc2': nuc2}
     
+
     def guide_horseshoe_plus(self):
         
         npar = self.agent.np  # number of parameters
@@ -312,10 +341,24 @@ class Inferrer(object):
         mg_df = pd.DataFrame(data=mean_global, columns=labels)
         sg_df = pd.DataFrame(data=sigma_global, columns=labels)
         
-        # get marginal posterior over planning depths
-        elbo = TraceEnum_ELBO(max_plate_nesting=1)
-        post_depth = elbo.compute_marginals(self.model, self.guide)
-        for name in post_depth.keys():
-            post_depth[name] = post_depth[name].probs.detach().numpy()
+        return tp_df, tps_df, mg_df, sg_df
+    
+    def sample_posterior_marginal(self, n_samples=100):
         
-        return (tp_df, tps_df, mg_df, sg_df, post_depth)
+        elbo = TraceEnum_ELBO(max_plate_nesting=1)
+        post_depth_samples = {}
+        
+        pbar = tqdm(range(n_samples), position=0)
+
+        for n in pbar:
+            pbar.set_description("Sample posterior depth")
+            # get marginal posterior over planning depths
+            post_depth = elbo.compute_marginals(self.model, self.guide)
+            for name in post_depth.keys():
+                post_depth_samples.setdefault(name, [])
+                post_depth_samples[name].append(post_depth[name].probs.detach().clone())
+        
+        for name in post_depth_samples.keys():
+            post_depth_samples[name] = torch.stack(post_depth_samples[name]).numpy()
+        
+        return post_depth_samples

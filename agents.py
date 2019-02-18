@@ -21,13 +21,14 @@ class BackInduction(object):
                  na=2,
                  ns=6,
                  costs=None,
+                 utility = None,
                  planning_depth=1):
         
                 
         self.runs = runs
         self.nmb = mini_blocks
         self.trials = trials
-        self.np = 3  # number of free model parameters
+        self.np = 2  # number of free model parameters
         
         self.depth = planning_depth  # maximal planning depth
         self.na = na  # number of actions
@@ -35,12 +36,16 @@ class BackInduction(object):
         
         # matrix containing planet type in each state
         self.pc = planet_confs
-        self.utility = torch.arange(-2., 3., 1.)
         if costs is not None:
             self.costs = costs.reshape(na, 1, 1)
         else:
             self.costs = torch.tensor([-.2, -.5]).reshape(na, 1, 1)
             
+        if utility is not None:
+            self.utility = utility
+        else:
+            self.utility = torch.arange(-2., 3., 1.)
+
         self.transitions = torch.tensor([4, 3, 4, 5, 1, 1])
 
     def set_parameters(self, trans_par=None):
@@ -50,16 +55,14 @@ class BackInduction(object):
 #            self.tp_mean0 = trans_par[:, :2].sigmoid()  # transition probabilty for action jump
 #            self.tp_scale0 = trans_par[:, 2:4].exp() # precision of beliefs about transition probability
             self.beta = trans_par[:, 0].exp()
-            self.kappa = trans_par[:, 1].exp().reshape(-1, 1)
-            self.eps = trans_par[:, 2].sigmoid()
+            self.eps = trans_par[:, 1].sigmoid()
 
         else:
             self.tp_mean0 = torch.tensor([.9, .5])\
                                 .view(1,-1).repeat(self.runs, 1)
             self.tp_scale0 = 50*ones(self.runs, 2)
             
-            self.beta = torch.tensor([1e10]).repeat(self.runs)
-            self.kappa = torch.tensor([10.]).repeat(self.runs, 1)
+            self.beta = torch.tensor([10.]).repeat(self.runs)
             self.eps = .99 * ones(self.runs)
         
         self.tp_mean0 = torch.tensor([.9, .5])\
@@ -113,11 +116,13 @@ class BackInduction(object):
         tm = self.tm[-1]  # transition matrix
         depth = self.depth  # planning depth
         
-        Vs = [(self.utility * self.pc[:, block]).sum(dim=-1)]
-    
-        D = zeros(self.depth, self.runs, self.ns)
+        utility = self.utility
         
-        R = self.kappa * (torch.einsum('ijkl,il->jik', tm, Vs[-1]) + self.costs)
+        Vs = [torch.sum(utility * self.pc[:, block], -1)]
+    
+        D = []
+        
+        R = (torch.einsum('ijkl,il->jik', tm, Vs[-1]) + self.costs)
     
         Q = R
         for d in range(1,depth+1):
@@ -130,13 +135,13 @@ class BackInduction(object):
             # set state value
             Vs.append(p * Q[1] + (1-p) * Q[0])
             
-            D[d-1] = dQ
+            D.append(dQ)
             
             if d < depth:
                 Q = torch.einsum('ijkl,il->jik', tm, Vs[-1]) + R
         
-        self.Vs.append(Vs)
-        self.D.append(D)        
+        self.Vs.append(torch.stack(Vs))
+        self.D.append(torch.stack(D))        
         
     def update_beliefs(self, block, trial, states, conditions, responses = None):
         
@@ -187,9 +192,9 @@ class BackInduction(object):
         
         logits = self.logits[-1]
         
-        cat = Bernoulli(logits=logits[d, range(self.runs)])
+        bern = Bernoulli(logits=logits[d, range(self.runs)])
         
-        res = cat.sample()
+        res = bern.sample()
         res[~valid] = nan
         
         return res

@@ -9,6 +9,7 @@ Test inference of model
 """
 
 import torch
+import pandas as pd
 from tasks import SpaceAdventure
 from agents import BackInduction
 from simulate import Simulator
@@ -18,10 +19,15 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+import pyro
+pyro.enable_validation()
+
 sns.set(context='talk', style='white', color_codes=True)
 
-runs = 100
+runs = 40
 mini_blocks = 100
+max_trials = 3
+max_depth = 3
 na = 2
 ns = 6
 no = 5
@@ -38,8 +44,11 @@ ol2 = torch.from_numpy(np.vstack([vect[50:], vect[:50]]))
 
 starts1 = torch.from_numpy(starts)
 starts2 = torch.from_numpy(np.hstack([starts[50:], starts[:50]]))
-    
+
+# noise condition low -> 0, high -> 1     
 noise = np.tile(np.array([0, 1, 0, 1]), (25,1)).T.flatten()
+
+# max trials
 trials1 = np.tile(np.array([2, 2, 3, 3]), (25,1)).T.flatten()
 trials2 = np.tile(np.array([3, 3, 2, 2]), (25,1)).T.flatten()
 
@@ -62,37 +71,61 @@ conditions[1, runs//2:] = torch.tensor(trials2, dtype=torch.long)
 agents = []
 simulations = []
 performance = []
-planning_depth = 3
+
+for i in range(3):
     
-# define space adventure task with aquired configurations
-# set number of trials to the max number of actions
-space_advent = SpaceAdventure(conditions,
-                              outcome_likelihoods=confs,
-                              init_states=starts,
-                              runs=runs,
-                              mini_blocks=mini_blocks,
-                              trials=3)
+    # define space adventure task with aquired configurations
+    # set number of trials to the max number of actions
+    space_advent = SpaceAdventure(conditions,
+                                  outcome_likelihoods=confs,
+                                  init_states=starts,
+                                  runs=runs,
+                                  mini_blocks=mini_blocks,
+                                  trials=max_trials)
+    
+    # define the optimal agent, each with a different maximal planning depth
+    agent = BackInduction(confs,
+                          runs=runs,
+                          mini_blocks=mini_blocks,
+                          trials=3,
+                          planning_depth=i+1)
+    
+    trans_pars = torch.arange(-1, 0, 1/runs).view(-1, 1).repeat(1, 2)\
+            + torch.tensor([3., 5.]).view(1, -1)
+    agent.set_parameters(trans_pars)
+    
+    # simulate behavior
+    sim = Simulator(space_advent, 
+                    agent, 
+                    runs=runs, 
+                    mini_blocks=mini_blocks,
+                    trials=3)
+    sim.simulate_experiment()
+    
+    simulations.append(sim)
+    agents.append(agent)
+    
+    responses = simulations[-1].responses.clone()
+    responses[torch.isnan(responses)] = -1.
+    responses = responses.long()
+    points = 10*(costs[responses] + fuel[simulations[-1].outcomes])
+    points[simulations[-1].outcomes<0] = 0
+    performance.append(points.sum(dim=-1))
+    
+for i in range(3):
+    plt.figure()
+    plt.plot(performance[i].numpy().cumsum(axis=-1).T, 'b')
 
-# define the optimal agent, each with a different maximal planning depth
-agent = BackInduction(confs,
-                      runs=runs,
-                      mini_blocks=mini_blocks,
-                      trials=3,
-                      planning_depth=planning_depth)
 
-trans_pars = torch.arange(-1, 1, 2/runs).view(-1, 1).repeat(1, 3)\
-            + torch.tensor([1., 1., 3.]).view(1, -1)
-agent.set_parameters(trans_pars)
-
-# simulate behavior
-sim = Simulator(space_advent, 
-                agent, 
-                runs=runs, 
-                mini_blocks=mini_blocks,
-                trials=3)
-sim.simulate_experiment()
-
-responses = sim.responses.clone()
+plt.figure(figsize=(10, 5))
+labels = [r'd=1', r'd=2', r'd=3']
+plt.hist(torch.stack(performance).numpy().cumsum(axis=-1)[...,-1].T, bins=30, stacked=True);
+plt.legend(labels)
+plt.ylabel('count')
+plt.xlabel('score')
+plt.savefig('finalscore_exp.pdf', bbox_inches='tight', transparent=True, dpi=600)
+    
+responses = simulations[-1].responses.clone()
 mask = ~torch.isnan(responses)
 
 stimuli = {'conditions': conditions,
@@ -102,8 +135,8 @@ stimuli = {'conditions': conditions,
 agent = BackInduction(confs,
                       runs=runs,
                       mini_blocks=mini_blocks,
-                      trials=3,
-                      planning_depth=3)
+                      trials=max_trials,
+                      planning_depth=max_depth)
 
 infer = Inferrer(agent, stimuli, responses, mask)
 infer.fit(num_iterations=500, parametrisation='horseshoe')
@@ -111,9 +144,9 @@ infer.fit(num_iterations=500, parametrisation='horseshoe')
 plt.figure()
 plt.plot(infer.loss[-200:])
 
-labels = [r'$\beta$', r'$\kappa$', r'$\epsilon$']
+labels = [r'$\beta$', r'$\epsilon$']
 
-pars_df, scales_df, mg_df, sg_df, post_depth = infer.sample_from_posterior(labels)
+pars_df, scales_df, mg_df, sg_df  = infer.sample_from_posterior(labels)
 
 pars_df = pars_df.melt(id_vars='subject', var_name='parameter')
 
@@ -122,7 +155,7 @@ g = (g.map(sns.lineplot, 'subject', 'value', ci='sd'));
 
 for i in range(len(labels)):
     g.axes[0,i].plot(np.arange(1,runs+1), trans_pars[:,i].numpy(),'ro', markersize = 4, zorder=0);
-    g.axes[0,i].set_ylim([0, 6])
+    g.axes[0,i].set_ylim([0, 4])
     
 g = sns.PairGrid(mg_df)
 g = g.map_diag(sns.kdeplot)
@@ -138,5 +171,42 @@ def posterior_accuracy(labels, df, vals):
         mean = df.loc[df['parameter'] == lbl].groupby(by='subject').mean()
         print(lbl, np.sum(((mean+2*std).values[:, 0] > vals[i])*((mean-2*std).values[:, 0] < vals[i]))/runs)
 
-vals = [trans_pars[:,0].numpy(), trans_pars[:, 1].numpy(), trans_pars[:,2].numpy()]
+vals = [trans_pars[:,0].numpy(), trans_pars[:, 1].numpy()]
 posterior_accuracy(labels, pars_df, vals)
+
+n_samples = 100
+post_depth = infer.sample_posterior_marginal(n_samples=n_samples)
+
+probs = np.zeros((mini_blocks, max_trials-1, n_samples, runs, 3))
+for b in range(mini_blocks):
+    for t in range(max_trials-1):
+        tmp = post_depth['d_{}_{}'.format(b, t)]
+        probs[b, t, :, :20] = tmp[:, :20]
+        if b < 50:
+            probs[b+50 , t, :, 20:] = tmp[:, 20:]
+        else:
+            probs[b-50, t, :, 20:] = tmp[:, 20:]
+
+count = np.array([np.sum(probs.argmax(-1) == i, axis=-2) for i in range(3)])
+trial_count = count.sum(-1)
+trial_count = trial_count/trial_count.sum(0)            
+for i in range(max_trials-1):
+    plt.figure(figsize=(10, 5))
+    sns.heatmap(trial_count[..., i], cmap='viridis')
+    plt.yticks(ticks = [0.5, 1.5, 2.5], labels=range(1, 4))
+    plt.ylabel('planning depth')
+    plt.xticks(ticks= np.arange(.5, 100., 5), labels = range(1, 101, 5))
+    plt.xlabel('mini-block')
+    plt.savefig('exp_ep_depth_t{}.pdf'.format(i+1), bbox_inches='tight', transparent=True, dpi=600)
+    
+cond_count = count.reshape(3, 4, 25, 2, runs).sum(-3)
+cond_probs = cond_count/cond_count.sum(0)
+
+plt.figure(figsize=(10, 5))
+sns.boxplot(data=pd.DataFrame(data=cond_probs[[1, 1, 2, 2], [0, 1, 2, 3], 0].T, 
+                              columns=['1', '2', '3', '4']), 
+                              color='b')
+plt.ylim([0, 1.01])
+plt.xlabel('phase')
+plt.ylabel('exceedance probability')
+plt.savefig('ep_experiment.pdf', bbox_inches='tight', transparent=True, dpi=600)
