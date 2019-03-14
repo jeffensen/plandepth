@@ -28,7 +28,7 @@ class BackInduction(object):
         self.runs = runs
         self.nmb = mini_blocks
         self.trials = trials
-        self.np = 2  # number of free model parameters
+        self.np = 3  # number of free model parameters
         
         self.depth = planning_depth  # maximal planning depth
         self.na = na  # number of actions
@@ -55,7 +55,8 @@ class BackInduction(object):
 #            self.tp_mean0 = trans_par[:, :2].sigmoid()  # transition probabilty for action jump
 #            self.tp_scale0 = trans_par[:, 2:4].exp() # precision of beliefs about transition probability
             self.beta = trans_par[:, 0].exp()
-            self.eps = trans_par[:, 1].sigmoid()
+            self.theta = trans_par[:, 1]
+            self.eps = trans_par[:, 2].sigmoid()
 
         else:
             self.tp_mean0 = torch.tensor([.9, .5])\
@@ -63,6 +64,7 @@ class BackInduction(object):
             self.tp_scale0 = 50*ones(self.runs, 2)
             
             self.beta = torch.tensor([10.]).repeat(self.runs)
+            self.theta = zeros(self.runs)
             self.eps = .99 * ones(self.runs)
         
         self.tp_mean0 = torch.tensor([.9, .5])\
@@ -180,7 +182,7 @@ class BackInduction(object):
         
         D = self.D[-1]
 
-        self.logits.append(D[:, range(self.runs), self.states] * self.beta)
+        self.logits.append(D[:, range(self.runs), self.states] * self.beta + self.theta)
  
     def sample_responses(self, block, trial):
         depth = self.depth

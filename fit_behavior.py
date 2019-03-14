@@ -106,7 +106,7 @@ home = str(Path.home())
 #      'part_64_04-Jul-2018_10-10.mat',
 #      'part_66_04-Jul-2018_11-41.mat']
 
-path = home + '/tudcloud/Shared/Advanced_Adventure/data/Main Experiment/'
+path = home + '/mycloud/Shared/Advanced_Adventure/data/Main Experiment/'
 f1 = ['part_2_29-Oct-2018_13-52.mat',
       'part_7_19-Nov-2018_15-43.mat',
       'part_10_30-Nov-2018_14-13.mat',
@@ -171,12 +171,12 @@ agent = BackInduction(confs,
                       planning_depth=max_depth)
 
 infer = Inferrer(agent, stimuli, responses, mask)
-infer.fit(num_iterations=500, parametrisation='horseshoe')
+infer.fit(num_iterations=400, parametrisation='dynamic')
 
 plt.figure()
 plt.plot(infer.loss[-200:])
 
-labels = [r'$\beta$', r'$\epsilon$']
+labels = [r'$\beta$', r'$\theta$', r'$\epsilon$']
 pars_df, scales_df, mg_df, sg_df = infer.sample_from_posterior(labels)
 
 pars_df[r'$\beta$'] = np.exp(pars_df[r'$\beta$'].values)

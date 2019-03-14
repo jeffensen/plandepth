@@ -40,8 +40,9 @@ class Inferrer(object):
         self.configs = stimuli['configs']
         self.conditions = stimuli['conditions']
     
-    def model_horseshoe(self):
-        
+    def model_static(self):
+        """Assume static prior over planning depth per condition.
+        """
         agent = self.agent
         np = agent.np  # number of parameters
         
@@ -59,8 +60,6 @@ class Inferrer(object):
             # define priors over planning depth
             probsc1 = sample("probs_c1", dist.Dirichlet(ones(2)*nuc1))
             probsc2 = sample("probs_c2", dist.Dirichlet(ones(3)*nuc2))
-            with plate('depths', 3):
-                rho = sample('rho', dist.Dirichlet(ones(3)))
             
         agent.set_parameters(locs)
         
@@ -69,49 +68,46 @@ class Inferrer(object):
         
         priors = torch.stack([tmp, probsc2])
         
-        d = tensor([0]*nsub)
         for b in markov(range(nblk)):
             conditions = self.conditions[..., b]
             states = self.states[:, b]
             responses = self.responses[:, b]
             max_trials = conditions[-1]
             
-            if b == 0:
-               probs = priors[max_trials - 2, range(nsub)].unsqueeze(0)
-            else:
-               probs = rho
-            
             tm = self.depth_transition[:, :, max_trials - 2]
-            with plate('responses_{}'.format(b), nsub) as ind:
-                d = sample('d0_{}'.format(b), dist.Categorical(probs[d, ind]))
-                d1 = sample('d1_{}'.format(b), dist.Categorical(tm[0, d, ind]))
-                d2 = sample('d2_{}'.format(b), dist.Categorical(tm[0, d1, ind]))
-                
-                depth = [d, d1, d2]
-            
-                for t in markov(range(3)):
-                    if t == 0:
-                        res = None
-                    else:
-                        res = responses[:, t-1]
-                    
-                    agent.update_beliefs(b, t, states[:, t], conditions, res)
-                    agent.plan_actions(b, t)
-                    
-                    valid = self.mask[:, b, t]
-                    res = responses[valid, t]
+            for t in markov(range(3)):
 
-                    logits = agent.logits[-1][depth[t]]
-                    logits = torch.diag(logits)[valid]
+                if t == 0:
+                    res = None
+                    probs = priors[max_trials - 2, range(nsub)]
+                else:
+                    res = responses[:, t-1]
+                    probs = tm[t-1, -1]
+            
+                agent.update_beliefs(b, t, states[:, t], conditions, res)
+                agent.plan_actions(b, t)
+                
+                valid = self.mask[:, b, t]
+                N = self.N[b, t]
+                res = responses[valid, t]
+                
+                logits = agent.logits[-1][:, valid]
+                
+                probs = probs[valid]
+                
+                with plate('responses_{}_{}'.format(b, t), N) as ind:
+
+                    d = sample('d_{}_{}'.format(b, t),
+                               dist.Categorical(probs[ind]),
+                               infer={"enumerate": "parallel"})
                     
-                    print(logits.shape)
-                        
-                    sample('obs_{}_{}'.format(b, t), 
-                               dist.Bernoulli(logits=logits),
-                               obs=res)
-   
-    def model_horseshoe_plus(self):
-        
+                    sample('obs_{}_{}'.format(b, t),
+                           dist.Bernoulli(logits=logits[d, ind]),
+                           obs=res[ind])
+                    
+    def model_dynamic(self):
+        """Assume dynamic transition between planning depths between mini-blocks.
+        """
         agent = self.agent
         np = agent.np  # number of parameters
         
@@ -121,53 +117,86 @@ class Inferrer(object):
         mu = sample("mu", dist.Normal(0., 20.).expand([np]).to_event(1))
         sigma = sample("sigma", dist.HalfCauchy(1.).expand([np]).to_event(1))
         
-        probs_prior = torch.tril(ones(3, 3))
-#        nuc1 = sample("nu_c1", dist.HalfCauchy(5.))
-#        probsc1 = sample("probs_c1", dist.Dirichlet(ones(2)*nuc1).expand([nsub]).to_event(1))
-#        
-#        nuc2 = sample("nu_c2", dist.HalfCauchy(5.))
-#        probsc2 = sample("probs_c2", dist.Dirichlet(ones(3)*nuc2).expand([nsub]).to_event(1))
+        nuc1 = sample("nu_c1", dist.HalfCauchy(5.))
+        nuc2 = sample("nu_c2", dist.HalfCauchy(5.))
         
         with plate('subjects', nsub):
-            scales = sample("scales", dist.HalfCauchy(sigma).to_event(1))
-            locs = sample("locs", dist.Normal(mu, scales).to_event(1))
-    
-        
+            locs = sample("locs", dist.Normal(mu, sigma).expand([np]).to_event(1))
+            # define priors over planning depth
+            probsc1 = sample("probs_c1", dist.Dirichlet(ones(2)*nuc1))
+            probsc2 = sample("probs_c2", dist.Dirichlet(ones(3)*nuc2))
+            
+        with plate('depth', 3): 
+            with plate('subs', nsub):
+                # define priors over planning depth transition matrix
+                rho1 = sample("rho_c1", dist.Dirichlet(ones(2)))
+                rho2 = sample("rho_c2", dist.Dirichlet(ones(3)))
+            
         agent.set_parameters(locs)
         
+        tmp1 = zeros(nsub, 3)
+        tmp1[:, :2] = probsc1
+        
+        priors = torch.stack([tmp1, probsc2])
+        
+        tmp2 = zeros(nsub, 3, 3)
+        tmp2[..., :2] = rho1
+        
+        rho = torch.stack([tmp2, rho2])
+        
+        d = tensor([0]*nsub)        
         for b in markov(range(nblk)):
             conditions = self.conditions[..., b]
             states = self.states[:, b]
             responses = self.responses[:, b]
+            max_trials = conditions[-1]
+            
+            tm = self.depth_transition[:, :, max_trials - 2]
             for t in markov(range(3)):
-                if t == 0:
+                if t == 0 and b == 0:
                     res = None
+                    probs = priors[max_trials - 2, range(nsub)].unsqueeze(1)
+                elif t== 0:
+                    probs = rho[max_trials - 2, range(nsub)]
                 else:
                     res = responses[:, t-1]
-                
+                    probs = tm[t-1, -1]
+            
                 agent.update_beliefs(b, t, states[:, t], conditions, res)
                 agent.plan_actions(b, t)
                 
                 valid = self.mask[:, b, t]
                 N = self.N[b, t]
-
-                logits = agent.logits[-1][:, valid]
                 res = responses[valid, t]
                 
-                max_trials = conditions[-1, valid]
-                max_depth = max_trials - t - 1
-                probs = probs_prior[max_depth]
-
+                logits = agent.logits[-1][:, valid]
+                
+                probs = probs[valid]
+                
                 with plate('responses_{}_{}'.format(b, t), N) as ind:
-                    d = sample('d_{}_{}'.format(b, t),
+                    
+                    if t == 0:
+                        d = sample('d_{}_{}'.format(b, t),
+                               dist.Categorical(probs[ind, d]),
+                               infer={"enumerate": "parallel"})
+                    
+                        sample('obs_{}_{}'.format(b, t),
+                           dist.Bernoulli(logits=logits[d, ind]),
+                           obs=res[ind])
+                    elif t == 1:
+                        d1 = sample('d_{}_{}'.format(b, t),
                                dist.Categorical(probs[ind]),
                                infer={"enumerate": "parallel"})
-                   
-                    sample('obs_{}_{}'.format(b, t), 
-                           dist.Bernoulli(logits=logits[d, ind]),
-                           obs=res[ind])   
-                
-    def guide_horseshoe(self):
+                    
+                        sample('obs_{}_{}'.format(b, t),
+                           dist.Bernoulli(logits=logits[d1, ind]),
+                           obs=res[ind])
+                    else:
+                        sample('obs_{}_{}'.format(b, t),
+                           dist.Bernoulli(logits=logits[0]),
+                           obs=res)
+
+    def guide_static(self):
         
         npar = self.agent.np  # number of parameters
         nsub = self.nsub  # number of subjects
@@ -216,13 +245,10 @@ class Inferrer(object):
         
         return {'mu': mu, 'sigma': sigma, 'locs': locs, 'pc1': probsc1, 'pc2': probsc2, 'nuc1': nuc1, 'nuc2': nuc2}
     
-
-    def guide_horseshoe_plus(self):
+    def guide_dynamic(self):
         
         npar = self.agent.np  # number of parameters
         nsub = self.nsub  # number of subjects
-        trns = biject_to(constraints.positive)
-
         
         m_hyp = param('m_hyp', zeros(2*npar))
         st_hyp = param('scale_tril_hyp', 
@@ -235,37 +261,50 @@ class Inferrer(object):
         unc_mu = hyp[:npar]
         unc_sigma = hyp[npar:]
     
+        trns_sigma = biject_to(constraints.positive)
     
-        c_sigma = trns(unc_sigma)
+        c_sigma = trns_sigma(unc_sigma)
     
-        ld_sigma = trns.inv.log_abs_det_jacobian(c_sigma, unc_sigma)
+        ld_sigma = trns_sigma.inv.log_abs_det_jacobian(c_sigma, unc_sigma)
         ld_sigma = sum_rightmost(ld_sigma, ld_sigma.dim() - c_sigma.dim() + 1)
     
         mu = sample("mu", dist.Delta(unc_mu, event_dim=1))
         sigma = sample("sigma", dist.Delta(c_sigma, log_density=ld_sigma, event_dim=1))
         
-        m_tmp = param('m_tmp', zeros(nsub, 2*npar))
-        st_tmp = param('s_tmp', torch.eye(2*npar).repeat(nsub, 1, 1), 
+        m_locs = param('m_locs', zeros(nsub, npar))
+        st_locs = param('s_locs', torch.eye(npar).repeat(nsub, 1, 1), 
                    constraint=constraints.lower_cholesky)
+        
+        
+        l1 = param('l1', zeros(1))
+        s1 = param('s1', ones(1), constraint=constraints.positive)
+        nuc1 = sample("nu_c1", dist.LogNormal(loc=l1, scale=s1))
+        
+        l2 = param('l2', zeros(1))
+        s2 = param('s2', ones(1), constraint=constraints.positive)
+        nuc2 = sample("nu_c2", dist.LogNormal(loc=l2, scale=s2))
+        
+        alpha1 = param('alpha1', ones(nsub, 2), constraint=constraints.positive)
+        alpha2 = param('alpha2', ones(nsub, 3), constraint=constraints.positive)
 
         with plate('subjects', nsub):
-            tmp = sample('tmp', dist.MultivariateNormal(m_tmp, 
-                                                  scale_tril=st_tmp), 
-                            infer={'is_auxiliary': True})
+            locs = sample("locs", dist.MultivariateNormal(m_locs, scale_tril=st_locs))
+            probsc1 = sample("probs_c1", dist.Dirichlet(alpha1))
+            probsc2 = sample("probs_c2", dist.Dirichlet(alpha2))
             
-            unc_locs = tmp[..., :npar]
-            unc_scale = tmp[..., npar:]
-            
-            c_scale = trns(unc_scale)
-            
-            ld_scale = trns.inv.log_abs_det_jacobian(c_scale, unc_scale)
-            ld_scale = sum_rightmost(ld_scale, ld_scale.dim() - c_scale.dim() + 1)
-            
-            locs = sample("locs", dist.Delta(unc_locs, event_dim=1))
-            scales = sample("scales", dist.Delta(c_scale, log_density=ld_scale, event_dim=1))
         
-        return {'mu': mu, 'sigma': sigma, 'locs': locs, 'scales': scales}
+        beta1 = param('beta1', ones(nsub, 3, 2), constraint=constraints.positive)
+        beta2 = param('beta2', ones(nsub, 3, 3), constraint=constraints.positive)
+        
+        with plate('depth', 3): 
+            with plate('subs', nsub):
+                # define priors over planning depth transition matrix
+                sample("rho_c1", dist.Dirichlet(beta1))
+                sample("rho_c2", dist.Dirichlet(beta2))
+        
+        return {'mu': mu, 'sigma': sigma, 'locs': locs, 'pc1': probsc1, 'pc2': probsc2, 'nuc1': nuc1, 'nuc2': nuc2}
     
+
     def fit(self, 
             num_iterations = 100, 
             num_particles=10,
@@ -274,17 +313,19 @@ class Inferrer(object):
         
         clear_param_store()
         
-        if parametrisation == 'horseshoe':
-            self.model = self.model_horseshoe
-            self.guide = self.guide_horseshoe
-        elif parametrisation == 'horseshoe+':
-            self.model = self.model_horseshoe_plus
-            self.guide = self.guide_horseshoe_plus
+        if parametrisation == 'static':
+            self.model = self.model_static
+            self.guide = self.guide_static
+            self.mpn = 1
+        elif parametrisation == 'dynamic':
+            self.model = self.model_dynamic
+            self.guide = self.guide_dynamic
+            self.mpn = 2
         
         svi = SVI(model=self.model,
                   guide=self.guide,
                   optim=Adam(optim_kwargs),
-                  loss=TraceEnum_ELBO(num_particles=num_particles, max_plate_nesting=1))
+                  loss=TraceEnum_ELBO(num_particles=num_particles, max_plate_nesting=self.mpn))
 
         loss = []
         pbar = tqdm(range(num_iterations), position=0)
@@ -345,7 +386,7 @@ class Inferrer(object):
     
     def sample_posterior_marginal(self, n_samples=100):
         
-        elbo = TraceEnum_ELBO(max_plate_nesting=1)
+        elbo = TraceEnum_ELBO(max_plate_nesting=self.mpn)
         post_depth_samples = {}
         
         pbar = tqdm(range(n_samples), position=0)

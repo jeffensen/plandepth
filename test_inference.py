@@ -90,8 +90,8 @@ for i in range(3):
                           trials=3,
                           planning_depth=i+1)
     
-    trans_pars = torch.arange(-1, 0, 1/runs).view(-1, 1).repeat(1, 2)\
-            + torch.tensor([3., 5.]).view(1, -1)
+    trans_pars = torch.arange(-1, 0, 1/runs).view(-1, 1).repeat(1, 3)\
+            + torch.tensor([3., 0., 5.]).view(1, -1)
     agent.set_parameters(trans_pars)
     
     # simulate behavior
@@ -139,23 +139,22 @@ agent = BackInduction(confs,
                       planning_depth=max_depth)
 
 infer = Inferrer(agent, stimuli, responses, mask)
-infer.fit(num_iterations=500, parametrisation='horseshoe')
+infer.fit(num_iterations=400, parametrisation='dynamic')
 
 plt.figure()
 plt.plot(infer.loss[-200:])
 
-labels = [r'$\beta$', r'$\epsilon$']
+labels = [r'$\beta$', r'$\theta$', r'$\epsilon$']
 
 pars_df, scales_df, mg_df, sg_df  = infer.sample_from_posterior(labels)
 
 pars_df = pars_df.melt(id_vars='subject', var_name='parameter')
 
-g = sns.FacetGrid(pars_df, col="parameter", height=3);
+g = sns.FacetGrid(pars_df, col="parameter", height=5);
 g = (g.map(sns.lineplot, 'subject', 'value', ci='sd'));
 
 for i in range(len(labels)):
     g.axes[0,i].plot(np.arange(1,runs+1), trans_pars[:,i].numpy(),'ro', markersize = 4, zorder=0);
-    g.axes[0,i].set_ylim([0, 4])
     
 g = sns.PairGrid(mg_df)
 g = g.map_diag(sns.kdeplot)
@@ -171,7 +170,7 @@ def posterior_accuracy(labels, df, vals):
         mean = df.loc[df['parameter'] == lbl].groupby(by='subject').mean()
         print(lbl, np.sum(((mean+2*std).values[:, 0] > vals[i])*((mean-2*std).values[:, 0] < vals[i]))/runs)
 
-vals = [trans_pars[:,0].numpy(), trans_pars[:, 1].numpy()]
+vals = [trans_pars[:,0].numpy(), trans_pars[:, 1].numpy(), trans_pars[:, 2].numpy()]
 posterior_accuracy(labels, pars_df, vals)
 
 n_samples = 100
@@ -193,9 +192,7 @@ trial_count = trial_count/trial_count.sum(0)
 for i in range(max_trials-1):
     plt.figure(figsize=(10, 5))
     sns.heatmap(trial_count[..., i], cmap='viridis')
-    plt.yticks(ticks = [0.5, 1.5, 2.5], labels=range(1, 4))
     plt.ylabel('planning depth')
-    plt.xticks(ticks= np.arange(.5, 100., 5), labels = range(1, 101, 5))
     plt.xlabel('mini-block')
     plt.savefig('exp_ep_depth_t{}.pdf'.format(i+1), bbox_inches='tight', transparent=True, dpi=600)
     
