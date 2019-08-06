@@ -1,7 +1,6 @@
 *.npy
 *.svg
 *.m~
-*.mat
 *.asv
 *.png
 *.pdf
