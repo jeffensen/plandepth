@@ -7,6 +7,7 @@ Created on Thu Feb  8 11:50:01 2018
 """
 
 import torch
+import pyro
 from tasks import SpaceAdventure
 from agents import BackInduction
 from simulate import Simulator
@@ -19,7 +20,7 @@ import seaborn as sns
 
 sns.set(context = 'talk', style = 'white', color_codes = True)
 
-runs = 3000000
+runs = 1000000
 trials = [2,3]
 na = 2
 ns = 6
@@ -59,7 +60,7 @@ for T in trials:
     # get the trials on which the choice sign for optimal planning depth
     # differs from all suboptimal planning depths.
     tmp = np.all(np.sign(D_suboptim) != np.sign(D_optim), axis = 0)
-    tmp *= np.all(np.abs(D_suboptim - D_optim) > 1.4, axis=0)
+    tmp *= np.all(np.abs(D_suboptim - D_optim) > 1.3, axis=0)
     tmp *= (D_optim != 0)
     tmp *= np.all(D_suboptim != 0, axis=0)
     
@@ -125,17 +126,20 @@ conditions = conditions.reshape(-1, 2)
 
 # simulate behavior
 
-runs = 50
+runs = 40
 mini_blocks = 100
 
 tt_s0 = torch.tensor(init_states, dtype=torch.long).view(1, -1).repeat(runs, 1)
+tt_s0[runs//2:] = torch.stack([tt_s0[runs//2:, 50:], tt_s0[runs//2:, :50]], 1).reshape(runs//2, -1)
 
 tt_conds = torch.tensor(conditions.T, dtype=torch.long).view(2, 1, -1)
 tt_conds = tt_conds.repeat(1, runs, 1)
+tt_conds[:, runs//2:] = torch.stack([tt_conds[:, runs//2:, 50:], tt_conds[:, runs//2:, :50]], 2).reshape(2, runs//2, -1)
 
 tt_confs = torch.tensor(confs, dtype=torch.float).view(1, mini_blocks, ns, no)
 tt_confs = tt_confs.repeat(runs, 1, 1, 1)
 
+tt_confs[runs//2:] = torch.stack([tt_confs[runs//2:, 50:], tt_confs[runs//2:, :50]], 1).reshape(runs//2, -1, ns, no)
 
 costs = torch.tensor([-2., -5.])
 fuel = torch.arange(-20., 30., 10) 
@@ -161,8 +165,8 @@ for i in range(3):
                           trials=3,
                           planning_depth=i+1)
     
-    trans_pars = torch.arange(-1, 0, 1/runs).view(-1, 1).repeat(1, 3)\
-            + torch.tensor([1., 3., 6.]).view(1, -1)
+    m = torch.tensor([0., 0., 0.])
+    trans_pars = torch.distributions.Normal(m, 1.).sample((runs,))
     agent.set_parameters(trans_pars)
     
     # simulate behavior
@@ -195,7 +199,8 @@ plt.hist(torch.stack(performance).numpy().cumsum(axis=-1)[...,-1].T, bins=30, st
 plt.legend(labels)
 plt.ylabel('count')
 plt.xlabel('score')
-plt.savefig('finalscore_opt.pdf', bbox_inches='tight', transparent=True, dpi=600)
+
+#plt.savefig('finalscore_opt.pdf', bbox_inches='tight', transparent=True, dpi=600)
     
 # np.save('startsT%d.npy' % trials, np.array(inits))
 # np.save('confsT%d.npy' % trials, np.array(confs))
@@ -206,7 +211,7 @@ max_trials = 3
 max_depth = 3
 
 results = {1: {}, 2: {}, 3: {}}
-for i in range(3):
+for i in range(2,3):
     responses = simulations[i].responses.clone()
     mask = ~torch.isnan(responses)
     
@@ -221,7 +226,7 @@ for i in range(3):
                           planning_depth=max_depth)
     
     infer = Inferrer(agent, stimuli, responses, mask)
-    infer.fit(num_iterations=500, parametrisation='horseshoe')
+    infer.fit(num_iterations=200, parametrisation='static')
     
     results[i+1]['inference'] = infer 
     
@@ -232,14 +237,18 @@ for i in range(3):
     
     labels = [r'$\beta$', r'$\kappa$', r'$\epsilon$']
     
-    pars_df, scales_df, mg_df, sg_df  = infer.sample_from_posterior(labels)
+    pars_df, scales_df, mg_df, sg_df  = infer.sample_from_posterior(labels, n_samples=1000)
     
     results[i+1]['pars'] = [pars_df, scales_df, mg_df, sg_df]
     
-    pars_df = pars_df.melt(id_vars='subject', var_name='parameter')
-    
-    g = sns.FacetGrid(pars_df, col="parameter", height=3);
-    g = (g.map(sns.lineplot, 'subject', 'value', ci='sd'));
+    fig, axes = plt.subplots(3, 1, figsize=(15, 10))
+    m = pars_df.groupby('subject').mean()
+    s = pars_df.groupby('subject').std()
+    for i, l in enumerate(labels):
+        tp = trans_pars[:, i].numpy()
+        axes[i].errorbar(tp, m[l], 2*s[l], linestyle='', marker='o')
+        axes[i].plot(tp, tp, 'k--')
+        axes[i].set_title(l)
     
     g = sns.PairGrid(mg_df)
     g = g.map_diag(sns.kdeplot)
@@ -249,38 +258,53 @@ for i in range(3):
     g = g.map_diag(sns.kdeplot)
     g = g.map_offdiag(plt.scatter)
     
-    n_samples = 100
-    post_depth = infer.sample_posterior_marginal(n_samples=n_samples)
+    probs = torch.zeros((mini_blocks, max_trials-1, runs, 3))
+    prd1 = pyro.param('prd1').detach()
+    prd2 = pyro.param('prd2').detach()
+
+    probs[50:, 0, :20] = prd1[:20, 50:].transpose(dim1=0, dim0=1)
+    probs[50:, 0, 20:] = prd1[20:, :50].transpose(dim1=0, dim0=1)
     
-    probs = np.zeros((mini_blocks, max_trials-1, n_samples, runs, 3))
-    for b in range(mini_blocks):
-        for t in range(max_trials-1):
-            tmp = post_depth['d_{}_{}'.format(b, t)]
-            probs[b, t] = tmp
+    probs[:50, 0, :20, :2] = prd2[:20, :50].transpose(dim1=0, dim0=1)
+    probs[:50, 0, 20:, :2] = prd2[20:, 50:].transpose(dim1=0, dim0=1)
     
-    results[i+1]['post_depth'] = probs
+    probs[:50, 1, :runs//2, 0] = 1.
+    probs[50:, 1, :runs//2, :2] = prd2[:runs//2, 50:].transpose(dim1=0, dim0=1)
+        
+    probs[:50, 1, runs//2:, 0] = 1.
+    probs[50:, 1, runs//2:, :2] = prd2[runs//2:, :50].transpose(dim1=0, dim0=1)
+
+    probs = probs.numpy()
     
-    count = np.array([np.sum(probs.argmax(-1) == i, axis=-2) for i in range(3)])
-    trial_count = count.sum(-1)
-    trial_count = trial_count/trial_count.sum(0)            
-    for i in range(max_trials-1):
+    results[i+1]['post_depth'] = probs.copy()
+    
+    count = np.array([(probs.argmax(-1) == i).sum(-1) for i in range(3)])
+    trial_count = count/count.sum(0)            
+    for j in range(max_trials-1):
         plt.figure(figsize=(10, 5))
-        sns.heatmap(trial_count[..., i], cmap='viridis')
+        sns.heatmap(trial_count[..., j], cmap='viridis')
         plt.yticks(ticks = [0.5, 1.5, 2.5], labels=range(1, 4))
         plt.ylabel('planning depth')
         plt.xticks(ticks= np.arange(.5, 100., 5), labels = range(1, 101, 5))
         plt.xlabel('mini-block')
-    #    plt.savefig('opt_ep_depth_t{}.pdf'.format(i+2), bbox_inches='tight', transparent=True, dpi=600)
-        
-    cond_count = count.reshape(3, 4, 25, 2, runs).sum(-3)
-    cond_probs = cond_count/cond_count.sum(0)
+        #plt.savefig('opt_ep_depth_t{}.pdf'.format(i+2), bbox_inches='tight', transparent=True, dpi=600)
     
-    import pandas as pd
-    plt.figure(figsize=(10, 5))
-    sns.boxplot(data=pd.DataFrame(data=cond_probs[[1, 1, 2, 2], [0, 1, 2, 3], 0].T, 
-                                  columns=['1', '2', '3', '4']), 
-                                  color='b')
-    plt.ylim([0, 1.01])
-    plt.xlabel('phase')
-    plt.ylabel('exceedance probability')
-    #plt.savefig('ep_optimised.pdf', bbox_inches='tight', transparent=True ,dpi=600)
+    depths = torch.stack(agents[-1].depths).numpy()
+    depths[0, :runs//2] = 1
+    depths[:, runs//2:] = np.vstack([depths[50:, runs//2:], depths[:50, runs//2:]])
+
+    diff = []
+    for sub in range(runs):
+        diff.append(depths[:, sub] != probs[:, 0, sub].argmax(-1))
+
+    diff = np.vstack(diff)
+    plt.figure()
+    plt.plot(diff.mean(0));
+    
+    plt.figure()
+    sns.boxplot(data=diff.mean(0).reshape(4, 25).T)
+    
+    sub = 0
+    plt.figure()
+    sns.heatmap(probs[:,0, sub].T, cmap='viridis')
+    plt.plot(range(100), depths[:, sub]+.5, 'wo');

@@ -35,7 +35,7 @@ PsychDefaultSetup(2);
 PsychTweak('UseGPUIndex', 0);
 
 %% Load everything needed for the experiment
-load('experimental_variables.mat')
+load('experimental_variables_new.mat')
 
 %makes screen transparent for debugging
 %PsychDebugWindowConfiguration();
@@ -93,17 +93,17 @@ text = ['Hallo!' ...
          '\n\n\n\n Dein Weltraumabenteuer kann nun beginnen.'];
 
 % Some block transition text     
-trans_text = ['In Kürze erreichst Du ein neues Planetensystem......'];
+trans_text = ['In Kï¿½rze erreichst Du ein neues Planetensystem......'];
 
 % Some brake text
-break_text1 = ['Bitte nimm Dir etwas Zeit zum Ausruhen, falls Du dich müde fühlst.'...
-                '\n\n\n\n Achtung, als nächstes reist Du in Planetensysteme mit Asteroiden!'];
+break_text1 = ['Bitte nimm Dir etwas Zeit zum Ausruhen, falls Du dich mï¿½de fï¿½hlst.'...
+                '\n\n\n\n Achtung, als nï¿½chstes reist Du in Planetensysteme mit Asteroiden!'];
 
  
-break_text2 = ['Bitte nimm Dir etwas Zeit zum Ausruhen, falls Du dich müde fühlst.'...
-                '\n\n\n\n Achtung, die Anzahl deiner Reiseschritte verändert sich!'];
+break_text2 = ['Bitte nimm Dir etwas Zeit zum Ausruhen, falls Du dich mï¿½de fï¿½hlst.'...
+                '\n\n\n\n Achtung, die Anzahl deiner Reiseschritte verï¿½ndert sich!'];
 
-anykey_text = ['Drücke eine Taste um fortzufahren.'];
+anykey_text = ['Drï¿½cke eine Taste um fortzufahren.'];
 
 % Draw all the text in one go
 DrawFormattedText(window, text,...
@@ -400,12 +400,12 @@ delete('tmpdata.mat');
 
 %% End screen
 end_msg = ['Ende des Experiments.' ...
-           '\n\n Danke für deine Teilnahme.'];
+           '\n\n Danke fï¿½r deine Teilnahme.'];
 
        
 gameOver = ['Game over' ...
             '\n\n Deine Treibstoffreserven sind aufgebraucht.' ...
-            '\n\n Danke für deine Teilnahme'];       
+            '\n\n Danke fï¿½r deine Teilnahme'];       
 
 % Draw the text
 if points < 0

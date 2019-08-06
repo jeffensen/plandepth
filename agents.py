@@ -22,7 +22,8 @@ class BackInduction(object):
                  ns=6,
                  costs=None,
                  utility = None,
-                 planning_depth=1):
+                 planning_depth=1,
+                 depths=None):
         
                 
         self.runs = runs
@@ -31,6 +32,9 @@ class BackInduction(object):
         self.np = 3  # number of free model parameters
         
         self.depth = planning_depth  # maximal planning depth
+        if depths is None:
+            self.depths = [torch.tensor([planning_depth - 1]).repeat(self.runs)]
+        self.make_depth_transitions()
         self.na = na  # number of actions
         self.ns = ns  # number of states
         
@@ -54,9 +58,9 @@ class BackInduction(object):
             assert trans_par.shape[-1] == self.np
 #            self.tp_mean0 = trans_par[:, :2].sigmoid()  # transition probabilty for action jump
 #            self.tp_scale0 = trans_par[:, 2:4].exp() # precision of beliefs about transition probability
-            self.beta = trans_par[:, 0].exp()
+            self.beta = (trans_par[:, 0]+2).exp()
             self.theta = trans_par[:, 1]
-            self.eps = trans_par[:, 2].sigmoid()
+            self.eps = (trans_par[:, 2]+4).sigmoid()
 
         else:
             self.tp_mean0 = torch.tensor([.9, .5])\
@@ -87,6 +91,15 @@ class BackInduction(object):
         
         # response probability
         self.logits = [] 
+        
+    def make_depth_transitions(self):
+        
+        tm = torch.eye(self.depth).repeat(self.runs, 1, 1)
+        rho = .8
+        if self.depth > 1:
+            tm = rho*tm + (1-rho)*(ones(self.runs, self.depth, self.depth) - tm)/(self.depth-1)
+
+        self.tm_depths = tm
 
     def make_transition_matrix(self, p):
         na = self.na  # number of actions
@@ -145,7 +158,7 @@ class BackInduction(object):
         self.Vs.append(torch.stack(Vs))
         self.D.append(torch.stack(D))        
         
-    def update_beliefs(self, block, trial, states, conditions, responses = None):
+    def update_beliefs(self, block, trial, states, conditions, responses=None):
         
         self.noise = conditions[0]
         self.max_trials = conditions[1]
@@ -185,18 +198,25 @@ class BackInduction(object):
         self.logits.append(D[:, range(self.runs), self.states] * self.beta + self.theta)
  
     def sample_responses(self, block, trial):
-        depth = self.depth
+        if trial == 0 and block > 0:
+            probs = self.tm_depths[range(self.runs), self.depths[0]]
+            depths = Categorical(probs=probs).sample()
+            loc = depths > self.max_trials - 1 
+            depths[loc] = self.max_trials[loc] - 1
+            self.depths.append(depths)
+        else:
+            depths = self.depths[-1]
         
-        d = self.max_trials-trial
-        d[d > depth] = depth
-        valid = d > 0
-        d[valid] -= 1
+        d = self.max_trials - trial - 1
+        loc = d > depths
+        d[loc] = depths[loc]
         
         logits = self.logits[-1]
         
         bern = Bernoulli(logits=logits[d, range(self.runs)])
         
         res = bern.sample()
+        valid = d > -1
         res[~valid] = nan
         
         return res
