@@ -94,17 +94,17 @@ text = ['Hallo!' ...
          '\n\n\n\n Dein Weltraumabenteuer kann nun beginnen.'];
 
 % Some block transition text     
-trans_text = ['In Kï¿½rze erreichst Du ein neues Planetensystem......'];
+trans_text = ['In Kürze erreichst Du ein neues Planetensystem......'];
 
 % Some brake text
-break_text1 = ['Bitte nimm Dir etwas Zeit zum Ausruhen, falls Du dich mï¿½de fï¿½hlst.'...
-                '\n\n\n\n Achtung, als nï¿½chstes reist Du in Planetensysteme mit Asteroiden!'];
+break_text1 = ['Bitte nimm Dir etwas Zeit zum Ausruhen, falls Du dich müde fühlst.'...
+                '\n\n\n\n Achtung, als nächstes reist Du in Planetensysteme mit Asteroiden!'];
 
  
-break_text2 = ['Bitte nimm Dir etwas Zeit zum Ausruhen, falls Du dich mï¿½de fï¿½hlst.'...
-                '\n\n\n\n Achtung, die Anzahl deiner Reiseschritte verï¿½ndert sich!'];
+break_text2 = ['Bitte nimm Dir etwas Zeit zum Ausruhen, falls Du dich müde fühlst.'...
+                '\n\n\n\n Achtung, die Anzahl deiner Reiseschritte verändert sich!'];
 
-anykey_text = ['Drï¿½cke eine Taste um fortzufahren.'];
+anykey_text = ['Drücke eine Taste um fortzufahren.'];
 
 % Draw all the text in one go
 DrawFormattedText(window, text,...

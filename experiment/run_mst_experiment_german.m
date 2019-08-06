@@ -10,7 +10,7 @@ rng('shuffle');
 %%%%%%%%%%%%%%%   Modify before experiment %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 data = struct;
  
-Pbn_ID = 1; % fill out
+Pbn_ID = 2; % fill out
 data.Age = 22; % fill out
 data.Gender = 0 ; % 0 = male; 1 = female
 %  
@@ -33,6 +33,7 @@ file_name = strcat('part_', int2str(Pbn_ID),'_', date,'_', datestr(now,'HH-MM'),
 PsychDefaultSetup(2);
 
 PsychTweak('UseGPUIndex', 0);
+Screen('Preference', 'SkipSyncTests', 1);
 
 %% Load everything needed for the experiment
 load('experimental_variables_new.mat')
@@ -93,17 +94,17 @@ text = ['Hallo!' ...
          '\n\n\n\n Dein Weltraumabenteuer kann nun beginnen.'];
 
 % Some block transition text     
-trans_text = ['In Kï¿½rze erreichst Du ein neues Planetensystem......'];
+trans_text = ['In Kürze erreichst Du ein neues Planetensystem......'];
 
 % Some brake text
-break_text1 = ['Bitte nimm Dir etwas Zeit zum Ausruhen, falls Du dich mï¿½de fï¿½hlst.'...
-                '\n\n\n\n Achtung, als nï¿½chstes reist Du in Planetensysteme mit Asteroiden!'];
+break_text1 = ['Bitte nimm Dir etwas Zeit zum Ausruhen, falls Du dich müde fühlst.'...
+                '\n\n\n\n Achtung, als nächstes reist Du in Planetensysteme mit Asteroiden!'];
 
  
-break_text2 = ['Bitte nimm Dir etwas Zeit zum Ausruhen, falls Du dich mï¿½de fï¿½hlst.'...
-                '\n\n\n\n Achtung, die Anzahl deiner Reiseschritte verï¿½ndert sich!'];
+break_text2 = ['Bitte nimm Dir etwas Zeit zum Ausruhen, falls Du dich müde fülst.'...
+                '\n\n\n\n Achtung, die Anzahl deiner Reiseschritte verändert sich!'];
 
-anykey_text = ['Drï¿½cke eine Taste um fortzufahren.'];
+anykey_text = ['Drücke eine Taste um fortzufahren.'];
 
 % Draw all the text in one go
 DrawFormattedText(window, text,...
