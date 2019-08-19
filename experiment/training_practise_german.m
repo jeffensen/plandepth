@@ -41,7 +41,7 @@ PsychDefaultSetup(2);
 % PsychTweak('UseGPUIndex', 0);
 
 %% Load everything needed for the experiment
-load('experimental_variables.mat')
+load('experimental_variables_new.mat')
 
 %makes screen transparent for debugging
 %PsychDebugWindowConfiguration();
@@ -172,7 +172,7 @@ DebrisTexture = Screen('MakeTexture', window, debris);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % text
-text = ['Du kannst die Aufgabe nun ein paar Mal üben'];
+text = ['Du kannst die Aufgabe nun ein paar Mal Ã¼ben'];
 
 
 % Draw all the text in one go
@@ -180,7 +180,7 @@ DrawFormattedText(window, text,...
     'center', screenYpixels*0.25, white);
 
 % Press Key to continue  
-DrawFormattedText(window, 'Drücke eine Taste um fortzufahren.', ...
+DrawFormattedText(window, 'DrÃ¼cke eine Taste um fortzufahren.', ...
                   'center', screenYpixels*0.8);
 
 % Flip to the screen
@@ -214,7 +214,7 @@ for n = 1:NoMiniBlocks
         break
     end
    
-    text = ['In Kürze erreichst Du ein neues Planetensystem...'];
+    text = ['In KÃ¼rze erreichst Du ein neues Planetensystem...'];
     
     % Draw all the text in one go
     DrawFormattedText(window, text,...
@@ -369,7 +369,7 @@ delete('tmpdata.mat');
 %%%%%%%%%%%% END INSTRUCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% End screen
-end_msg = ['Glückwunsch!' ... 
+end_msg = ['GlÃ¼ckwunsch!' ... 
          '\n\n '...
          '\n\n Du bist nun bereit dein Weltraumabenteuer zu beginnen' ...
          '\n\n '...
