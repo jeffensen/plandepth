@@ -12,7 +12,7 @@ clear all;
 
 data = struct;
  
-Pbn_ID = 01; % fill out
+Pbn_ID = 9901; % fill out
 No_Training= 1; % change if more than one training
 data.Age = 22; % fill out
 data.Gender = 0 ; % 0 = male; 1 = female
@@ -172,7 +172,7 @@ DebrisTexture = Screen('MakeTexture', window, debris);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % text
-text = ['Du kannst die Aufgabe nun ein paar Mal Ã¼ben'];
+text = ['Sie können die Aufgabe nun ein paar Mal üben'];
 
 
 % Draw all the text in one go
@@ -180,7 +180,7 @@ DrawFormattedText(window, text,...
     'center', screenYpixels*0.25, white);
 
 % Press Key to continue  
-DrawFormattedText(window, 'DrÃ¼cke eine Taste um fortzufahren.', ...
+DrawFormattedText(window, 'Drücken Sie eine Taste, um fortzufahren.', ...
                   'center', screenYpixels*0.8);
 
 % Flip to the screen
@@ -214,7 +214,7 @@ for n = 1:NoMiniBlocks
         break
     end
    
-    text = ['In KÃ¼rze erreichst Du ein neues Planetensystem...'];
+    text = ['In Kürze erreichen Sie ein neues Planetensystem...'];
     
     % Draw all the text in one go
     DrawFormattedText(window, text,...
@@ -369,15 +369,15 @@ delete('tmpdata.mat');
 %%%%%%%%%%%% END INSTRUCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% End screen
-end_msg = ['GlÃ¼ckwunsch!' ... 
+end_msg = ['Glückwunsch!' ... 
          '\n\n '...
-         '\n\n Du bist nun bereit dein Weltraumabenteuer zu beginnen' ...
+         '\n\n Sie sind nun bereit dein Weltraumabenteuer zu beginnen' ...
          '\n\n '...
-         '\n\n Bitte gib dem Versuchleiter Bescheid.'];
+         '\n\n Bitte melden Sie sich beim Versuchsleiter.'];
 
        
-gameOver = ['Game over' ...
-            '\n\n Bitte gib dem Versuchsleiter Bescheid.' ...
+gameOver = ['Das Spiel ist nun zu Ende.' ...
+            '\n\n Bitte melden Sie sich beim Versuchsleiter.' ...
             '\n\n '];       
 
 % Draw the text
