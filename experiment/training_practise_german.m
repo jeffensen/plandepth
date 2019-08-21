@@ -50,6 +50,9 @@ load('experimental_variables_new.mat')
 
 screen_number = max(Screen('Screens'));
 
+% Hide mouse cursor during the experiment
+HideCursor;
+
 % Define black and white (white will be 1 and black 0). This is because
 % in general luminace values are defined between 0 and 1 with 255 steps in
 % between. All values in Psychtoolbox are defined between 0 and 1
