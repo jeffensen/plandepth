@@ -35,6 +35,9 @@ PsychDefaultSetup(2);
 
 PsychTweak('UseGPUIndex', 0);
 
+% comment this out for the experiment
+Screen('Preference', 'SkipSyncTests', 1);
+
 %% Load everything needed for the experiment
 load('experimental_variables_new.mat')
 
@@ -299,7 +302,7 @@ for n = 1:NoMiniBlocks
             ac = actionCost(2);
             points = points + ac;
             data.Responses.Keys(n,t)= 2;
-        else
+        elseif strcmp(Key, 'ESCAPE')
             %stop the experiment if escape was pressed
             points = -1;
         end
@@ -341,6 +344,13 @@ for n = 1:NoMiniBlocks
             time = time + ifi;
         end
         
+        % Position of the square on this frame
+        xpos = locEnd(1);
+        ypos = locEnd(2);
+
+        % Center the rectangle on the centre of the screen
+        cRect = CenterRectOnPointd(rocketRect, xpos, ypos);
+        
         % set start to a new location
         start = next;
         reward = planetRewards(planetList(next));
@@ -363,7 +373,7 @@ for n = 1:NoMiniBlocks
             Screen('DrawTexture', window, DebrisTexture, [], debrisPos)
         end
         
-        DrawFormattedText(window, s, 'center', yCenter - 100, white);
+        DrawFormattedText(window, s, xpos - 25, ypos - 120, white);
         draw_point_bar(points, window, xCenter, yCenter);
         draw_remaining_actions(window, t+1, NoTrials, xCenter, yCenter);
         draw_planets(planetList, window, PlanetsTexture, planetsPos);
@@ -374,7 +384,7 @@ for n = 1:NoMiniBlocks
     end
     KbQueueStop(deviceIndex);
     data.States(n,t+1) = start;
-    WaitSecs(.5);
+    WaitSecs(1);
     if points < 0
         break
     end
@@ -398,8 +408,7 @@ for n = 1:NoMiniBlocks
                   'center', screenYpixels*0.8);
         Screen('flip', window);
         KbStrokeWait;
- 
-       end
+        end
     end
 end
 

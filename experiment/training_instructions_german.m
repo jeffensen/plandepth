@@ -51,15 +51,13 @@ waitframes = round(flipSecs / ifi);
 
 % Setup the text type for the window
 Screen('TextFont', window, 'Ariel');
-Screen('TextSize', window, 30);
+Screen('TextSize', window, 26);
 
 % Set up alpha-blending for smooth (anti-aliased) lines
 Screen('BlendFunction', window, 'GL_SRC_ALPHA', 'GL_ONE_MINUS_SRC_ALPHA');
 
-
 % Get the centre coordinate of the window
 [xCenter, yCenter] = RectCenter(windowRect);
-
 
 imagePos = [[xCenter-500, yCenter];
             [xCenter-200, yCenter-250];
@@ -93,9 +91,11 @@ DrawFormattedText(window, 'Drücken Sie eine Taste, um fortzufahren.', ...
 % Flip to the screen
 Screen('Flip', window);
 
-KbStrokeWait;
-
-
+[secs, keyCode, deltaSecs] = KbPressWait;
+if strcmp(KbName(keyCode), 'ESCAPE')
+    sca;
+    return;
+end
 %%%%%%%%%%%% INSTRUCTIONS 1 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -111,7 +111,11 @@ DrawFormattedText(window, text, 'center', screenYpixels * 0.25, white);
 % Flip to the screen
 Screen('Flip', window);
 
-KbStrokeWait;
+[secs, keyCode, deltaSecs] = KbPressWait;
+if strcmp(KbName(keyCode), 'ESCAPE')
+    sca;
+    return;
+end
 
 %%%%%%%%%%%% SHOW PLANETSYSTEM %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -151,7 +155,11 @@ DrawFormattedText(window, 'Drücken Sie eine Taste, um fortzufahren.', ...
 
 Screen('flip', window);
  
-KbStrokeWait;
+[secs, keyCode, deltaSecs] = KbPressWait;
+if strcmp(KbName(keyCode), 'ESCAPE')
+    sca;
+    return;
+end;
 % 
 % 
 % %%%%%%%%%%%% INSTRUCTIONS 2 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -198,8 +206,11 @@ DrawFormattedText(window, 'Drücken Sie eine Taste, um fortzufahren.', ...
 
 Screen('flip', window);
 
-KbStrokeWait;
-
+[secs, keyCode, deltaSecs] = KbPressWait;
+if strcmp(KbName(keyCode), 'ESCAPE')
+    sca;
+    return;
+end
  
 %%%%%%%%%%%% INSTRUCTIONS 3 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -224,8 +235,11 @@ DrawFormattedText(window, 'Drücken Sie eine Taste, um fortzufahren.', ...
 % Flip to the screen
 Screen('Flip', window);
 
-KbStrokeWait;
-
+[secs, keyCode, deltaSecs] = KbPressWait;
+if strcmp(KbName(keyCode), 'ESCAPE')
+    sca;
+    return;
+end
 %%%%%%%%%%%%% INTRODUCE FUEL TANK %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%% INSTRUCTIONS 5 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -249,15 +263,18 @@ DrawFormattedText(window, 'Drücken Sie eine Taste, um fortzufahren.', ...
 % Flip to the screen
 Screen('Flip', window);
 
-KbStrokeWait;                
-
+[secs, keyCode, deltaSecs] = KbPressWait;
+if strcmp(KbName(keyCode), 'ESCAPE')
+    sca;
+    return;
+end
 %%%%%%%%%%%% Bar in the middle %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 planets = Practise;
        
 % Initial point and planet specific rewards
-points = 990;
+points = 1000;
 % points bar
 bar = [0, 0, 100, 1000];
 
@@ -277,8 +294,11 @@ DrawFormattedText(window, 'Drücken Sie eine Taste, um fortzufahren.', ...
 
 vbl = Screen('flip', window);
     
-KbStrokeWait;       
-
+[secs, keyCode, deltaSecs] = KbPressWait;
+if strcmp(KbName(keyCode), 'ESCAPE')
+    sca;
+    return;
+end
  
 % %%%%%%%%%%%% PRACTISE JUMPING LEFT  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -300,15 +320,18 @@ DrawFormattedText(window, 'Drücken Sie eine Taste, um fortzufahren.', ...
 % Flip to the screen
 Screen('Flip', window);
 
-KbStrokeWait;
+[secs, keyCode, deltaSecs] = KbPressWait;
+if strcmp(KbName(keyCode), 'ESCAPE')
+    sca;
+    return;
+end
 
 NoMiniBlocks = 1;
 NoTrials = 12;  %change to 12
-points = 990;
+points = 1000;
 start = 1;
 for t = 1:NoTrials
     while(true)
-
         % draw fuel tank
         draw_point_bar(points, window, xCenter, screenYpixels);
    
@@ -321,8 +344,10 @@ for t = 1:NoTrials
 
         % Wait for a key press
         [secs, keyCode, deltaSecs] = KbPressWait;
-
-        if strcmp(KbName(keyCode), 'RightArrow')
+        if strcmp(KbName(keyCode), 'ESCAPE')
+            sca;
+            return;
+        elseif strcmp(KbName(keyCode), 'RightArrow')
             p = state_transition_matrix(1, start, :);
             next = find(cumsum(p)>=rand,1);
 
@@ -330,6 +355,7 @@ for t = 1:NoTrials
             time = 0;
             locStart = imagePos(start, :);
             locEnd = imagePos(next, :);
+            points = points + actionCost(1);
             while time < md
 
                 % Position of the square on this frame
@@ -355,7 +381,6 @@ for t = 1:NoTrials
                 time = time + ifi;
 
             end
-            points = points + actionCost(1);
             % set start to a new location
             start = next;
 
@@ -369,6 +394,7 @@ for t = 1:NoTrials
             Screen('DrawTexture', window, RocketTexture, [], cRect);
 
             Screen('Flip', window);
+            WaitSecs(1.)
             break;
         else
               DrawFormattedText(window, 'Bitte RECHTS drücken',...
@@ -412,9 +438,13 @@ DrawFormattedText(window, 'Drücken Sie eine Taste, um fortzufahren.', ...
 % Flip to the screen
 Screen('Flip', window);
 
-KbStrokeWait;
+[secs, keyCode, deltaSecs] = KbPressWait;
+if strcmp(KbName(keyCode), 'ESCAPE')
+    sca;
+    return;
+end
 
-points = 990;
+points = 1000;
 
 for n = 1:NoMiniBlocks
     for t = 1:NoTrials
@@ -438,8 +468,10 @@ for n = 1:NoMiniBlocks
 
             % Wait for a key press
             [secs, keyCode, deltaSecs] = KbPressWait;
-
-            if strcmp(KbName(keyCode), 's')
+            if strcmp(KbName(keyCode), 'ESCAPE')
+                sca;
+                return;
+            elseif strcmp(KbName(keyCode), 's')
                 p = state_transition_matrix(2, start, :);
                 next = find(cumsum(p)>=rand,1);
 
@@ -447,7 +479,7 @@ for n = 1:NoMiniBlocks
                 time = 0;
                 locStart = imagePos(start, :);
                 locEnd = imagePos(next, :);
-                poinst = points + actionCost(2);
+                points = points + actionCost(2);
                 while time < md
 
                     % Position of the square on this frame
@@ -475,16 +507,15 @@ for n = 1:NoMiniBlocks
                     % Increment the time
                     time = time + ifi;
                end
-               points = points + actionCost(2);
                 
                WaitSecs(1);
                Screen('Flip', window);
                WaitSecs(1);
                break;
             else 
-                  DrawFormattedText(window, 'Bitte S drücken', 'center', 'center', white);
-                  Screen('Flip', window); 
-                  WaitSecs(1);                   
+               DrawFormattedText(window, 'Bitte S drücken', 'center', 'center', white);
+               Screen('Flip', window); 
+               WaitSecs(1);                   
             end
         end
     end
@@ -515,9 +546,11 @@ Screen('flip', window);
 
 WaitSecs(2.)
 
-KbStrokeWait;
-
-
+[secs, keyCode, deltaSecs] = KbPressWait;
+if strcmp(KbName(keyCode), 'ESCAPE')
+    sca;
+    return;
+end
 
 % %%%%%%%%%%%% PRACTISE TRAVEL PATTERN  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -538,17 +571,20 @@ DrawFormattedText(window, 'Drücken Sie eine Taste, um fortzufahren.', ...
 % Flip to the screen
 Screen('Flip', window);
 
-KbStrokeWait;
-
+[secs, keyCode, deltaSecs] = KbPressWait;
+if strcmp(KbName(keyCode), 'ESCAPE')
+    sca;
+    return;
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%   Training_S_Test %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 NoTrials=18; %change to 18
 
-points = 990;
-TestStarts= [1,2,3,4,5,6,2,5,1,6,3,4,3,6,4,1,5,2];
-RightAnswer=[5,4,5,6,2,2,4,2,5,2,5,6,5,2,6,5,2,4];
+points = 1000;
+TestStarts = [1,2,3,4,5,6,2,5,1,6,3,4,3,6,4,1,5,2];
+RightAnswer = [5,4,5,6,2,2,4,2,5,2,5,6,5,2,6,5,2,4];
 
 for n = 1:NoMiniBlocks
     for t = 1:NoTrials
@@ -561,8 +597,6 @@ for n = 1:NoMiniBlocks
             planetList = Practise;
             draw_planets(planetList, window, PlanetsTexture, planetsPos);
             
-
-            
             % Draw numbers
             DrawFormattedText(window, '1', xCenter-520, yCenter+30);
             DrawFormattedText(window, '2', xCenter-220, yCenter-220);
@@ -571,7 +605,6 @@ for n = 1:NoMiniBlocks
             DrawFormattedText(window, '5', xCenter+180, yCenter+280);
             DrawFormattedText(window, '6', xCenter-220, yCenter+280);
 
-
             % Draw the rocket at the starting position 
             Screen('DrawTexture', window, RocketTexture, [], rocketPos(:,start)');
             vbl = Screen('flip', window);
@@ -579,7 +612,11 @@ for n = 1:NoMiniBlocks
             % Wait for a key press
             [secs, keyCode, deltaSecs] = KbPressWait;
             
-            Resp= KbName(keyCode);
+            Resp = KbName(keyCode);
+            if strcmp(Resp, 'ESCAPE')
+                sca;
+                return;
+            end
             Resp = str2double(Resp(1));
             
             % draw fuel tank
@@ -589,8 +626,6 @@ for n = 1:NoMiniBlocks
             planetList = Practise;
             draw_planets(planetList, window, PlanetsTexture, planetsPos);
             
-
-            
             % Draw numbers
             DrawFormattedText(window, '1', xCenter-520, yCenter+30);
             DrawFormattedText(window, '2', xCenter-220, yCenter-220);
@@ -599,24 +634,17 @@ for n = 1:NoMiniBlocks
             DrawFormattedText(window, '5', xCenter+180, yCenter+280);
             DrawFormattedText(window, '6', xCenter-220, yCenter+280);
 
-
             % Draw the rocket at the starting position 
             Screen('DrawTexture', window, RocketTexture, [], rocketPos(:,start)');
 
             if Resp == RightAnswer(t)
-               
                 DrawFormattedText(window, 'Richtig', 'center', 'center', white)
                 vbl = Screen('flip', window);
                 WaitSecs(0.5);
-
-                
             else
                 DrawFormattedText(window, 'Falsch, die richtige Antwort wäre:', 'center', 'center', white);  % ask
-                
                 vbl = Screen('flip', window);
-                
                 WaitSecs(2);
-                
             end  
                 p = state_transition_matrix(2, start, :);
                 next = find(cumsum(p)>=rand,1);
@@ -625,9 +653,9 @@ for n = 1:NoMiniBlocks
                 time = 0;
                 locStart = imagePos(start, :);
                 locEnd = imagePos(next, :);
-                poinst = points + actionCost(2);
-                while time < md
+                points = points + actionCost(2);
 
+                while time < md
                     % Position of the square on this frame
                     xpos = locStart(1) + time/md*(locEnd(1) - locStart(1));
                     ypos = locStart(2) + time/md*(locEnd(2) - locStart(2));
@@ -642,31 +670,29 @@ for n = 1:NoMiniBlocks
                     draw_planets(planetList, window, PlanetsTexture, planetsPos);
             
                     % draw number        
-                     DrawFormattedText(window, '1', xCenter-520, yCenter+30);
-                     DrawFormattedText(window, '2', xCenter-220, yCenter-230);
-                     DrawFormattedText(window, '3', xCenter+180, yCenter-230);
-                     DrawFormattedText(window, '4', xCenter+480, yCenter+30);
-                     DrawFormattedText(window, '5', xCenter+180, yCenter+280);
-                     DrawFormattedText(window, '6', xCenter-220, yCenter+280);
+                    DrawFormattedText(window, '1', xCenter-520, yCenter+30);
+                    DrawFormattedText(window, '2', xCenter-220, yCenter-220);
+                    DrawFormattedText(window, '3', xCenter+180, yCenter-220);
+                    DrawFormattedText(window, '4', xCenter+480, yCenter+30);
+                    DrawFormattedText(window, '5', xCenter+180, yCenter+280);
+                    DrawFormattedText(window, '6', xCenter-220, yCenter+280);
 
                     % Draw the rect to the screen
                     Screen('DrawTexture', window, RocketTexture, [], cRect);
-                    % Flip to the screen
-
+                    
+                    % Draw travel costs
                     DrawFormattedText(window, '-5', 'center', yCenter-100, white);
-                   
+                    
+                    % Flip to the screen
                     vbl  = Screen('Flip', window, vbl + 0.5*ifi);
-
 
                     % Increment the time
                     time = time + ifi;
-               end
-               points = points + actionCost(2);
-                
+                end
+               
                WaitSecs(1);
                Screen('Flip', window);
                WaitSecs(1);
-
     end 
  end
     
@@ -701,8 +727,11 @@ DrawFormattedText(window, 'Drücken Sie eine Taste, um fortzufahren.', ...
 % Flip to the screen
 Screen('Flip', window);
 
-KbStrokeWait;
-
+[secs, keyCode, deltaSecs] = KbPressWait;
+if strcmp(KbName(keyCode), 'ESCAPE')
+    sca;
+    return;
+end
 
 % %%%%%%%%%%%% PRACTISE RIGHT ACTION IN LOW NOISE%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -726,9 +755,11 @@ DrawFormattedText(window, 'Drücken Sie eine Taste, um fortzufahren.', ...
 % Flip to the screen
 Screen('Flip', window);
 
-KbStrokeWait;
-
-
+[secs, keyCode, deltaSecs] = KbPressWait;
+if strcmp(KbName(keyCode), 'ESCAPE')
+    sca;
+    return;
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % %%%%%%%%%%%% SHOW REISEMUSTER FOR  JUMPING Right %%%%%%%%%%%%%%%%%%%%%%%%%
@@ -753,8 +784,11 @@ DrawFormattedText(window, 'Drücken Sie eine Taste, um fortzufahren.', ...
 
 Screen('flip', window);
 
-KbStrokeWait;
-
+[secs, keyCode, deltaSecs] = KbPressWait;
+if strcmp(KbName(keyCode), 'ESCAPE')
+    sca;
+    return;
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 text = ['Wir fangen mit Planetensystemen ohne Asteroiden an.'...
@@ -772,14 +806,18 @@ DrawFormattedText(window, 'Drücken Sie eine Taste, um fortzufahren.', ...
 
 Screen('flip', window);
 
-KbStrokeWait;
+[secs, keyCode, deltaSecs] = KbPressWait;
+if strcmp(KbName(keyCode), 'ESCAPE')
+    sca;
+    return;
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 rnd_val = [0.2320    0.7325    0.9631    0.6932    0.8595    0.8387  ...
     0.0786    0.0716    0.0324    0.9084    0.6857    0.0666];
 NoTrials = 12; %change to 12
-points = 990;
+points = 1000;
 for n = 1:NoMiniBlocks
     for t = 1:NoTrials
         while(true)
@@ -802,8 +840,10 @@ for n = 1:NoMiniBlocks
 
             % Wait for a key press
             [secs, keyCode, deltaSecs] = KbPressWait;
-
-            if strcmp(KbName(keyCode), 's')
+            if strcmp(KbName(keyCode), 'ESCAPE')
+                sca;
+                return;
+            elseif strcmp(KbName(keyCode), 's')
                 p = state_transition_matrix(3, start, :);
                 next = find(cumsum(p)>=rnd_val(t),1);
                 if next ~= jumps(start)
@@ -811,22 +851,6 @@ for n = 1:NoMiniBlocks
                 else
                     missed = 0;
                 end
-                
-                if missed
-                    % draw fuel tank
-                    draw_point_bar(points, window, xCenter, screenYpixels);
-
-                    % plot planets for the given mini block
-                    planetList = Practise;
-                    draw_planets(planetList, window, PlanetsTexture, planetsPos);
-
-                    % Draw the rocket at the starting position 
-                    Screen('DrawTexture', window, RocketTexture, [], rocketPos(:,start)');
-                    DrawFormattedText(window, 'Zielplanet verfehlt', 'center', 'center', [1 0 0]);
-                    vbl = Screen('Flip', window); 
-                    WaitSecs(1);  
-                end     
-                    
                 
                 points = points + actionCost(2);
                 % move the rocket
@@ -859,12 +883,29 @@ for n = 1:NoMiniBlocks
                     % Increment the time
                     time = time + ifi;
                end
-               points = points + actionCost(2);
                
-               WaitSecs(1);
-               Screen('Flip', window);
-               WaitSecs(1);
-               break;
+               if missed
+                    % draw fuel tank
+                    draw_point_bar(points, window, xCenter, screenYpixels);
+
+                    % plot planets for the given mini block
+                    planetList = Practise;
+                    draw_planets(planetList, window, PlanetsTexture, planetsPos);
+
+                    % Draw the rocket at the starting position 
+                    Screen('DrawTexture', window, RocketTexture, [], cRect);
+                    DrawFormattedText(window, 'Ziel verfehlt', 'center', 'center', [1 0 0]);
+                    WaitSecs(1);
+                    vbl = Screen('Flip', window); 
+                    WaitSecs(2);
+                    break;
+               else
+                    WaitSecs(1);
+                    Screen('Flip', window);
+                    WaitSecs(1);
+                    break;
+               end 
+               
             else
                DrawFormattedText(window, 'Bitte S drücken', 'center', 'center', white);
                Screen('Flip', window); 
@@ -899,7 +940,11 @@ DrawFormattedText(window, 'Drücken Sie eine Taste, um fortzufahren.', ...
 % Flip to the screen
 Screen('Flip', window);
 
-KbStrokeWait;
+[secs, keyCode, deltaSecs] = KbPressWait;
+if strcmp(KbName(keyCode), 'ESCAPE')
+    sca;
+    return;
+end
 
 debrisLoc = 'debris.png';
 
@@ -920,7 +965,7 @@ debrisPos = CenterRectOnPointd(debrisRect, xCenter, yCenter);
 DebrisTexture = Screen('MakeTexture', window, debris);
 
 rng(54321);
-points = 990;
+points = 1000;
 rnd_val = [0.9116    0.6238    0.7918    0.4298    0.5430    0.4135    0.0856 ...
     0.7776    0.4889    0.0505    0.5384    0.0415];
 NoTrials = 12;  %% change to 12 
@@ -948,8 +993,10 @@ for t = 1:NoTrials
 
         % Wait for a key press
         [secs, keyCode, deltaSecs] = KbPressWait;
-
-        if strcmp(KbName(keyCode), 's')
+        if strcmp(KbName(keyCode), 'ESCAPE')
+            sca;
+            return;
+        elseif strcmp(KbName(keyCode), 's')
             p = state_transition_matrix(4, start, :);
             next = find(cumsum(p)>=rnd_val(t),1);
             
@@ -957,31 +1004,14 @@ for t = 1:NoTrials
                     missed = 1;
                 else
                     missed = 0;
-                end
-                
-                if missed                    
-                    % Draw debris
-                    Screen('DrawTexture', window, DebrisTexture, [], debrisPos)
-        
-                    % draw fuel tank
-                    draw_point_bar(points, window, xCenter, screenYpixels);
-
-                    % Draw planets for the given mini block
-                    planetList = Practise;
-                    draw_planets(planetList, window, PlanetsTexture, planetsPos);
-
-                    % Draw the rocket at the starting position 
-                    Screen('DrawTexture', window, RocketTexture, [], rocketPos(:,start)');
-                    
-                    DrawFormattedText(window, 'Zielplanet verfehlt', 'center', 'center', [1 0 0 ]);
-                    vbl= Screen('Flip', window); 
-                    WaitSecs(1);  
-                end     
+                end   
 
             % Move the rocket
             time = 0;
             locStart = imagePos(start, :);
             locEnd = imagePos(next, :);
+            points = points + actionCost(2);
+
             while time < md
 
                 % Position of the square on this frame
@@ -1011,13 +1041,33 @@ for t = 1:NoTrials
                 % Increment the time
                 time = time + ifi;
 
-            end
-           points = points + actionCost(2);
+           end
 
-           WaitSecs(1);
-           Screen('Flip', window);
-           WaitSecs(1);
-           break;
+           if missed
+                % Draw debris
+                Screen('DrawTexture', window, DebrisTexture, [], debrisPos)
+                
+                % draw fuel tank
+                draw_point_bar(points, window, xCenter, screenYpixels);
+
+                % plot planets for the given mini block
+                planetList = Practise;
+                draw_planets(planetList, window, PlanetsTexture, planetsPos);
+
+                % Draw the rocket at the starting position 
+                Screen('DrawTexture', window, RocketTexture, [], cRect);
+                DrawFormattedText(window, 'Ziel verfehlt', 'center', 'center', [1 0 0]);
+                Screen('Flip', window); 
+                WaitSecs(1);
+                Screen('Flip', window); 
+                WaitSecs(1);
+                break;
+           else
+                WaitSecs(1);
+                Screen('Flip', window);
+                WaitSecs(1);
+                break;
+           end 
         else 
               DrawFormattedText(window, 'Bitte S drücken', 'center', 'center', white);
               Screen('Flip', window); 
@@ -1051,7 +1101,11 @@ DrawFormattedText(window, 'Drücken Sie eine Taste, um fortzufahren.', ...
 % Flip to the screen
 Screen('Flip', window);
 
-KbStrokeWait;        
+[secs, keyCode, deltaSecs] = KbPressWait;
+if strcmp(KbName(keyCode), 'ESCAPE')
+    sca;
+    return;
+end
 
 %%%%%%%%%%%% INSTRUCTIONS 5 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1100,8 +1154,12 @@ DrawFormattedText(window, 'Drücken Sie eine Taste, um fortzufahren.', ...
 % Flip to the screen
 Screen('Flip', window);
 
-KbStrokeWait;  
-                
+[secs, keyCode, deltaSecs] = KbPressWait;
+if strcmp(KbName(keyCode), 'ESCAPE')
+    sca;
+    return;
+end
+
 %%%%%%%%%%%% INSTRUCTIONS 5 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -1123,7 +1181,11 @@ DrawFormattedText(window, 'Drücke eine Taste um fortzufahren.', ...
 % Flip to the screen
 Screen('Flip', window);
 
-KbStrokeWait;                
+[secs, keyCode, deltaSecs] = KbPressWait;
+if strcmp(KbName(keyCode), 'ESCAPE')
+    sca;
+    return;
+end
 
 %%%%%%%%%%%% Action points %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1137,32 +1199,9 @@ NoTrials = 3;
 
        
 % Initial point and planet specific rewards
-points = 990;
+points = 1000;
 % points bar
 bar = [0, 0, 100, 1000];
-
-% buttons_img_location = ['button1.png'; 'button2.png'];
-% 
-% ButtonsTexture = NaN(2);
-% for i=1:2
-%   [button, ~, balpha] = imread(buttons_img_location(i, :)); 
-%   % Add transparency to the background
-%   button(:,:,4) = balpha;
-%   % Make the planets into a texture
-%   ButtonsTexture(i) = Screen('MakeTexture', window, button);
-% end
-% 
-% % Get the size of the button image
-% [b1, b2, ~] = size(button);
-% 
-% buttonRect = [0 0 b2 b1];
-% 
-% %generate buttons locations
-% buttonsPos = NaN(4, 2);
-% xPos = [-800, 800];
-% for i=1:2
-%     buttonsPos(:,i) = CenterRectOnPointd(buttonRect, xCenter + xPos(i), yCenter+300);
-% end
 
 % draw point bar
 draw_point_bar(points, window, xCenter, screenYpixels);
@@ -1186,7 +1225,11 @@ DrawFormattedText(window, 'Drücken Sie eine Taste, um fortzufahren.', ...
 
 vbl = Screen('flip', window);
     
-KbStrokeWait;       
+[secs, keyCode, deltaSecs] = KbPressWait;
+if strcmp(KbName(keyCode), 'ESCAPE')
+    sca;
+    return;
+end
 
 %%%%%%%%%%% SUMMARY %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1215,8 +1258,11 @@ DrawFormattedText(window, 'Drücken Sie eine Taste, um fortzufahren.', ...
 % Flip to the screen
 Screen('Flip', window);
 
-KbStrokeWait;
-
+[secs, keyCode, deltaSecs] = KbPressWait;
+if strcmp(KbName(keyCode), 'ESCAPE')
+    sca;
+    return;
+end
 
 %%%%%%%%%%% TIPP %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1236,7 +1282,11 @@ DrawFormattedText(window, 'Drücken Sie eine Taste, um fortzufahren.', ...
 % Flip to the screen
 Screen('Flip', window);
 
-KbStrokeWait;
+[secs, keyCode, deltaSecs] = KbPressWait;
+if strcmp(KbName(keyCode), 'ESCAPE')
+    sca;
+    return;
+end
 
 %%%%%%%%%%% TIPP 2 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1263,8 +1313,11 @@ DrawFormattedText(window, 'Drücken Sie eine Taste, um fortzufahren.', ...
 % Flip to the screen
 Screen('Flip', window);
 
-KbStrokeWait;
-
+[secs, keyCode, deltaSecs] = KbPressWait;
+if strcmp(KbName(keyCode), 'ESCAPE')
+    sca;
+    return;
+end
 
 %%%%%%%%%%% TIPP 2 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1291,8 +1344,11 @@ DrawFormattedText(window, 'Drücken Sie eine Taste, um fortzufahren.', ...
 % Flip to the screen
 Screen('Flip', window);
 
-KbStrokeWait;
-
+[secs, keyCode, deltaSecs] = KbPressWait;
+if strcmp(KbName(keyCode), 'ESCAPE')
+    sca;
+    return;
+end
 
 %%%%%%%%%%% INSTRUCTIONS 6 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1313,8 +1369,11 @@ DrawFormattedText(window, 'Drücken Sie eine Taste, um fortzufahren.', ...
 % Flip to the screen
 Screen('Flip', window);
 
-KbStrokeWait;      
-
+[secs, keyCode, deltaSecs] = KbPressWait;
+if strcmp(KbName(keyCode), 'ESCAPE')
+    sca;
+    return;
+end
 
 %%%%%%%%%%%% PRACTISE %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1364,7 +1423,7 @@ for n = 1:NoMiniBlocks
             while true
                 [secs, keyCode, deltaSecs] = KbPressWait;
                 Key = KbName(keyCode);
-                if strcmp(Key, 'RightArrow') || strcmp(Key, 's')
+                if strcmp(Key, 'RightArrow') || strcmp(Key, 's') || strcmp(Key, 'ESCAPE')
                     break;
                 end
             end
@@ -1373,14 +1432,17 @@ for n = 1:NoMiniBlocks
                 p = state_transition_matrix(1, start, :);
                 next = find(cumsum(p)>=rand,1);
                 ac = actionCost(1);
-                points = min(points + ac, 1000);
+                points = points + ac;
                 TestKey(t) = 1;
             elseif strcmp(Key, 's')
                 p = state_transition_matrix(2, start, :);
                 next = find(cumsum(p)>=rand,1);
                 ac = actionCost(2);
-                points = min(points + ac, 1000);
+                points = points + ac;
                 TestKey(t) = 0;
+            elseif strcmp(Key, 'ESCAPE')
+                sca;
+                return;
             end
 
             % move the rocket
@@ -1412,11 +1474,17 @@ for n = 1:NoMiniBlocks
                 % Increment the time
                 time = time + ifi;
             end
+            
+            xpos = locEnd(1);
+            ypos = locEnd(2);
 
+            % Center the rectangle on the centre of the screen
+            cRect = CenterRectOnPointd(rocketRect, xpos, ypos);
+                
             % set start to a new location
             start = next;
             reward = planetRewards(planetList(next));
-            points = min(points + reward, 1000);
+            points = points + reward;
 
             if reward > 0
                 s = strcat('+', int2str(reward));
@@ -1424,15 +1492,16 @@ for n = 1:NoMiniBlocks
                 s = int2str(reward);
             end
 
-            DrawFormattedText(window, s, 'center', yCenter - 100, white);
+            DrawFormattedText(window, s, xpos - 25, ypos - 120, white);
             draw_point_bar(points, window, xCenter, yCenter);
             draw_remaining_actions(window, t+1, NoTrials, xCenter, yCenter);
             draw_planets(planetList, window, PlanetsTexture, planetsPos);
             Screen('DrawTexture', window, RocketTexture, [], cRect);
 
-            vbl = Screen('Flip', window);                  
+            vbl = Screen('Flip', window);
         end
-    
+        WaitSecs(2);
+
         %% TEST FOR OPTIMAL TRAVEL PATH AND CREATE FEEDBACK %%
         if all(TestKey == correctResponses(n,:))
             text = ['Sehr gut, Sie haben den optimalen Reiseweg gewählt.'];

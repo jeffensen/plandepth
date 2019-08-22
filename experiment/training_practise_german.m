@@ -46,7 +46,7 @@ load('experimental_variables_new.mat')
 %makes screen transparent for debugging
 %PsychDebugWindowConfiguration();
 
-% Screen('Preference', 'SkipSyncTests', 1);
+Screen('Preference', 'SkipSyncTests', 1);
 
 screen_number = max(Screen('Screens'));
 
@@ -149,7 +149,7 @@ end
 RocketTexture = Screen('MakeTexture', window, rocket);
 
 % Initial point and planet specific rewards
-points = 350;
+points = 1000;
 % points bar
 bar = [0, 0, 100, 1000];
 
@@ -331,6 +331,13 @@ for n = 1:NoMiniBlocks
             time = time + ifi;
         end
         
+        % Position of the square on this frame
+        xpos = locEnd(1);
+        ypos = locEnd(2);
+        
+        % Center the rectangle on the centre of the screen
+        cRect = CenterRectOnPointd(rocketRect, xpos, ypos);
+        
         % set start to a new location
         start = next;
         reward = planetRewards(planetList(next));
@@ -352,7 +359,7 @@ for n = 1:NoMiniBlocks
            % Draw debris
            Screen('DrawTexture', window, DebrisTexture, [], debrisPos)
         end
-        DrawFormattedText(window, s, 'center', yCenter - 100, white);
+        DrawFormattedText(window, s, xpos - 25, ypos - 120, white);
         draw_point_bar(points, window, xCenter, yCenter);
         draw_remaining_actions(window, t+1, NoTrials, xCenter, yCenter);
         draw_planets(planetList, window, PlanetsTexture, planetsPos);
@@ -360,7 +367,7 @@ for n = 1:NoMiniBlocks
         
         vbl = Screen('Flip', window);
     end
-    WaitSecs(.5);
+    WaitSecs(1);
 end
 
 save(file_name, 'data');
