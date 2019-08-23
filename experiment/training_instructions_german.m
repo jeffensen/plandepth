@@ -11,7 +11,7 @@ clear all;
 % Here we call some default settings for setting up Psychtoolbox
 PsychDefaultSetup(2);
 
-% PsychTweak('UseGPUIndex', 0);
+PsychTweak('UseGPUIndex', 0);
 
 %% Load everything needed for the experiment
 load('experimental_variables_new.mat')
@@ -381,6 +381,14 @@ for t = 1:NoTrials
                 time = time + ifi;
 
             end
+            
+            % Position of the square on this frame
+            xpos = locEnd(1);
+            ypos = locEnd(2);
+
+            % Center the rectangle on the centre of the screen
+            cRect = CenterRectOnPointd(rocketRect, xpos, ypos);
+            
             % set start to a new location
             start = next;
 
@@ -394,7 +402,6 @@ for t = 1:NoTrials
             Screen('DrawTexture', window, RocketTexture, [], cRect);
 
             Screen('Flip', window);
-            WaitSecs(1.)
             break;
         else
               DrawFormattedText(window, 'Bitte RECHTS drücken',...
@@ -404,6 +411,8 @@ for t = 1:NoTrials
         end
     end
 end
+WaitSecs(1.)
+
 
 %%%%%%% SHORT BREAK%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -598,12 +607,12 @@ for n = 1:NoMiniBlocks
             draw_planets(planetList, window, PlanetsTexture, planetsPos);
             
             % Draw numbers
-            DrawFormattedText(window, '1', xCenter-520, yCenter+30);
-            DrawFormattedText(window, '2', xCenter-220, yCenter-220);
-            DrawFormattedText(window, '3', xCenter+180, yCenter-220);
-            DrawFormattedText(window, '4', xCenter+480, yCenter+30);
-            DrawFormattedText(window, '5', xCenter+180, yCenter+280);
-            DrawFormattedText(window, '6', xCenter-220, yCenter+280);
+            DrawFormattedText(window, '1', xCenter-520, yCenter+30, [1 0 0]);
+            DrawFormattedText(window, '2', xCenter-220, yCenter-220, [1 0 0]);
+            DrawFormattedText(window, '3', xCenter+180, yCenter-220, [1 0 0]);
+            DrawFormattedText(window, '4', xCenter+480, yCenter+30, [1 0 0]);
+            DrawFormattedText(window, '5', xCenter+180, yCenter+280, [1 0 0]);
+            DrawFormattedText(window, '6', xCenter-220, yCenter+280, [1 0 0]);
 
             % Draw the rocket at the starting position 
             Screen('DrawTexture', window, RocketTexture, [], rocketPos(:,start)');
@@ -627,12 +636,12 @@ for n = 1:NoMiniBlocks
             draw_planets(planetList, window, PlanetsTexture, planetsPos);
             
             % Draw numbers
-            DrawFormattedText(window, '1', xCenter-520, yCenter+30);
-            DrawFormattedText(window, '2', xCenter-220, yCenter-220);
-            DrawFormattedText(window, '3', xCenter+180, yCenter-220);
-            DrawFormattedText(window, '4', xCenter+480, yCenter+30);
-            DrawFormattedText(window, '5', xCenter+180, yCenter+280);
-            DrawFormattedText(window, '6', xCenter-220, yCenter+280);
+            DrawFormattedText(window, '1', xCenter-520, yCenter+30, [1 0 0]);
+            DrawFormattedText(window, '2', xCenter-220, yCenter-220, [1 0 0]);
+            DrawFormattedText(window, '3', xCenter+180, yCenter-220, [1 0 0]);
+            DrawFormattedText(window, '4', xCenter+480, yCenter+30, [1 0 0]);
+            DrawFormattedText(window, '5', xCenter+180, yCenter+280, [1 0 0]);
+            DrawFormattedText(window, '6', xCenter-220, yCenter+280, [1 0 0]);
 
             % Draw the rocket at the starting position 
             Screen('DrawTexture', window, RocketTexture, [], rocketPos(:,start)');
@@ -669,13 +678,13 @@ for n = 1:NoMiniBlocks
                     % draw planets
                     draw_planets(planetList, window, PlanetsTexture, planetsPos);
             
-                    % draw number        
-                    DrawFormattedText(window, '1', xCenter-520, yCenter+30);
-                    DrawFormattedText(window, '2', xCenter-220, yCenter-220);
-                    DrawFormattedText(window, '3', xCenter+180, yCenter-220);
-                    DrawFormattedText(window, '4', xCenter+480, yCenter+30);
-                    DrawFormattedText(window, '5', xCenter+180, yCenter+280);
-                    DrawFormattedText(window, '6', xCenter-220, yCenter+280);
+                    % Draw numbers
+                    DrawFormattedText(window, '1', xCenter-520, yCenter+30, [1 0 0]);
+                    DrawFormattedText(window, '2', xCenter-220, yCenter-220, [1 0 0]);
+                    DrawFormattedText(window, '3', xCenter+180, yCenter-220, [1 0 0]);
+                    DrawFormattedText(window, '4', xCenter+480, yCenter+30, [1 0 0]);
+                    DrawFormattedText(window, '5', xCenter+180, yCenter+280, [1 0 0]);
+                    DrawFormattedText(window, '6', xCenter-220, yCenter+280, [1 0 0]);
 
                     % Draw the rect to the screen
                     Screen('DrawTexture', window, RocketTexture, [], cRect);
