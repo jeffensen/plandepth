@@ -16,6 +16,7 @@ Pbn_ID = 9901; % fill out
 No_Training= 1; % change if more than one training
 data.Age = 22; % fill out
 data.Gender = 0 ; % 0 = male; 1 = female
+data.Group = 0 ;  % 0 = control; 1 = experimental
 %  
 %  
 % 

@@ -13,6 +13,7 @@ data = struct;
 Pbn_ID = 9901; % fill out
 data.Age = 22; % fill out
 data.Gender = 0 ; % 0 = male; 1 = female
+data.Group = 0 ;  % 0 = control; 1 = experimental
 %  
 %  
 % 
