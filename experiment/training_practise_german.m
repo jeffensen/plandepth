@@ -175,7 +175,7 @@ DebrisTexture = Screen('MakeTexture', window, debris);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % text
-text = ['Sie können die Aufgabe nun ein paar Mal üben'];
+text = ['Sie kÃ¶nnen die Aufgabe nun ein paar Mal Ã¼ben'];
 
 
 % Draw all the text in one go
@@ -183,7 +183,7 @@ DrawFormattedText(window, text,...
     'center', screenYpixels*0.25, white);
 
 % Press Key to continue  
-DrawFormattedText(window, 'Drücken Sie eine Taste, um fortzufahren.', ...
+DrawFormattedText(window, 'DrÃ¼cken Sie eine Taste, um fortzufahren.', ...
                   'center', screenYpixels*0.8);
 
 % Flip to the screen
@@ -217,7 +217,7 @@ for n = 1:NoMiniBlocks
         break
     end
    
-    text = ['In Kürze erreichen Sie ein neues Planetensystem...'];
+    text = ['In KÃ¼rze erreichen Sie ein neues Planetensystem...'];
     
     % Draw all the text in one go
     DrawFormattedText(window, text,...
@@ -263,6 +263,9 @@ for n = 1:NoMiniBlocks
         while true
             [secs, keyCode, deltaSecs] = KbPressWait;
             Key = KbName(keyCode);
+            if iscell(Key)
+                Key = Key{1};
+            end
             if strcmp(Key, 'RightArrow') || strcmp(Key, 's')
                 break;
             end
@@ -379,7 +382,7 @@ delete('tmpdata.mat');
 %%%%%%%%%%%% END INSTRUCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% End screen
-end_msg = ['Glückwunsch!' ... 
+end_msg = ['GlÃ¼ckwunsch!' ... 
          '\n\n '...
          '\n\n Sie sind nun bereit dein Weltraumabenteuer zu beginnen' ...
          '\n\n '...
