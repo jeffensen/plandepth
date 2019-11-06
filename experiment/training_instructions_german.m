@@ -78,21 +78,25 @@ md = .5; %movement duration
 text = ['Hallo Abenteurer!' ...
         '\n\n\n\n Willkommen im Trainingslager'... 
         '\n\n\n\n Heute haben Sie die Gelegenheit an einer Reise durch den Weltraum teilzunehmen.'...
-        '\n\n\n\n Um möglichst viele Punkte zu sammeln, ist es wichtig, dass Sie Ihre Reisen immer im Voraus planen.'...        
-        '\n\n\n\n Bevor es losgeht, zeige ich Ihnen jedoch, wie Sie im Weltraum überleben können.'];
+        '\n\n\n\n Um mÃ¶glichst viele Punkte zu sammeln, ist es wichtig, dass Sie Ihre Reisen immer im Voraus planen.'...        
+        '\n\n\n\n Bevor es losgeht, zeige ich Ihnen jedoch, wie Sie im Weltraum Ã¼berleben kÃ¶nnen.'];
      
 % Draw all the text in one go
 DrawFormattedText(window, text, 'center', screenYpixels * 0.25, white);
 
 % Press Key to continue  
-DrawFormattedText(window, 'Drücken Sie eine Taste, um fortzufahren.', ...
+DrawFormattedText(window, 'DrÃ¼cken Sie eine Taste, um fortzufahren.', ...
                   'center', screenYpixels*0.9);
 
 % Flip to the screen
 Screen('Flip', window);
 
 [secs, keyCode, deltaSecs] = KbPressWait;
-if strcmp(KbName(keyCode), 'ESCAPE')
+Key = KbName(keyCode);
+if iscell(Key)
+    Key = Key{1};
+end
+if strcmp(Key, 'ESCAPE')
     sca;
     return;
 end
@@ -102,7 +106,7 @@ end
 %text 
 text = ['Sie werden durch viele verschiedene Planetensysteme reisen.' ...
         '\n\n\n\n Jedes dieser Systeme besteht aus 6 Planeten.' ...
-         '\n\n\n\n Drücken Sie eine Taste, um fortzufahren.'];
+         '\n\n\n\n DrÃ¼cken Sie eine Taste, um fortzufahren.'];
 
 
 % Draw all the text in one go
@@ -112,7 +116,11 @@ DrawFormattedText(window, text, 'center', screenYpixels * 0.25, white);
 Screen('Flip', window);
 
 [secs, keyCode, deltaSecs] = KbPressWait;
-if strcmp(KbName(keyCode), 'ESCAPE')
+Key = KbName(keyCode);
+if iscell(Key)
+    Key = Key{1};
+end
+if strcmp(Key, 'ESCAPE')
     sca;
     return;
 end
@@ -150,13 +158,17 @@ planetList = [1, 3, 2, 2, 4, 5];
 draw_planets(planetList, window, PlanetsTexture, planetsPos);
     
 % Press Key to continue  
-DrawFormattedText(window, 'Drücken Sie eine Taste, um fortzufahren.', ...
+DrawFormattedText(window, 'DrÃ¼cken Sie eine Taste, um fortzufahren.', ...
                   'center', screenYpixels*0.9); 
 
 Screen('flip', window);
  
 [secs, keyCode, deltaSecs] = KbPressWait;
-if strcmp(KbName(keyCode), 'ESCAPE')
+Key = KbName(keyCode);
+if iscell(Key)
+    Key = Key{1};
+end
+if strcmp(Key, 'ESCAPE')
     sca;
     return;
 end;
@@ -201,13 +213,17 @@ RocketTexture = Screen('MakeTexture', window, rocket);
 Screen('DrawTexture', window, RocketTexture, [], rocketPos(:,1)');
 
 % Press Key to continue  
-DrawFormattedText(window, 'Drücken Sie eine Taste, um fortzufahren.', ...
+DrawFormattedText(window, 'DrÃ¼cken Sie eine Taste, um fortzufahren.', ...
                   'center', screenYpixels*0.9);  
 
 Screen('flip', window);
 
 [secs, keyCode, deltaSecs] = KbPressWait;
-if strcmp(KbName(keyCode), 'ESCAPE')
+Key = KbName(keyCode);
+if iscell(Key)
+    Key = Key{1};
+end
+if strcmp(Key, 'ESCAPE')
     sca;
     return;
 end
@@ -216,12 +232,12 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 text = ['Kurz gesagt:'...
-        '\n\n Um im Weltraum zu überleben, müssen Sie möglichst viel Treibstoff sammeln, indem Sie von Planet zu Planet reisen.' ... 
-        '\n\n\n\n Sie bereisen Planeten, indem Sie immer zwischen den Kommandos RECHTE PFEILTASTE und (S)prung wählen.'...
-        '\n\n\n\n Planen Sie die Reisen sorgfältig im Voraus, um Treibstoff zu sparen und zu überleben.',...
-        '\n\n\n\n RECHTE PFEILTASTE kostet Sie dabei immer 2 Treibstoffeinheiten, während (S)prung 5 Treibstoffeinheiten verbraucht.'...
+        '\n\n Um im Weltraum zu Ã¼berleben, mÃ¼ssen Sie mÃ¶glichst viel Treibstoff sammeln, indem Sie von Planet zu Planet reisen.' ... 
+        '\n\n\n\n Sie bereisen Planeten, indem Sie immer zwischen den Kommandos RECHTE PFEILTASTE und (S)prung wÃ¤hlen.'...
+        '\n\n\n\n Planen Sie die Reisen sorgfÃ¤ltig im Voraus, um Treibstoff zu sparen und zu Ã¼berleben.',...
+        '\n\n\n\n RECHTE PFEILTASTE kostet Sie dabei immer 2 Treibstoffeinheiten, wÃ¤hrend (S)prung 5 Treibstoffeinheiten verbraucht.'...
         '\n\n\n\n Je nachdem auf welchem Planeten Sie landen, gewinnen oder verlieren Sie Treibstoff.',...
-        '\n\n\n\n Im Folgenden werde ich Ihnen alles genauer erklären.']; 
+        '\n\n\n\n Im Folgenden werde ich Ihnen alles genauer erklÃ¤ren.']; 
 
 
 % Draw all the text in one go
@@ -229,14 +245,18 @@ DrawFormattedText(window, text,...
     'center', screenYpixels * 0.25, white);
 
 % Press Key to continue  
-DrawFormattedText(window, 'Drücken Sie eine Taste, um fortzufahren.', ...
+DrawFormattedText(window, 'DrÃ¼cken Sie eine Taste, um fortzufahren.', ...
                   'center', screenYpixels*0.9);
 
 % Flip to the screen
 Screen('Flip', window);
 
 [secs, keyCode, deltaSecs] = KbPressWait;
-if strcmp(KbName(keyCode), 'ESCAPE')
+Key = KbName(keyCode);
+if iscell(Key)
+    Key = Key{1};
+end
+if strcmp(Key, 'ESCAPE')
     sca;
     return;
 end
@@ -246,9 +266,9 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % text
-text = ['Damit Sie nicht den Überblick über die Menge des verfügbaren Treibstoffes verlieren,'...
+text = ['Damit Sie nicht den Ãœberblick Ã¼ber die Menge des verfÃ¼gbaren Treibstoffes verlieren,'...
          '\n\n zeigt der Balken am oberen Bildschirmrand Ihren aktuellen Treibstofflevel an.'...
-        '\n\n\n Wenn Ihr Treibstofflevel gefährlich absinkt, färbt sich der Balken rot.'];
+        '\n\n\n Wenn Ihr Treibstofflevel gefÃ¤hrlich absinkt, fÃ¤rbt sich der Balken rot.'];
   
 
 
@@ -257,14 +277,18 @@ DrawFormattedText(window, text,...
     'center', screenYpixels * 0.25, white);
 
 % Press Key to continue  
-DrawFormattedText(window, 'Drücken Sie eine Taste, um fortzufahren.', ...
+DrawFormattedText(window, 'DrÃ¼cken Sie eine Taste, um fortzufahren.', ...
                   'center', screenYpixels*0.8); 
 
 % Flip to the screen
 Screen('Flip', window);
 
 [secs, keyCode, deltaSecs] = KbPressWait;
-if strcmp(KbName(keyCode), 'ESCAPE')
+Key = KbName(keyCode);
+if iscell(Key)
+    Key = Key{1};
+end
+if strcmp(Key, 'ESCAPE')
     sca;
     return;
 end
@@ -289,24 +313,28 @@ start = 1;
 Screen('DrawTexture', window, RocketTexture, [], rocketPos(:,start)');
     
 % Press Key to continue  
-DrawFormattedText(window, 'Drücken Sie eine Taste, um fortzufahren.', ...
+DrawFormattedText(window, 'DrÃ¼cken Sie eine Taste, um fortzufahren.', ...
                   'center', screenYpixels*0.9);
 
 vbl = Screen('flip', window);
     
 [secs, keyCode, deltaSecs] = KbPressWait;
-if strcmp(KbName(keyCode), 'ESCAPE')
+Key = KbName(keyCode);
+if iscell(Key)
+    Key = Key{1};
+end
+if strcmp(Key, 'ESCAPE')
     sca;
     return;
 end
  
 % %%%%%%%%%%%% PRACTISE JUMPING LEFT  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-text = ['Jetzt zeige ich Ihnen, wie man Planeten bereist und erkläre dabei die Kommandos.',...
-        '\n\n\n\n Zuerst schauen wir uns an, was passiert, wenn Sie die RECHTE PFEILTASTE wählen.' ...
-        '\n\n\n\n Die RECHTE PFEILTASTE ermöglicht es Ihnen, im Uhrzeigersinn zum nächsten' ...
+text = ['Jetzt zeige ich Ihnen, wie man Planeten bereist und erklÃ¤re dabei die Kommandos.',...
+        '\n\n\n\n Zuerst schauen wir uns an, was passiert, wenn Sie die RECHTE PFEILTASTE wÃ¤hlen.' ...
+        '\n\n\n\n Die RECHTE PFEILTASTE ermÃ¶glicht es Ihnen, im Uhrzeigersinn zum nÃ¤chsten' ...
         '\n\n benachbarten Planeten zu reisen.' ...
-        '\n\n\n\n Sie können dies nun ein paar Mal ausprobieren.']; 
+        '\n\n\n\n Sie kÃ¶nnen dies nun ein paar Mal ausprobieren.']; 
 
 
 % Draw all the text in one go
@@ -314,14 +342,18 @@ DrawFormattedText(window, text,...
     'center', screenYpixels * 0.25, white);
 
 % Press Key to continue  
-DrawFormattedText(window, 'Drücken Sie eine Taste, um fortzufahren.', ...
+DrawFormattedText(window, 'DrÃ¼cken Sie eine Taste, um fortzufahren.', ...
                   'center', screenYpixels*0.9); 
 
 % Flip to the screen
 Screen('Flip', window);
 
 [secs, keyCode, deltaSecs] = KbPressWait;
-if strcmp(KbName(keyCode), 'ESCAPE')
+Key = KbName(keyCode);
+if iscell(Key)
+    Key = Key{1};
+end
+if strcmp(Key, 'ESCAPE')
     sca;
     return;
 end
@@ -344,10 +376,14 @@ for t = 1:NoTrials
 
         % Wait for a key press
         [secs, keyCode, deltaSecs] = KbPressWait;
-        if strcmp(KbName(keyCode), 'ESCAPE')
+        Key = KbName(keyCode);
+        if iscell(Key)
+            Key = Key{1};
+        end
+        if strcmp(Key, 'ESCAPE')
             sca;
             return;
-        elseif strcmp(KbName(keyCode), 'RightArrow')
+        elseif strcmp(Key, 'RightArrow')
             p = state_transition_matrix(1, start, :);
             next = find(cumsum(p)>=rand,1);
 
@@ -404,7 +440,7 @@ for t = 1:NoTrials
             Screen('Flip', window);
             break;
         else
-              DrawFormattedText(window, 'Bitte RECHTS drücken',...
+              DrawFormattedText(window, 'Bitte RECHTS drÃ¼cken',...
                                         'center', 'center', white);
               Screen('Flip', window);
               WaitSecs(1.);
@@ -417,11 +453,11 @@ WaitSecs(1.)
 %%%%%%% SHORT BREAK%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 text = ['Haben Sie bemerkt, wie der Treibstofflevel abgesunken ist?',...
-         '\n\n\n\n Als nächstes zeige ich Ihnen was beim Kommando (S)prung passiert.'];
+         '\n\n\n\n Als nÃ¤chstes zeige ich Ihnen was beim Kommando (S)prung passiert.'];
 
  DrawFormattedText(window, text, 'center', screenYpixels * 0.5, white);
               
-% DrawFormattedText(window, 'Als nächstes zeige ich Dir was beim Kommando (S)prung passiert.',...
+% DrawFormattedText(window, 'Als nÃ¤chstes zeige ich Dir was beim Kommando (S)prung passiert.',...
 %                   'center', 'center', white);
                                 
 Screen('flip', window);
@@ -431,24 +467,28 @@ WaitSecs(4.);
 % %%%%%%%%%%%% PRACTISE JUMPING Right %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-text = [' Wenn Sie (S)prung wählen, reist Ihr Raumschiff zu einem nicht benachbarten Planeten.' ... 
-        '\n\n\n\n Als nächstes können Sie ausprobieren, was an jeder Planetenposition passiert,'...
-        '\n\n wenn Sie (S)prung wählen.'...
-        '\n\n\n\n Es ist wichtig, dass Sie sich das gezeigte Flugmuster gut einprägen.']; 
+text = [' Wenn Sie (S)prung wÃ¤hlen, reist Ihr Raumschiff zu einem nicht benachbarten Planeten.' ... 
+        '\n\n\n\n Als nÃ¤chstes kÃ¶nnen Sie ausprobieren, was an jeder Planetenposition passiert,'...
+        '\n\n wenn Sie (S)prung wÃ¤hlen.'...
+        '\n\n\n\n Es ist wichtig, dass Sie sich das gezeigte Flugmuster gut einprÃ¤gen.']; 
 
 
 % Draw all the text in one go
 DrawFormattedText(window, text,'center', screenYpixels * 0.25, white);
 
 % Press Key to continue  
-DrawFormattedText(window, 'Drücken Sie eine Taste, um fortzufahren.', ...
+DrawFormattedText(window, 'DrÃ¼cken Sie eine Taste, um fortzufahren.', ...
                   'center', screenYpixels*0.9);
 
 % Flip to the screen
 Screen('Flip', window);
 
 [secs, keyCode, deltaSecs] = KbPressWait;
-if strcmp(KbName(keyCode), 'ESCAPE')
+Key = KbName(keyCode);
+if iscell(Key)
+    Key = Key{1};
+end
+if strcmp(Key, 'ESCAPE')
     sca;
     return;
 end
@@ -477,10 +517,14 @@ for n = 1:NoMiniBlocks
 
             % Wait for a key press
             [secs, keyCode, deltaSecs] = KbPressWait;
-            if strcmp(KbName(keyCode), 'ESCAPE')
+            Key = KbName(keyCode);
+            if iscell(Key)
+                Key = Key{1};
+            end
+            if strcmp(Key, 'ESCAPE')
                 sca;
                 return;
-            elseif strcmp(KbName(keyCode), 's')
+            elseif strcmp(Key, 's')
                 p = state_transition_matrix(2, start, :);
                 next = find(cumsum(p)>=rand,1);
 
@@ -522,7 +566,7 @@ for n = 1:NoMiniBlocks
                WaitSecs(1);
                break;
             else 
-               DrawFormattedText(window, 'Bitte S drücken', 'center', 'center', white);
+               DrawFormattedText(window, 'Bitte S drÃ¼cken', 'center', 'center', white);
                Screen('Flip', window); 
                WaitSecs(1);                   
             end
@@ -534,7 +578,7 @@ end
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 text = [' Hier sehen Sie das Flugmuster noch einmal als Ganzes.' ...
-        ' Bitte prägen Sie es sich gut ein:',...
+        ' Bitte prÃ¤gen Sie es sich gut ein:',...
         '\n\n\n\n ']; 
 
     
@@ -548,7 +592,7 @@ DrawFormattedText(window, text,'center', screenYpixels * 0.10, white);
 
 
 % Press Key to continue  
-DrawFormattedText(window, 'Drücken Sie eine Taste, um fortzufahren.', ...
+DrawFormattedText(window, 'DrÃ¼cken Sie eine Taste, um fortzufahren.', ...
                   'center', screenYpixels*0.9);
 
 Screen('flip', window);
@@ -556,7 +600,11 @@ Screen('flip', window);
 WaitSecs(2.)
 
 [secs, keyCode, deltaSecs] = KbPressWait;
-if strcmp(KbName(keyCode), 'ESCAPE')
+Key = KbName(keyCode);
+if iscell(Key)
+    Key = Key{1};
+end
+if strcmp(Key, 'ESCAPE')
     sca;
     return;
 end
@@ -565,23 +613,27 @@ end
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 text = [' Um Ihnen zu helfen, das Muster noch mehr zu verinnerlichen, spielen wir jetzt ein kleines Spiel.' ... 
-        '\n\n\n\n Ich zeige Ihnen verschiedene Startpositionen und Sie können mit den Tasten 1-6 sagen,'...
-        '\n\n\n auf welchem Zielplaneten Sie landen, wenn Sie (S)prung wählen.'...
-        '\n\n\n\n Anschließend bekommen Sie ein Feedback, ob Sie richtig geantwortet haben.']; 
+        '\n\n\n\n Ich zeige Ihnen verschiedene Startpositionen und Sie kÃ¶nnen mit den Tasten 1-6 sagen,'...
+        '\n\n\n auf welchem Zielplaneten Sie landen, wenn Sie (S)prung wÃ¤hlen.'...
+        '\n\n\n\n AnschlieÃŸend bekommen Sie ein Feedback, ob Sie richtig geantwortet haben.']; 
 
 
 % Draw all the text in one go
 DrawFormattedText(window, text,'center', screenYpixels * 0.25, white);
 
 % Press Key to continue  
-DrawFormattedText(window, 'Drücken Sie eine Taste, um fortzufahren.', ...
+DrawFormattedText(window, 'DrÃ¼cken Sie eine Taste, um fortzufahren.', ...
                   'center', screenYpixels*0.9);
 
 % Flip to the screen
 Screen('Flip', window);
 
 [secs, keyCode, deltaSecs] = KbPressWait;
-if strcmp(KbName(keyCode), 'ESCAPE')
+Key = KbName(keyCode);
+if iscell(Key)
+    Key = Key{1};
+end
+if strcmp(Key, 'ESCAPE')
     sca;
     return;
 end
@@ -622,6 +674,11 @@ for n = 1:NoMiniBlocks
             [secs, keyCode, deltaSecs] = KbPressWait;
             
             Resp = KbName(keyCode);
+            
+            if iscell(Resp)
+                Resp = Resp{1};
+            end
+            
             if strcmp(Resp, 'ESCAPE')
                 sca;
                 return;
@@ -651,7 +708,7 @@ for n = 1:NoMiniBlocks
                 vbl = Screen('flip', window);
                 WaitSecs(0.5);
             else
-                DrawFormattedText(window, 'Falsch, die richtige Antwort wäre:', 'center', 'center', white);  % ask
+                DrawFormattedText(window, 'Falsch, die richtige Antwort wÃ¤re:', 'center', 'center', white);  % ask
                 vbl = Screen('flip', window);
                 WaitSecs(2);
             end  
@@ -710,7 +767,7 @@ for n = 1:NoMiniBlocks
 
 %%%%%%% SHORT BREAK%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-DrawFormattedText(window, 'Als nächstes zeige ich Ihnen eine Besonderheit des Kommandos (S)prung.',...
+DrawFormattedText(window, 'Als nÃ¤chstes zeige ich Ihnen eine Besonderheit des Kommandos (S)prung.',...
                   'center', 'center', white);
                                 
 Screen('flip', window);
@@ -721,8 +778,8 @@ WaitSecs(3.);
 % %%%%%%%%%%%% PRACTISE JUMP ACTION IN LOW NOISE%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-text = ['Im richtigen Experiment kann es passieren, dass Ihre Reise mit (S)prung unzuverlässig ist.'...
-    '\n\n\n\n In solchen Fällen verfehlt das Raumschiff den Zielplaneten'...
+text = ['Im richtigen Experiment kann es passieren, dass Ihre Reise mit (S)prung unzuverlÃ¤ssig ist.'...
+    '\n\n\n\n In solchen FÃ¤llen verfehlt das Raumschiff den Zielplaneten'...
     '\n\n und landet stattdessen auf einem der beiden Nachbarplaneten des Zielplaneten.'];
 
       
@@ -730,14 +787,18 @@ text = ['Im richtigen Experiment kann es passieren, dass Ihre Reise mit (S)prung
 DrawFormattedText(window, text, 'center', screenYpixels * 0.25, white);
 
 % Press Key to continue  
-DrawFormattedText(window, 'Drücken Sie eine Taste, um fortzufahren.', ...
+DrawFormattedText(window, 'DrÃ¼cken Sie eine Taste, um fortzufahren.', ...
                   'center', screenYpixels*0.9);
 
 % Flip to the screen
 Screen('Flip', window);
 
 [secs, keyCode, deltaSecs] = KbPressWait;
-if strcmp(KbName(keyCode), 'ESCAPE')
+Key = KbName(keyCode);
+if iscell(Key)
+    Key = Key{1};
+end
+if strcmp(Key, 'ESCAPE')
     sca;
     return;
 end
@@ -758,14 +819,18 @@ Screen('DrawTexture', window, ReiseTexture);
 DrawFormattedText(window, text, 'center', screenYpixels * 0.1, white);
 
 % Press Key to continue  
-DrawFormattedText(window, 'Drücken Sie eine Taste, um fortzufahren.', ...
+DrawFormattedText(window, 'DrÃ¼cken Sie eine Taste, um fortzufahren.', ...
                   'center', screenYpixels*0.95);
 
 % Flip to the screen
 Screen('Flip', window);
 
 [secs, keyCode, deltaSecs] = KbPressWait;
-if strcmp(KbName(keyCode), 'ESCAPE')
+Key = KbName(keyCode);
+if iscell(Key)
+    Key = Key{1};
+end
+if strcmp(Key, 'ESCAPE')
     sca;
     return;
 end
@@ -775,11 +840,11 @@ end
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 text = ['In manchen Planetensystemen befinden sich Asteroiden.'...
-        '\n\n In diesen passiert es besonders häufig, dass Sie den Zielplaneten bei (S)prung verfehlen.'...
+        '\n\n In diesen passiert es besonders hÃ¤ufig, dass Sie den Zielplaneten bei (S)prung verfehlen.'...
         '\n\n In den Planetensystemen ohne Asteroiden passiert das im Vergleich viel seltener.'...
-        '\n\n\n\n\n\n Um Ihnen ein Gefühl dafür zu geben, können Sie (S)prung jetzt in beiden Bedingungen ausprobieren.'...
+        '\n\n\n\n\n\n Um Ihnen ein GefÃ¼hl dafÃ¼r zu geben, kÃ¶nnen Sie (S)prung jetzt in beiden Bedingungen ausprobieren.'...
         '\n\n Beachten Sie, dass das Reisemuster dabei gleich bleibt und'...
-        '\n\n lediglich weniger zuverlässig ist.']; 
+        '\n\n lediglich weniger zuverlÃ¤ssig ist.']; 
 
 
 
@@ -788,35 +853,43 @@ text = ['In manchen Planetensystemen befinden sich Asteroiden.'...
 DrawFormattedText(window, text,'center', screenYpixels * 0.10, white);
 
 % Press Key to continue  
-DrawFormattedText(window, 'Drücken Sie eine Taste, um fortzufahren.', ...
+DrawFormattedText(window, 'DrÃ¼cken Sie eine Taste, um fortzufahren.', ...
                   'center', screenYpixels*0.9);
 
 Screen('flip', window);
 
 [secs, keyCode, deltaSecs] = KbPressWait;
-if strcmp(KbName(keyCode), 'ESCAPE')
+Key = KbName(keyCode);
+if iscell(Key)
+    Key = Key{1};
+end
+if strcmp(Key, 'ESCAPE')
     sca;
     return;
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 text = ['Wir fangen mit Planetensystemen ohne Asteroiden an.'...
-        '\n\n Hier landen Sie, wenn Sie (S)prung wählen, fast immer auf dem erwarteten Zielplaneten.'...
-        '\n\n Hinweis: Die Häufigkeit mit der Sie in dieser Bedingung Ihren Zielplaneten verfehlen,'...
-        '\n\n ist über das gesamte Experiment gleich.'];
+        '\n\n Hier landen Sie, wenn Sie (S)prung wÃ¤hlen, fast immer auf dem erwarteten Zielplaneten.'...
+        '\n\n Hinweis: Die HÃ¤ufigkeit mit der Sie in dieser Bedingung Ihren Zielplaneten verfehlen,'...
+        '\n\n ist Ã¼ber das gesamte Experiment gleich.'];
 
 
 % Draw all the text in one go
 DrawFormattedText(window, text,'center', screenYpixels * 0.10, white);
 
 % Press Key to continue  
-DrawFormattedText(window, 'Drücken Sie eine Taste, um fortzufahren.', ...
+DrawFormattedText(window, 'DrÃ¼cken Sie eine Taste, um fortzufahren.', ...
                   'center', screenYpixels*0.9);
 
 Screen('flip', window);
 
 [secs, keyCode, deltaSecs] = KbPressWait;
-if strcmp(KbName(keyCode), 'ESCAPE')
+Key = KbName(keyCode);
+if iscell(Key)
+    Key = Key{1};
+end
+if strcmp(Key, 'ESCAPE')
     sca;
     return;
 end
@@ -849,10 +922,14 @@ for n = 1:NoMiniBlocks
 
             % Wait for a key press
             [secs, keyCode, deltaSecs] = KbPressWait;
-            if strcmp(KbName(keyCode), 'ESCAPE')
+            Key = KbName(keyCode);
+            if iscell(Key)
+                Key = Key{1};
+            end
+            if strcmp(Key, 'ESCAPE')
                 sca;
                 return;
-            elseif strcmp(KbName(keyCode), 's')
+            elseif strcmp(Key, 's')
                 p = state_transition_matrix(3, start, :);
                 next = find(cumsum(p)>=rnd_val(t),1);
                 if next ~= jumps(start)
@@ -916,7 +993,7 @@ for n = 1:NoMiniBlocks
                end 
                
             else
-               DrawFormattedText(window, 'Bitte S drücken', 'center', 'center', white);
+               DrawFormattedText(window, 'Bitte S drÃ¼cken', 'center', 'center', white);
                Screen('Flip', window); 
                WaitSecs(1);                   
             end
@@ -930,27 +1007,31 @@ end
 
 text = ['Jetzt lernen Sie Planetensysteme mit Asteroiden kennen.'...
         '\n\n\n\n Ob Sie sich in einem Planetensystem mit Asteroiden befinden,'...
-        '\n\n können Sie immer am Hintergrund erkennen.'...
-        '\n\n\n\n In diesen Bedingungen ist das Kommando (S)prung hochgradig unzuverlässig.' ... 
-        '\n\n\n\n Um Ihnen auch hierfür ein Gefühl zu geben, können Sie nun auch hier (S)prung'...
+        '\n\n kÃ¶nnen Sie immer am Hintergrund erkennen.'...
+        '\n\n\n\n In diesen Bedingungen ist das Kommando (S)prung hochgradig unzuverlÃ¤ssig.' ... 
+        '\n\n\n\n Um Ihnen auch hierfÃ¼r ein GefÃ¼hl zu geben, kÃ¶nnen Sie nun auch hier (S)prung'...
         '\n\n ein paar Mal ausprobieren.'...
         '\n\n\n\n Beachten Sie, dass auch hier das Reisemuster gleich bleibt,'...
         '\n\n aber es auch wahrscheinlicher wird, dass Sie den Zielplaneten verfehlen.'...
-        '\n\n Auch in dieser Bedingung bleibt die Häufigkeit, mit der Sie ihren Zielplaneten verfehlen, gleich.']; 
+        '\n\n Auch in dieser Bedingung bleibt die HÃ¤ufigkeit, mit der Sie ihren Zielplaneten verfehlen, gleich.']; 
 
 
 % Draw all the text in one go
 DrawFormattedText(window, text, 'center', screenYpixels * 0.15, white);
 
 % Press Key to continue  
-DrawFormattedText(window, 'Drücken Sie eine Taste, um fortzufahren.', ...
+DrawFormattedText(window, 'DrÃ¼cken Sie eine Taste, um fortzufahren.', ...
                   'center', screenYpixels*0.9);
 
 % Flip to the screen
 Screen('Flip', window);
 
 [secs, keyCode, deltaSecs] = KbPressWait;
-if strcmp(KbName(keyCode), 'ESCAPE')
+Key = KbName(keyCode);
+if iscell(Key)
+    Key = Key{1};
+end
+if strcmp(Key, 'ESCAPE')
     sca;
     return;
 end
@@ -1002,10 +1083,14 @@ for t = 1:NoTrials
 
         % Wait for a key press
         [secs, keyCode, deltaSecs] = KbPressWait;
-        if strcmp(KbName(keyCode), 'ESCAPE')
+        Key = KbName(keyCode);
+        if iscell(Key)
+            Key = Key{1};
+        end
+        if strcmp(Key, 'ESCAPE')
             sca;
             return;
-        elseif strcmp(KbName(keyCode), 's')
+        elseif strcmp(Key, 's')
             p = state_transition_matrix(4, start, :);
             next = find(cumsum(p)>=rnd_val(t),1);
             
@@ -1078,7 +1163,7 @@ for t = 1:NoTrials
                 break;
            end 
         else 
-              DrawFormattedText(window, 'Bitte S drücken', 'center', 'center', white);
+              DrawFormattedText(window, 'Bitte S drÃ¼cken', 'center', 'center', white);
               Screen('Flip', window); 
               WaitSecs(1);                   
         end
@@ -1091,12 +1176,12 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % text
-text = ['Zusätzlich zu dem Treibstoff, der Sie das Reisen kostet,' ...
+text = ['ZusÃ¤tzlich zu dem Treibstoff, der Sie das Reisen kostet,' ...
         '\n\n kann Sie auch das Landen auf einem Planeten Treibstoff kosten,'...
-        '\n\n aber Sie können auf manchen Planeten auch zusätzlichen Treibstoff finden.'...
-        '\n\n\n\n Ob und wie viel Sie gewinnen oder verlieren hängt davon ab, auf welchem Zielplaneten Sie landen.'...
-        '\n\n\n\n Um zu überleben, ist es wichtig, dass Sie versuchen so viel Treibstoff wie möglich zu sammeln.'...
-        '\n\n\n\n Hierzu zeige ich Ihnen im nächsten Schritt,' ...
+        '\n\n aber Sie kÃ¶nnen auf manchen Planeten auch zusÃ¤tzlichen Treibstoff finden.'...
+        '\n\n\n\n Ob und wie viel Sie gewinnen oder verlieren hÃ¤ngt davon ab, auf welchem Zielplaneten Sie landen.'...
+        '\n\n\n\n Um zu Ã¼berleben, ist es wichtig, dass Sie versuchen so viel Treibstoff wie mÃ¶glich zu sammeln.'...
+        '\n\n\n\n Hierzu zeige ich Ihnen im nÃ¤chsten Schritt,' ...
         '\n\n welche Planeten gute und welche schlechte Treibstoffquellen sind.'];
 
 % Draw all the text in one go
@@ -1104,14 +1189,18 @@ DrawFormattedText(window, text,...
     'center', screenYpixels * 0.25, white);
 
 % Press Key to continue  
-DrawFormattedText(window, 'Drücken Sie eine Taste, um fortzufahren.', ...
+DrawFormattedText(window, 'DrÃ¼cken Sie eine Taste, um fortzufahren.', ...
                   'center', screenYpixels*0.9);
               
 % Flip to the screen
 Screen('Flip', window);
 
 [secs, keyCode, deltaSecs] = KbPressWait;
-if strcmp(KbName(keyCode), 'ESCAPE')
+Key = KbName(keyCode);
+if iscell(Key)
+    Key = Key{1};
+end
+if strcmp(Key, 'ESCAPE')
     sca;
     return;
 end
@@ -1153,18 +1242,22 @@ Screen('DrawText', window, ...
 Screen('DrawText', window, ...
     '+20', xCenter+575, yCenter+150); 
     
-DrawFormattedText(window, 'Bitte merken Sie sich die Treibstoffbelohnung für jeden Planeten: ', ...
+DrawFormattedText(window, 'Bitte merken Sie sich die Treibstoffbelohnung fÃ¼r jeden Planeten: ', ...
                   'center',  screenYpixels*0.25, white); 
 
 % Press Key to continue  
-DrawFormattedText(window, 'Drücken Sie eine Taste, um fortzufahren.', ...
+DrawFormattedText(window, 'DrÃ¼cken Sie eine Taste, um fortzufahren.', ...
                   'center', screenYpixels*0.8); 
 
 % Flip to the screen
 Screen('Flip', window);
 
 [secs, keyCode, deltaSecs] = KbPressWait;
-if strcmp(KbName(keyCode), 'ESCAPE')
+Key = KbName(keyCode);
+if iscell(Key)
+    Key = Key{1};
+end
+if strcmp(Key, 'ESCAPE')
     sca;
     return;
 end
@@ -1173,10 +1266,10 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % text
-text = ['In jedem neuen Planetensystem können Sie immer nur 2 oder 3 Planeten bereisen und dort Treibstoff sammeln.'...
-         '\n\n Die Anzahl der grünen Quadrate zeigt Ihnen an, wie oft Sie reisen müssen,'...
-         '\n\n bevor es weiter zum nächsten Planetensystem geht.',...
-         '\n\n\n\n Um zum nächsten Planetensystem reisen zu können, müssen Sie also alle grünen Quadrate aufbrauchen.'];
+text = ['In jedem neuen Planetensystem kÃ¶nnen Sie immer nur 2 oder 3 Planeten bereisen und dort Treibstoff sammeln.'...
+         '\n\n Die Anzahl der grÃ¼nen Quadrate zeigt Ihnen an, wie oft Sie reisen mÃ¼ssen,'...
+         '\n\n bevor es weiter zum nÃ¤chsten Planetensystem geht.',...
+         '\n\n\n\n Um zum nÃ¤chsten Planetensystem reisen zu kÃ¶nnen, mÃ¼ssen Sie also alle grÃ¼nen Quadrate aufbrauchen.'];
 
 
 % Draw all the text in one go
@@ -1184,14 +1277,18 @@ DrawFormattedText(window, text,...
     'center', screenYpixels * 0.25, white);
 
 % Press Key to continue  
-DrawFormattedText(window, 'Drücken Sie eine Taste, um fortzufahren.', ...
+DrawFormattedText(window, 'DrÃ¼cken Sie eine Taste, um fortzufahren.', ...
                   'center', screenYpixels*0.8); 
 
 % Flip to the screen
 Screen('Flip', window);
 
 [secs, keyCode, deltaSecs] = KbPressWait;
-if strcmp(KbName(keyCode), 'ESCAPE')
+Key = KbName(keyCode);
+if iscell(Key)
+    Key = Key{1};
+end
+if strcmp(Key, 'ESCAPE')
     sca;
     return;
 end
@@ -1229,13 +1326,17 @@ start = 1;
 Screen('DrawTexture', window, RocketTexture, [], rocketPos(:,start)');
     
 % Press Key to continue  
-DrawFormattedText(window, 'Drücken Sie eine Taste, um fortzufahren.', ...
+DrawFormattedText(window, 'DrÃ¼cken Sie eine Taste, um fortzufahren.', ...
                   'center', screenYpixels*0.9);
 
 vbl = Screen('flip', window);
     
 [secs, keyCode, deltaSecs] = KbPressWait;
-if strcmp(KbName(keyCode), 'ESCAPE')
+Key = KbName(keyCode);
+if iscell(Key)
+    Key = Key{1};
+end
+if strcmp(Key, 'ESCAPE')
     sca;
     return;
 end
@@ -1244,31 +1345,35 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Summary text
-text = ['Ich fasse noch einmal alles für Sie zusammen:' ...
-        '\n\n\n Ihre Aufgabe ist es, möglichst viel Treibstoff zu sammeln, indem Sie von Planet zu Planet reisen.'... 
+text = ['Ich fasse noch einmal alles fÃ¼r Sie zusammen:' ...
+        '\n\n\n Ihre Aufgabe ist es, mÃ¶glichst viel Treibstoff zu sammeln, indem Sie von Planet zu Planet reisen.'... 
         '\n\n\n  Sie haben entweder 2 oder 3 Reisen pro Planetensystem.'...
-        '\n\n Sie können immer entweder zum Nachbarplaneten im Uhrzeigersinn reisen, was 2 Treibstoffeinheiten kostet,'...
-        '\n\n oder für 5 Treibstoffeinheiten springen. Je nachdem auf welchem Planeten Sie landen,'...
+        '\n\n Sie kÃ¶nnen immer entweder zum Nachbarplaneten im Uhrzeigersinn reisen, was 2 Treibstoffeinheiten kostet,'...
+        '\n\n oder fÃ¼r 5 Treibstoffeinheiten springen. Je nachdem auf welchem Planeten Sie landen,'...
         '\n\n gewinnen oder verlieren Sie Treibstoff.'... 
         '\n\n\n Der blaue Balken am oberen Rand zeigt Ihnen Ihren aktuellen Treibstoffstand.'...     
         '\n\n\n Manchmal passiert es beim Springen, dass Sie, statt auf dem erwarteten Zielplaneten,'...
-        '\n\n auf einem seiner Nachbarplaneten landen. Das passiert besonders häufig in Planetensystemen'...
+        '\n\n auf einem seiner Nachbarplaneten landen. Das passiert besonders hÃ¤ufig in Planetensystemen'...
         '\n\n mit Asteroiden, kann aber auch (selten) in den anderen Planetensystemen passieren.'...
-        '\n\n Die unterschiedlichen Häufigkeiten, wie oft Sie in den beiden Bedingungen den Zielplaneten verfehlen,'...
-        '\n\n bleiben während des gesamten Experimentes gleich.'];
+        '\n\n Die unterschiedlichen HÃ¤ufigkeiten, wie oft Sie in den beiden Bedingungen den Zielplaneten verfehlen,'...
+        '\n\n bleiben wÃ¤hrend des gesamten Experimentes gleich.'];
      
 % Draw all the text in one go
 DrawFormattedText(window, text, 'center', screenYpixels * 0.1, white);
 
 % Press Key to continue  
-DrawFormattedText(window, 'Drücken Sie eine Taste, um fortzufahren.', ...
+DrawFormattedText(window, 'DrÃ¼cken Sie eine Taste, um fortzufahren.', ...
                   'center', screenYpixels*0.95);
 
 % Flip to the screen
 Screen('Flip', window);
 
 [secs, keyCode, deltaSecs] = KbPressWait;
-if strcmp(KbName(keyCode), 'ESCAPE')
+Key = KbName(keyCode);
+if iscell(Key)
+    Key = Key{1};
+end
+if strcmp(Key, 'ESCAPE')
     sca;
     return;
 end
@@ -1285,14 +1390,18 @@ text = ['Hier noch ein kleiner Tipp:' ...
 DrawFormattedText(window, text, 'center', screenYpixels * 0.25, white);
 
 % Press Key to continue  
-DrawFormattedText(window, 'Drücken Sie eine Taste, um fortzufahren.', ...
+DrawFormattedText(window, 'DrÃ¼cken Sie eine Taste, um fortzufahren.', ...
                   'center', screenYpixels*0.9);
 
 % Flip to the screen
 Screen('Flip', window);
 
 [secs, keyCode, deltaSecs] = KbPressWait;
-if strcmp(KbName(keyCode), 'ESCAPE')
+Key = KbName(keyCode);
+if iscell(Key)
+    Key = Key{1};
+end
+if strcmp(Key, 'ESCAPE')
     sca;
     return;
 end
@@ -1300,9 +1409,9 @@ end
 %%%%%%%%%%% TIPP 2 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-text = [' Wenn Sie nur einen Schritt im Voraus planen, würden Sie wahrscheinlich direkt zum blauen Planeten springen.' ...
-        '\n\n\n Danach wären Sie jedoch gezwungen, auf einen der roten Planeten zu springen.'...
-        '\n\n Insgesamt würden Sie so mindestens 17 Treibstoffeinheiten verlieren (-5 +10 -2 -20)'...
+text = [' Wenn Sie nur einen Schritt im Voraus planen, wÃ¼rden Sie wahrscheinlich direkt zum blauen Planeten springen.' ...
+        '\n\n\n Danach wÃ¤ren Sie jedoch gezwungen, auf einen der roten Planeten zu springen.'...
+        '\n\n Insgesamt wÃ¼rden Sie so mindestens 17 Treibstoffeinheiten verlieren (-5 +10 -2 -20)'...
         '\n\n\n\n ']; 
 
     
@@ -1316,14 +1425,18 @@ DrawFormattedText(window, text,'center', screenYpixels * 0.10, white);
 
 
 % Press Key to continue  
-DrawFormattedText(window, 'Drücken Sie eine Taste, um fortzufahren.', ...
+DrawFormattedText(window, 'DrÃ¼cken Sie eine Taste, um fortzufahren.', ...
                   'center', screenYpixels*0.9);
 
 % Flip to the screen
 Screen('Flip', window);
 
 [secs, keyCode, deltaSecs] = KbPressWait;
-if strcmp(KbName(keyCode), 'ESCAPE')
+Key = KbName(keyCode);
+if iscell(Key)
+    Key = Key{1};
+end
+if strcmp(Key, 'ESCAPE')
     sca;
     return;
 end
@@ -1331,9 +1444,9 @@ end
 %%%%%%%%%%% TIPP 2 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-text = [' In diesem Planetensystem wäre es also besser gewesen, erst wenige Punkte zu verlieren,' ...
+text = [' In diesem Planetensystem wÃ¤re es also besser gewesen, erst wenige Punkte zu verlieren,' ...
         '\n\n\n und erst danach zum blauen Planeten zu reisen.'...
-        '\n\n Insgesamt hätten Sie so nur 4 Treibstoffeinheiten verloren (-2 -10 +10 -2)'...
+        '\n\n Insgesamt hÃ¤tten Sie so nur 4 Treibstoffeinheiten verloren (-2 -10 +10 -2)'...
         '\n\n\n\n ']; 
 
     
@@ -1346,7 +1459,7 @@ Screen('DrawTexture', window, ReiseTexture);
 DrawFormattedText(window, text,'center', screenYpixels * 0.10, white);
 
 % Press Key to continue  
-DrawFormattedText(window, 'Drücken Sie eine Taste, um fortzufahren.', ...
+DrawFormattedText(window, 'DrÃ¼cken Sie eine Taste, um fortzufahren.', ...
                   'center', screenYpixels*0.9);
 
 
@@ -1354,7 +1467,11 @@ DrawFormattedText(window, 'Drücken Sie eine Taste, um fortzufahren.', ...
 Screen('Flip', window);
 
 [secs, keyCode, deltaSecs] = KbPressWait;
-if strcmp(KbName(keyCode), 'ESCAPE')
+Key = KbName(keyCode);
+if iscell(Key)
+    Key = Key{1};
+end
+if strcmp(Key, 'ESCAPE')
     sca;
     return;
 end
@@ -1363,8 +1480,8 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % text
-text = ['Sie können die Aufgabe nun ein paar Mal üben.'...
-        '\n\n Versuchen Sie dabei so zu planen, dass Sie insgesamt den bestmöglichen Reiseweg wählen.'];
+text = ['Sie kÃ¶nnen die Aufgabe nun ein paar Mal Ã¼ben.'...
+        '\n\n Versuchen Sie dabei so zu planen, dass Sie insgesamt den bestmÃ¶glichen Reiseweg wÃ¤hlen.'];
 
 
 % Draw all the text in one go
@@ -1372,14 +1489,18 @@ DrawFormattedText(window, text,...
     'center', screenYpixels*0.25, white);
 
 % Press Key to continue  
-DrawFormattedText(window, 'Drücken Sie eine Taste, um fortzufahren.', ...
+DrawFormattedText(window, 'DrÃ¼cken Sie eine Taste, um fortzufahren.', ...
                   'center', screenYpixels*0.8);
 
 % Flip to the screen
 Screen('Flip', window);
 
 [secs, keyCode, deltaSecs] = KbPressWait;
-if strcmp(KbName(keyCode), 'ESCAPE')
+Key = KbName(keyCode);
+if iscell(Key)
+    Key = Key{1};
+end
+if strcmp(Key, 'ESCAPE')
     sca;
     return;
 end
@@ -1399,7 +1520,7 @@ correctResponses = [[0 1 0]; [0 1 0]; [1 0 1]; [0 0 1]];
 
 for n = 1:NoMiniBlocks
     while true
-        text = ['In Kürze erreichen Sie ein neues Planetensystem...'];
+        text = ['In KÃ¼rze erreichen Sie ein neues Planetensystem...'];
     
         % Draw all the text in one go
         DrawFormattedText(window, text,...
@@ -1432,6 +1553,11 @@ for n = 1:NoMiniBlocks
             while true
                 [secs, keyCode, deltaSecs] = KbPressWait;
                 Key = KbName(keyCode);
+                                
+                if iscell(Key)
+                    Key = Key{1};
+                end
+
                 if strcmp(Key, 'RightArrow') || strcmp(Key, 's') || strcmp(Key, 'ESCAPE')
                     break;
                 end
@@ -1513,7 +1639,7 @@ for n = 1:NoMiniBlocks
 
         %% TEST FOR OPTIMAL TRAVEL PATH AND CREATE FEEDBACK %%
         if all(TestKey == correctResponses(n,:))
-            text = ['Sehr gut, Sie haben den optimalen Reiseweg gewählt.'];
+            text = ['Sehr gut, Sie haben den optimalen Reiseweg gewÃ¤hlt.'];
             correct = 1;
         else
             text = ['Guter Versuch, allerdings gibt es noch einen besseren Weg. Versuchen Sie es noch einmal...'];
@@ -1539,7 +1665,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % text
-text = ['Glückwunsch! Sie haben jetzt alles gelernt, was Sie für Ihr Weltraumabenteuer wissen müssen.' ... 
+text = ['GlÃ¼ckwunsch! Sie haben jetzt alles gelernt, was Sie fÃ¼r Ihr Weltraumabenteuer wissen mÃ¼ssen.' ... 
          '\n\n Bitte melden Sie sich beim Versuchsleiter.'];
 
 
