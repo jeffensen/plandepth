@@ -24,7 +24,7 @@ ns = 6
 no = 5
 
 import scipy.io as io
-exp = io.loadmat('./experiment/experimental_variables.mat')
+exp = io.loadmat('./experiment/experimental_variables_new.mat')
 starts = exp['startsExp'][:, 0] - 1
 planets = exp['planetsExp'] - 1
 vect = np.eye(5)[planets]
@@ -59,7 +59,7 @@ conditions[1, runs//2:] = torch.tensor(trials2, dtype=torch.long)
 agents = []
 simulations = []
 performance = []
-for i in range(3):
+for depth in range(3):
     
     # define space adventure task with aquired configurations
     # set number of trials to the max number of actions
@@ -75,7 +75,7 @@ for i in range(3):
                           runs=runs,
                           mini_blocks=mini_blocks,
                           trials=3,
-                          planning_depth=i+1)
+                          planning_depth=depth+1)
     
     agent.set_parameters()
     

@@ -1,101 +1,50 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from tqdm import tqdm
-
-import numpy as np
 
 import torch
-import torch.distributions.constraints as constraints 
-positive = constraints.positive
 
 import pyro
-from pyro.distributions import Normal, HalfCauchy, LogNormal
-from pyro.infer import SVI, Trace_ELBO
-from pyro.optim import Adam
-
-zeros = torch.zeros
-ones = torch.ones
+from pyro.distributions import Normal, HalfCauchy
+from pyro.infer.mcmc import MCMC, NUTS
 
 class BayesLinRegress(object):
     def __init__(self, X, y, idx):
-        self.x_data = torch.Tensor(X)
-        self.y_data = torch.Tensor(y).squeeze()
+        self.x_data = torch.from_numpy(X)
+        self.y_data = torch.from_numpy(y).squeeze()
         
-        self.N, self.f = X.shape
+        self.f, self.N = X.shape
         
-        self.loss = []
-        self.n = len(np.unique(idx))
-        self.idx = torch.LongTensor(idx)
-        
+        self.idx = torch.from_numpy(idx - 1)
+        self.n = len(torch.unique(self.idx))
+
     def model(self):
-        # Group level hyper prior for sigma
-        rho = pyro.sample('rho', HalfCauchy(zeros(1),ones(1)))
+        
+        rho = pyro.sample('rho', HalfCauchy(1.))
         
         # Per subject model uncertainty
-        sigma = pyro.sample('sigma', HalfCauchy(zeros(self.n), rho*ones(self.n)).independent(1))    
+        with pyro.plate('subjects', self.n):
+            sigma = pyro.sample('sigma', HalfCauchy(1))
+            with pyro.plate('factors', self.f):
+                # Factor level hyper prior for prior parameter uncertainty
+                lam = pyro.sample('lam', HalfCauchy(1.))
         
-        # Factor level hyper prior for prior parameter uncertainty
-        lam = pyro.sample('lam', HalfCauchy(zeros(self.n, self.f), ones(self.n, self.f)).independent(2))
+                # Priors over the parameters
+                weights = pyro.sample('weights', Normal(0., 1.))
         
-        #Per subject prior uncertainty over weights
-        phi = pyro.sample('phi', HalfCauchy(zeros(self.f), ones(self.f)).independent(1))
-        
-        # Priors over the parameters
-        mu0 = zeros(self.n, self.f) 
-        sigma0 = phi[None,:]*lam*sigma[:,None]
-        weights = pyro.sample('weights', Normal(mu0, sigma0).independent(2))
-        
-        
-        #Prediction
-        obs = self.y_data
-        with pyro.iarange('map', len(obs)):
-            pred = (weights[self.idx]*self.x_data).sum(dim=-1)
-            pyro.sample('obs', Normal(pred, sigma[self.idx]), obs = obs)
+        # Prediction
+        pred = ((rho*lam*weights)[:, self.idx]*self.x_data).sum(-2)
+           
+        # Observation likelihood
+        with pyro.plate('data', self.N):
+            pyro.sample('obs', Normal(pred, sigma[self.idx]), obs=self.y_data)
         
     
-    def guide(self):
-        mu_r = pyro.param('mu_r', zeros(1,requires_grad = True))
-        sigma_r = pyro.param('sigma_r', ones(1,requires_grad = True), constraint=positive)
-        pyro.sample('rho', LogNormal(mu_r, sigma_r))
-
-        mu_f = pyro.param('mu_f', zeros(self.f, requires_grad = True))
-        sigma_f = pyro.param('sigma_f', ones(self.f,requires_grad = True), constraint=positive)
-        pyro.sample('phi', LogNormal(mu_f, sigma_f).independent(1))
-        
-        mu_s = pyro.param('mu_s', zeros(self.n,requires_grad = True))
-        sigma_s = pyro.param('sigma_s', ones(self.n,requires_grad = True), constraint=positive)
-        pyro.sample('sigma', LogNormal(mu_s, sigma_s).independent(1))
-        
-        mu_l = pyro.param('mu_l', zeros(self.n, self.f,requires_grad = True))
-        sigma_l = pyro.param('sigma_l', ones(self.n, self.f,requires_grad = True), constraint=positive)
-        pyro.sample('lam', LogNormal(mu_l, sigma_l).independent(2))
-
-        mu_w = pyro.param('mu_w', zeros(self.n, self.f, requires_grad = True))
-        sigma_w = pyro.param('sigma_w',  ones(self.n, self.f,requires_grad = True), constraint=positive)
-        pyro.sample('weights', Normal(mu_w, sigma_w).independent(2))
-        
-    
-    def fit(self, n_iterations = 1000):
+    def fit(self, num_samples = 1500, num_chains=4, warmup_steps=500):
         pyro.clear_param_store()
-        svi = SVI(model=self.model,
-                  guide=self.guide,
-                  optim=Adam({"lr": 0.01}),
-                  loss=Trace_ELBO())
-
-        for step in tqdm(range(n_iterations)):
-            self.loss.append(svi.step())
+        nuts_kernel = NUTS(self.model, adapt_step_size=True, jit_compile=True, ignore_jit_warnings=True)
+        mcmc = MCMC(nuts_kernel, num_samples=num_samples, num_chains=num_chains, warmup_steps=warmup_steps)
+        mcmc.run()
+        samples = {k: v.detach().cpu().numpy() for k, v in mcmc.get_samples().items()}
         
-        results = {}
-        results['mean_beta'] = pyro.param('mu_w').data.numpy()
-        results['sigma_beta'] = pyro.param('sigma_w').data.numpy()
-        results['mean_std'] = pyro.param('mu_s').data.numpy()
-        results['sigma_std'] = pyro.param('sigma_s').data.numpy()
-        results['mean_rho'] = pyro.param('mu_r').data.numpy()
-        results['sigma_rho'] = pyro.param('sigma_r').data.numpy()
-        results['mean_lam'] = pyro.param('mu_l').data.numpy()
-        results['sigma_lam'] = pyro.param('sigma_l').data.numpy()
-        results['mean_phi'] = pyro.param('mu_f').data.numpy()
-        results['sigma_phi'] = pyro.param('sigma_f').data.numpy()
-        
-        return results
+        return samples
