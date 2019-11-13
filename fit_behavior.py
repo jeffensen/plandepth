@@ -59,7 +59,7 @@ def map_noise_to_values(strings):
         elif s[0] == 'low':
             yield 0
         else:
-            yield np.nap
+            yield np.nan
         
 from pathlib import Path
 home = str(Path.home())    

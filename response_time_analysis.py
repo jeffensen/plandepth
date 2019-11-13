@@ -31,7 +31,7 @@ def get_failures(states, responses):
     failures[failures < 0] = 0
     return failures
 
-path = '../Dropbox/Experiments/Data/Plandepth/Pilot/'
+path = '/home/dima/tudcloud/Shared/Experiments/Plandepth/Pilot - Healthy/'
 fnames = []
 for root, dirs, files in os.walk(path):
     fnames.extend(files)
@@ -160,10 +160,6 @@ with pm.Model() as model:
     
     #Data likelihood
     y = pm.Normal('y', mu = mu, sd=sd, observed=observed)
-    
-#with model:
-#    approx = pm.fit(method = 'advi', n = 50000)
-#trace = approx.sample(100000)
     
 with model:
     trace = pm.sample(draws = 2000, njobs = 4)

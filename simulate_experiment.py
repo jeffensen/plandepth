@@ -79,7 +79,7 @@ for depth in range(3):
     
     agent.set_parameters()
     
-    # simulate behavior
+    # simulate experiment
     sim = Simulator(space_advent, 
                     agent, 
                     runs=runs, 
@@ -100,13 +100,14 @@ for depth in range(3):
     points[outcomes<0] = 0
     performance.append(points.sum(dim=-1))
     
+start_points = 1000
 for i in range(3):
     plt.figure()
-    plt.plot(performance[i].numpy().cumsum(axis=-1).T + 990, 'b')
+    plt.plot(performance[i].numpy().cumsum(axis=-1).T + start_points, 'b')
 
 plt.figure()
 labels = [r'd=1', r'd=2', r'd=3']
 for i in range(3):
-    plt.hist(performance[i].numpy().cumsum(axis=-1)[...,-1] + 990, label=labels[i])
+    plt.hist(performance[i].numpy().cumsum(axis=-1)[...,-1] + start_points, label=labels[i])
 plt.vlines(0, 0, 30, linestyle='--', lw=3)
 plt.legend()

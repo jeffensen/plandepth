@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+
+"""
+Here we will test the inference procedure for the linear regression model. Use the same predictors as in the 
+analysis of the behavioural data with a set of known regression coefficients to thest if we can 
+infer the correct (non-zero) coefficients.
+"""
 import sys
 from tqdm import tqdm
 import pandas as pd

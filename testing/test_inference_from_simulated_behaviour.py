@@ -5,7 +5,11 @@
 """
 Created on Fri Dec 21 17:23:10 2018
 
-Test inference of model 
+Here we will test the validity of the inference procedure for estimating free parameters of the behavioural model. 
+In a frist step we will simulate behaviour from the agents with a fixed planning depth and try to recover model 
+parameters as mini-block dependent planning depth. In the second step, we will simulate behaviour from agents 
+with varying planning depth and try to determine the estimation accuracy of the free model paramters and 
+mini-block dependent planning depth.
 
 @author: Dimitrije Markovic
 """
