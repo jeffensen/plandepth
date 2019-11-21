@@ -1,50 +1,81 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+from time import time_ns as time
+import jax.numpy as np
+from jax import random
+from jax.scipy.special import logsumexp
 
-import torch
+import numpyro as npyro
 
-import pyro
-from pyro.distributions import Normal, HalfCauchy
-from pyro.infer.mcmc import MCMC, NUTS
+import numpyro.distributions as dist
+from numpyro.infer import MCMC, NUTS, log_likelihood, Predictive
+
 
 class BayesLinRegress(object):
-    def __init__(self, X, y, idx):
-        self.x_data = torch.from_numpy(X)
-        self.y_data = torch.from_numpy(y).squeeze()
+    def __init__(self, X, y, const=True):
+        self.N, self.ns, self.nf = X.shape
         
-        self.f, self.N = X.shape
+        self.x_data = X
         
-        self.idx = torch.from_numpy(idx - 1)
-        self.n = len(torch.unique(self.idx))
+        self.y_data = y
+        
+        q, r = np.linalg.qr(self.x_data.reshape(-1, self.nf))
+        self.Q = q.reshape(self.N, self.ns, self.nf) * self.N
+        self.R_T = r.T / self.N
 
+        self.rng_key = random.PRNGKey(time())        
+        
     def model(self):
+        nf = self.nf
+        ns = self.ns
         
-        rho = pyro.sample('rho', HalfCauchy(1.))
+        m = npyro.sample('m', dist.Normal(np.zeros(nf), 10.))
+                
+        sigma = npyro.sample('sigma', dist.InverseGamma(2.*np.ones((ns,)), 1.))
         
-        # Per subject model uncertainty
-        with pyro.plate('subjects', self.n):
-            sigma = pyro.sample('sigma', HalfCauchy(1))
-            with pyro.plate('factors', self.f):
-                # Factor level hyper prior for prior parameter uncertainty
-                lam = pyro.sample('lam', HalfCauchy(1.))
+        tau = npyro.sample('tau', dist.HalfNormal(.1*np.ones((ns,))))
         
-                # Priors over the parameters
-                weights = pyro.sample('weights', Normal(0., 1.))
+        with npyro.plate('facts', nf):
+            with npyro.plate('subs', ns):
+                lam = npyro.sample('lam', dist.HalfCauchy(1.))
+                var_theta = npyro.sample('var_theta', dist.Normal(0., 1.))
         
-        # Prediction
-        pred = ((rho*lam*weights)[:, self.idx]*self.x_data).sum(-2)
-           
-        # Observation likelihood
-        with pyro.plate('data', self.N):
-            pyro.sample('obs', Normal(pred, sigma[self.idx]), obs=self.y_data)
+        beta = m + lam * tau.reshape(-1, 1)*var_theta
         
+        theta = beta @ self.R_T
+        
+        mu = (theta * self.Q).sum(-1) 
+        
+        npyro.sample('obs', dist.Normal(mu, sigma), obs=self.y_data)
+
+    def fit(self, num_samples = 2000, warmup_steps=2000, summary=True):
+        self.rng_key, rng_key_ = random.split(self.rng_key)
+        
+        nuts_kernel = NUTS(self.model)
+        mcmc = MCMC(nuts_kernel, warmup_steps, num_samples)
+        mcmc.run(rng_key_)
+        
+        if summary:
+            mcmc.print_summary()
+        
+        samples = mcmc.get_samples()
+        self.mcmc = mcmc
+        self.samples = samples
+        
+        beta = np.expand_dims(samples['m'], -2) \
+            + samples['var_theta'] * samples['lam'] * np.expand_dims(samples['tau'], -1)
+        
+        return {'beta': beta}
     
-    def fit(self, num_samples = 1500, num_chains=4, warmup_steps=500):
-        pyro.clear_param_store()
-        nuts_kernel = NUTS(self.model, adapt_step_size=True, jit_compile=True, ignore_jit_warnings=True)
-        mcmc = MCMC(nuts_kernel, num_samples=num_samples, num_chains=num_chains, warmup_steps=warmup_steps)
-        mcmc.run()
-        samples = {k: v.detach().cpu().numpy() for k, v in mcmc.get_samples().items()}
+    def post_pred_log_likelihood(self):
         
-        return samples
+        log_lk = log_likelihood(self.model, self.samples)['obs']
+        n = log_lk.shape[0]
+        return (logsumexp(log_lk, 0) - np.log(n)).sum()
+    
+    def predictions(self):
+        self.rng_key, rng_key_ = random.split(self.rng_key)
+        predictive = Predictive(self.model, self.samples)
+        
+        return predictive.get_samples(rng_key_)['obs']

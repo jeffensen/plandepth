@@ -6,12 +6,15 @@ Created on Thu Feb  8 11:50:01 2018
 @author: markovic
 """
 import os
-import pymc3 as pm
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
-sns.set(context = 'talk', style = 'white', color_codes = True)
+
+plt.style.use('seaborn-notebook')
+sns.set(style = 'white')
+
+from bayesian_linear_regression import BayesLinRegress
 
 def get_failures(states, responses):
     transitions = np.array([4., 3., 4., 5., 1., 1.])
@@ -31,33 +34,25 @@ def get_failures(states, responses):
     failures[failures < 0] = 0
     return failures
 
-path = '/home/dima/tudcloud/Shared/Experiments/Plandepth/Pilot - Healthy/'
-fnames = []
-for root, dirs, files in os.walk(path):
-    fnames.extend(files)
+from pathlib import Path
+home = str(Path.home())
 
-files = []
-for f in fnames:
-    if f.split('_')[0] == 'Training':
-        pass
-    else:
-        files.append(f)
+path = home + '/tudcloud/Shared/Experiments/Plandepth/Main-Healthy/main/'
+fnames = os.listdir(path)
 
-fnames = np.sort(files)[3:]
-    
 from scipy import io
 
-data = pd.DataFrame(columns = ['log_rt', 'Gain', 'Subject', 'Phase', 'Order', 'NoTrials', 'BlockIndex'])
+data = pd.DataFrame()
 
+T = 100
 order = np.tile(range(1,5), (25,1)).flatten(order = 'F')
-blocks = np.arange(1,101)
-color = []
-states = []
+blocks = np.arange(1, T + 1)
 transitions = {0:4, 1:3, 2:4, 3:5, 4:2, 5:2}
+states = []
 responses = []
+
 n_subs = 0
 for i,f in enumerate(fnames):
-    parts = f.split('_')
     tmp = io.loadmat(path+f)
     points = tmp['data']['Points'][0, 0]
     rts = tmp['data']['Responses'][0,0]['RT'][0,0]
@@ -72,143 +67,149 @@ for i,f in enumerate(fnames):
     
         df = pd.DataFrame()
     
-        df['Gain']= np.diff(np.hstack([990, points]))
+        df['gain']= np.diff(np.hstack([990, points]))
     
-        df['Points'] = np.hstack([990, points])[:-1]
+        df['start_points'] = np.hstack([990, points])[:-1]
+        df['end_points'] = points
     
-        df['NoTrials'] = notrials
+        df['n_trials'] = notrials
     
-        df['log_rt']= np.log(np.nanmean(rts, axis = -1))
+        df['log_rt_1'] = np.log(rts[:, 0])
+        df['log_rt_sum'] = np.log(np.nansum(rts, -1)) 
 
-        df['Subject'] = n_subs
-    
+        df['subject'] = n_subs
+        df['block_number'] = blocks
+        
         if notrials[0] == 3:
-            df['Phase'] = np.hstack([order[50:], order[:50]])
-            df['Order'] = 2
-            df['BlockIndex'] = np.hstack([blocks[50:], blocks[:50]])
-            color.append('r')
-
+            df['phase'] = np.hstack([order[50:], order[:50]])
+            df['order'] = 2
+            df['block_index'] = np.hstack([blocks[50:], blocks[:50]])
+        
         else:
-            df['Phase'] = order
-            df['Order'] = 1
-            df['BlockIndex'] = blocks
-            color.append('b')
-    
-        data = data.append(df)
+            df['phase'] = order
+            df['order'] = 1
+            df['block_index'] = blocks
+            
+        data = data.append(df, ignore_index=True)
         n_subs += 1
 
-N = len(data)
+
+y1 = data['log_rt_1'].values.reshape(n_subs, T).T
+
+X1 = np.expand_dims(data['block_number'].values.astype(int).reshape(n_subs, T).T, -1)
+X2 = np.log(X1)
+
+X1 = X1 - X1.mean(0)
+X2 = X2 - X2.mean(0)
+
+X3 = np.concatenate([np.ones((T, n_subs, 1)), X2], -1)
+
+phases = data.phase.values.reshape(n_subs, T).T - 1
+
+X1 = np.concatenate([X1, np.eye(4)[phases]], -1)
+X2 = np.concatenate([X2, np.eye(4)[phases]], -1)
+
+start_points = data.start_points.values.reshape(n_subs, T).T
+start_points -= start_points.mean(0)
+
+X1 = np.concatenate([X1, np.expand_dims(start_points, -1)], -1)
+X2 = np.concatenate([X2, np.expand_dims(start_points, -1)], -1)
+X3 = np.concatenate([X3, np.expand_dims(start_points, -1)], -1)
+
+
+m1 = BayesLinRegress(X1, y1)
+m2 = BayesLinRegress(X2, y1)
+m3 = BayesLinRegress(X3, y1)
+
+samples_1 = []
+for i, m in enumerate([m1, m2, m3]):
+    samples_1.append(m.fit(num_samples=5000, warmup_steps=5000, summary=False))
+    # print posterior predictive log-likelihood
+    print('m{} ppll'.format(i+1), m.post_pred_log_likelihood())
+
+# We get approximately the following values for ppll
+# ppll(m1) = -3412, ppll(m2) = -3412, ppll(m3) = 3619
+# In conclusion removing phase basef dependency of response times reduces model evidence.
+
+    
+y2 = data['log_rt_sum'].values.reshape(n_subs, T).T
 
 states = np.array(states)
 responses = np.array(responses)
+failures = get_failures(states, responses).T
+failures -= failures.mean(0)
 
-sub_idx = data.Subject.values.astype(int)
-observed = data.log_rt.values
+X1 = np.concatenate([X1, np.expand_dims(failures, -1)], -1)
+X2 = np.concatenate([X2, np.expand_dims(failures, -1)], -1)
+X3 = np.concatenate([X3, np.expand_dims(failures, -1)], -1)
 
-failures = get_failures(states, responses).reshape(-1)
-success = np.sum(np.nan_to_num(responses), axis = -1).reshape(-1) - failures
+m4 = BayesLinRegress(X1, y2)
+m5 = BayesLinRegress(X2, y2)
+m6 = BayesLinRegress(X3, y2)
 
-#max_reward = np.load('max_reward.npy').reshape(-1)
+samples_2 = []
+for i, m in enumerate([m4, m5, m6]):
+    samples_2.append(m.fit(num_samples=5000, warmup_steps=5000, summary=False))
+    # print posterior predictive log-likelihood
+    print('m{} ppll'.format(i+4), m.post_pred_log_likelihood())
 
-X = data['BlockIndex'].values[:,None].astype(int)
-
-for phase in [1,2,3,4]:
-    X = np.hstack([X, (data.Phase == phase).values[:,None]])
+# For the second response variable we get the following values for ppll
+# ppll(m4) = -3167, ppll(m5) = -3153, ppll(m6) = -3357
+# We again see the need for separating response times on phases, and furthermore now a stronger 
+# evidence that predictor should contain log(block_number) instead of block_number. This results 
+# in a power-law reduction of response times with experiment duration.
     
-X = np.hstack([X, failures[:,None]])
-
-#adding points as regressor reduces model evidence and leads to a zero 
-#group mean
-#X = np.hstack([X, data.Points.values[:,None]])
-
-Q, R = np.linalg.qr(X)
-Q = Q*np.sqrt(N-1)
-R = R/np.sqrt(N-1)
-R_inv = np.linalg.inv(R).T
-
-d = X.shape[-1]
-
-import theano
-Q = theano.shared(Q)
-idx = theano.shared(sub_idx)
-
-with pm.Model() as model:
-    #model error
-    std = pm.InverseGamma('std', alpha=2, beta = 1, shape=(n_subs,))
+# Potential additional predictors to consider:
+#   - number of jumps
+#   - number of miniblocks since the usage of the same strategy (action sequence)
+#   - max gain
+#   - cumulative gain on x previous trials
     
-    #noise hyperpriors
-    phi = pm.InverseGamma('phi', alpha=2, beta=1, shape = (d,))
-    lam = pm.InverseGamma('lam', alpha = 2, beta=0.1, shape=(n_subs,d))
-    
-    #group level parameter
-    prior = pm.Normal('prior',
-                       mu=0,
-                       sd = 1,
-                       shape = (d,))
-    
-    prior_mu = (phi*prior)[None,:].repeat(n_subs, axis = 0)
-    
-    #subject level parameter
-    noise = pm.Normal('noise', 
-                       mu = 0, 
-                       sd = 1, 
-                       shape = (n_subs,d))
-    
-    theta = pm.Deterministic('theta', prior_mu + lam*noise)
-    mu = pm.math.sum(theta[idx]*Q, axis = -1)
-    sd = std[idx]
-    
-    #Data likelihood
-    y = pm.Normal('y', mu = mu, sd=sd, observed=observed)
-    
-with model:
-    trace = pm.sample(draws = 2000, njobs = 4)
+betas1 = samples_1[1]['beta']
+betas2 = samples_2[1]['beta']
 
+mu_beta1 = betas1.mean(0)
+std_beta1 = betas1.std(0)
 
-group_beta = (trace['prior']*trace['phi']).dot(R_inv)
-mu_group = group_beta.mean(axis = 0)
-sigma_group = group_beta.std(axis = 0)
-beta = trace['theta'].dot(R_inv)
-mu_beta = beta.mean(axis = 0)
-sigma_beta = beta.std(axis = 0)
+mu_beta2 = betas2.mean(0)
+std_beta2 = betas2.std(0)
 
-
-#plot results
+#plot results of fitting log_rt_1 response
 fig, ax = plt.subplots(2, 2, figsize = (10, 5), sharey = True)
 
-for i in range(len(color)):
-    
-    ax[0,0].errorbar(mu_beta[i,1], mu_beta[i,2], 
-      xerr = sigma_beta[i,1], 
-      yerr= sigma_beta[i,2], 
-      fmt='o',
-      elinewidth = 1,
-      c = 'r',
-      alpha = .8);
-      
-    ax[0,1].errorbar(mu_beta[i,4], mu_beta[i,2], 
-      xerr = sigma_beta[i,4], 
-      yerr= sigma_beta[i,2], 
-      fmt='o',
-      elinewidth = 1,
-      c = 'r',
-      alpha = .8);
-      
-    ax[1,0].errorbar(mu_beta[i,1], mu_beta[i,3], 
-      xerr = sigma_beta[i,1], 
-      yerr= sigma_beta[i,3], 
-      fmt='o',
-      elinewidth = 1,
-      c = 'r',
-      alpha = .8);
-      
-    ax[1,1].errorbar(mu_beta[i,4], mu_beta[i,3], 
-      xerr = sigma_beta[i,4], 
-      yerr= sigma_beta[i,3], 
-      fmt='o',
-      elinewidth = 1,
-      c = 'r',
-      alpha = .8);
+ax[0,0].errorbar(mu_beta1[:, 1], mu_beta1[:, 2], 
+                 xerr = std_beta1[:,1], 
+                 yerr= std_beta1[:,2], 
+                 fmt='o',
+                 elinewidth = 1,
+                 c = 'r',
+                 alpha = .8);
+  
+ax[0,1].errorbar(mu_beta1[:,4], mu_beta1[:, 2], 
+                 xerr = std_beta1[:, 4], 
+                 yerr= std_beta1[:, 2], 
+                 fmt='o',
+                 elinewidth = 1,
+                 c = 'r',
+                 alpha = .8);
+  
+ax[1,0].errorbar(mu_beta1[:, 1], mu_beta1[:, 3],
+                 xerr = std_beta1[i, 1],
+                 yerr= std_beta1[i, 3],
+                 fmt='o',
+                 elinewidth = 1,
+                 c = 'r',
+                 alpha = .8);
+  
+ax[1,1].errorbar(mu_beta1[:, 4], mu_beta1[:, 3],
+                 xerr = std_beta1[:, 4],
+                 yerr= std_beta1[:, 3],
+                 fmt='o',
+                 elinewidth = 1,
+                 c = 'r',
+                 alpha = .8);
+  
+mu_group = m2.samples['mt'][:, 1:5].mean(0)
 
 ax[0,0].scatter(mu_group[1], mu_group[2], color = 'k', zorder = 10)
 ax[0,1].scatter(mu_group[4], mu_group[2], color = 'k', zorder = 10)
@@ -220,77 +221,115 @@ ax[1,0].set_xlabel(r'$\ln(rt[$ two x low $])$')
 ax[1,0].set_ylabel(r'$\ln(rt[$ three x low $])$')
 ax[1,1].set_xlabel(r'$\ln(rt[$ three x high $])$')
 
-x1 = np.arange(0., 2.5, .1)
-x2 = np.arange(0., 4., .1)
+x1 = np.arange(1.5, 3.5, .1)
+x2 = np.arange(0.5, 3.5, .1)
 ax[0,0].plot(x1, x1, 'k--', lw = 2)
 ax[0,1].plot(x2, x2, 'k--', lw = 2)
 ax[1,0].plot(x1, x1, 'k--', lw = 2)
 ax[1,1].plot(x2, x2, 'k--', lw = 2)
-ax[0,0].set_xlim([0.5, 2.5]); ax[1,0].set_xlim([0.5,2.5]);
-ax[0,1].set_xlim([.0, 4.]); ax[1,1].set_xlim([.0, 4.]);
 
-fig.savefig('fig1.png', bbox_tight=True, transparent = True)
+#plot results of fitting log_rt_sum response
+fig, ax = plt.subplots(2, 2, figsize = (10, 5), sharey = True)
 
-residual = observed - np.sum(mu_beta[sub_idx,:]*X, axis = -1)
-residual = residual.reshape(n_subs,-1)
+ax[0,0].errorbar(mu_beta2[:, 1], mu_beta2[:, 2], 
+                 xerr = std_beta2[:,1], 
+                 yerr= std_beta2[:,2], 
+                 fmt='o',
+                 elinewidth = 1,
+                 c = 'r',
+                 alpha = .8);
+  
+ax[0,1].errorbar(mu_beta2[:,4], mu_beta2[:, 2], 
+                 xerr = std_beta2[:, 4], 
+                 yerr= std_beta2[:, 2], 
+                 fmt='o',
+                 elinewidth = 1,
+                 c = 'r',
+                 alpha = .8);
+  
+ax[1,0].errorbar(mu_beta2[:, 1], mu_beta2[:, 3],
+                 xerr = std_beta2[i, 1],
+                 yerr= std_beta2[i, 3],
+                 fmt='o',
+                 elinewidth = 1,
+                 c = 'r',
+                 alpha = .8);
+  
+ax[1,1].errorbar(mu_beta2[:, 4], mu_beta2[:, 3],
+                 xerr = std_beta2[:, 4],
+                 yerr= std_beta2[:, 3],
+                 fmt='o',
+                 elinewidth = 1,
+                 c = 'r',
+                 alpha = .8);
+  
+mu_group2 = m5.samples['mt'][:, 1:5].mean(0)
 
-plt.figure()
-plt.plot(blocks, np.median(residual,axis = 0))
-plt.xlim([1,100])
-plt.xlabel('block index')
-plt.ylabel(r'median $\ln(RT)$ residual')
-plt.savefig('fig2.pdf', bbox_tight=True, transparent = True)
+ax[0,0].scatter(mu_group2[1], mu_group2[2], color = 'k', zorder = 10)
+ax[0,1].scatter(mu_group2[4], mu_group2[2], color = 'k', zorder = 10)
+ax[1,0].scatter(mu_group2[1], mu_group2[3], color = 'k', zorder = 10)
+ax[1,1].scatter(mu_group2[4], mu_group2[3], color = 'k', zorder = 10)
+
+ax[0,0].set_ylabel(r'$\ln(rt[$ two x high $])$')
+ax[1,0].set_xlabel(r'$\ln(rt[$ two x low $])$')
+ax[1,0].set_ylabel(r'$\ln(rt[$ three x low $])$')
+ax[1,1].set_xlabel(r'$\ln(rt[$ three x high $])$')
+
+x1 = np.arange(1.5, 3.5, .1)
+x2 = np.arange(0.5, 3.5, .1)
+ax[0,0].plot(x1, x1, 'k--', lw = 2)
+ax[0,1].plot(x2, x2, 'k--', lw = 2)
+ax[1,0].plot(x1, x1, 'k--', lw = 2)
+ax[1,1].plot(x2, x2, 'k--', lw = 2)
+
+#fig.savefig('fig1.png', bbox_tight=True, transparent = True)
+
+fig, axes = plt.subplot()
+
+# test residuals for stationarity and normality
+
+pred1 = np.einsum('ijk,ljk->ilj',betas1, X2[..., :-1])
+residuals1 = y1 - pred1.mean(0)
+
+pred2 = np.einsum('ijk,ljk->ilj',betas2, X2)
+residuals2 = y2 - pred2.mean(0)
+
+from statsmodels.tsa.stattools import adfuller
+
+for ns in range(n_subs):
+    print(adfuller(residuals1[:, ns])[:2])
+    print(adfuller(residuals2[:, ns])[:2])
+
+# We do not see any nonstationarity in the residuals
+    
+fig, axes = plt.subplots(1, 2, figsize=(15, 5))
+for ns in range(n_subs):
+    sns.kdeplot(np.array(residuals1[:, ns]).astype(np.double), color='b', alpha=.6, ax=axes[0])
+    sns.kdeplot(np.array(residuals2[:, ns]).astype(np.double), color='b', alpha=.6, ax=axes[1])
+    
+# The plots show that we are not explaining all structure in the response times as not all distributions 
+# are unimodal that is gaussian. 
 
 
-fig, ax = plt.subplots(8, 5, figsize = (20, 15), sharex = True, sharey=True)
-ax = ax.flatten()
-max_reward = np.load('max_reward.npy')
-block_index = np.arange(1,101)
-phases = np.ones((25,4))
-for i in range(n_subs):
-    T = len(data.loc[data['Subject']==i, 'BlockIndex'])
-    ax[i].plot(data.loc[data['Subject']==i, 'BlockIndex'], data.loc[data['Subject']==i, 'log_rt'], 'ob')
-    ax[i].plot(block_index, block_index*mu_beta[i,0] + (phases*mu_beta[i,1:5].T).reshape(-1, order = 'F'), 'r')
+#residual = observed - np.sum(mu_beta[sub_idx,:]*X, axis = -1)
+#residual = residual.reshape(n_subs,-1)
 
-#failures = get_failures(states, responses)
-#fails_per_phase = failures.reshape(n_subs, 4, -1).sum(axis = -1)
-#fail0 = np.tile([16, 10], (n_subs,1))
-#
-#n_jumps = np.sum(np.nan_to_num(responses), axis = -1).reshape(20,4,-1)
-#jumps_per_phase = n_jumps.sum(axis = -1)
-#
-#fail1 = fail0+fails_per_phase[:,:2]
-#jpp1 = jumps_per_phase[:,:2]+20
-#
-#p1 = 1-fail1/jpp1
-#p2 = 1-(fail1+fails_per_phase[:,2:])/(jpp1+jumps_per_phase[:,2:])
-#
-#plt.figure()
-#plt.scatter(fail0[:,0]/20, p1[:,0]); 
-#plt.scatter(fail0[:,1]/20, p1[:,1]);
-#x = np.arange(.5, .9, .05)
-#plt.plot(x,x, 'k--')
-#plt.xlabel('prior')
-#plt.xlabel('first half posterior mean')
-#plt.savefig('fig4.pdf', bbox_tight=True, transparent = True)
-#
-#plt.figure()
-#plt.scatter(p1[:,0], p2[:,0]);
-#plt.scatter(p1[:,1], p2[:,1]);
-#plt.plot(x,x, 'k--')
-#plt.xlabel('first half posterior mean')
-#plt.ylabel('second half posterior mean')
-#plt.savefig('fig5.pdf', bbox_tight=True, transparent = True)
-#
-#report_low = np.array([10,7,8,8,8,9,8,9,8,9,9,9,9,8,9,9,8,9,9,3])/10
-#report_high = np.array([7,4,3,6,6,6,5,4,4,4,3,7,7,3,8,2,5,7,7,7])/10
-#
-#p2 = 1-(np.array([8,5])[None,:]+fails_per_phase[:,2:])/(10+jumps_per_phase[:,2:])
-#
-#plt.figure()
-#plt.scatter(p2[:,0], report_low);
-#plt.scatter(p2[:,1], report_high);
-#plt.plot(x,x, 'k--')
-#plt.xlabel('final')
-#plt.ylabel('report')
-#plt.savefig('fig6.pdf', bbox_tight=True, transparent = True)
+failures = get_failures(states, responses)
+fails_per_phase = failures.reshape(n_subs, 4, -1).sum(axis = -1)
+
+n_jumps = np.nansum(responses, -1).reshape(n_subs, 4, -1)
+jumps_per_phase = n_jumps.sum(axis = -1)
+
+order = data['order'].values.astype(int).reshape(n_subs, T).T[0]
+rdr1 = order == 1
+fig, axes = plt.subplots(1, 2, figsize=(15, 5), sharex=True, sharey=True)
+for i in range(4):
+    axes[0].scatter(fails_per_phase[rdr1, i]/jumps_per_phase[rdr1, i], jumps_per_phase[rdr1, i], label=i+1)
+    axes[1].scatter(fails_per_phase[~rdr1, i]/jumps_per_phase[~rdr1, i], jumps_per_phase[~rdr1, i])
+
+axes[0].legend(title='phase')
+axes[0].set_title('order 1')
+axes[1].set_title('order 2')
+
+# Subjects experienced more failures in the last phase of the experiment (phase 4, order 1 and phase 2 order 2), 
+# but they were also using jumps more often.
