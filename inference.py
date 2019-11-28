@@ -4,18 +4,47 @@ from tqdm import tqdm
 import pandas as pd
 
 import torch
-from torch import ones, zeros, tensor
+from torch import ones, zeros, tensor, nn
 
 from torch.distributions import constraints, biject_to
 
 from pyro.distributions.util import broadcast_shape, sum_rightmost
 
 import pyro.distributions as dist
-from pyro import sample, param, plate, markov, poutine, clear_param_store, get_param_store
+from pyro import sample, param, plate, markov, poutine, clear_param_store, get_param_store, module
 from pyro.infer import SVI, Trace_ELBO, TraceEnum_ELBO
 from pyro.optim import Adam
 from pyro.contrib.autoguide import AutoDiagonalNormal, AutoMultivariateNormal, AutoGuideList, AutoIAFNormal
 
+
+class Combiner(nn.Module):
+    """
+    Parameterizes q(k_t | k_{t-1}, o_{t:T}), which is the basic building block
+    of the guide (i.e. the variational distribution). The dependence on o_{t:T} is
+    through the hidden state of the RNN (see the pytorch module `rnn` below)
+    """
+    def __init__(self, k_dim, rnn_dim):
+        super(Combiner, self).__init__()
+        # initialize the three linear transformations used in the neural network
+        self.lin_k_to_hidden = nn.Linear(k_dim, rnn_dim)
+        self.lin_hidden_to_log_rho = nn.Linear(rnn_dim, k_dim)
+        
+        self.softmax = nn.Softmax(dim=-1)
+        self.softplus = nn.Softplus()
+
+    def forward(self, k_t_1, h_rnn):
+        """
+        Given the latent k at at a particular time step t-1 as well as the hidden
+        state of the RNN h(o_{t:T}) we return the mean and scale vectors that
+        parameterize the categorical distribution q(k_t | k_{t-1}, o_{t:T})
+        """
+        # combine the rnn hidden state with a transformed version of z_t_1
+        h_combined = 0.5 * (self.tanh(self.lin_k_to_hidden(k_t_1)) + h_rnn)
+        # use the combined hidden state to compute the mean used to sample z_t
+        rho = self.softmax(self.lin_hidden_to_log_rho(h_combined))
+
+        # return loc, scale which can be fed into Normal
+        return rho
 
 class Inferrer(object):
     def __init__(self,
@@ -127,19 +156,20 @@ class Inferrer(object):
         
         # define hyper priors over model parameters.
         # prior uncertanty
-        a = param('a', 2*ones(np), constraint=constraints.positive)
-        r = param('r', 2*ones(np), constraint=constraints.positive)
-        tau = sample('tau', dist.Gamma(a, r/a).to_event(1))
+        a = param('a', 2*ones(nsub, np), constraint=constraints.positive)
+        r = param('r', 2*ones(nsub, np), constraint=constraints.positive)
         
         # prior mean
         m = param('m', zeros(np))
-        lam = param('lam', ones(np), constraint=constraints.positive)
-        mu = sample("mu", dist.Normal(m, 1/torch.sqrt(lam*tau)).to_event(1))
+        lam = param('lam', ones(nsub, 1), constraint=constraints.positive)
         
         nuc1 = param('nu_c1', ones(1), constraint=constraints.positive)
         nuc2 = param('nu_c2', ones(1), constraint=constraints.positive)
         
         with plate('subjects', nsub):
+            tau = sample('tau', dist.Gamma(a, r/a).to_event(1))
+            mu = sample("mu", dist.Normal(m, 1/torch.sqrt(lam*tau)).to_event(1))
+
             locs = sample("locs", dist.Normal(mu, 1/torch.sqrt(tau)).to_event(1))
             # define priors over planning depth
             probsc1 = sample("probs_c1", dist.Dirichlet(ones(2)*nuc1))
@@ -214,11 +244,12 @@ class Inferrer(object):
                 
                 if t == 1:
                     with plate('responses_{}_{}'.format(b, t), N):
-                        d1 = sample('d_{}_{}'.format(b, t),
-                           dist.Categorical(probs), infer={"enumerate": "parallel"})
+#                        d1 = sample('d_{}_{}'.format(b, t),
+#                           dist.Categorical(probs),
+#                           infer={"enumerate": "parallel"})
                         
                         sample('obs_{}_{}'.format(b, t),
-                           dist.Categorical(logits=logits[d1]),
+                           dist.Categorical(logits=logits[0]),
                            obs=res)
                 else:
                     if N > 0:
@@ -274,31 +305,6 @@ class Inferrer(object):
             locs = sample("locs", dist.MultivariateNormal(m_locs, scale_tril=st_locs))
             probsc1 = sample("probs_c1", dist.Dirichlet(alpha1))
             probsc2 = sample("probs_c2", dist.Dirichlet(alpha2))
-            
-        d = []
-        
-        prd1 = param('prd1', ones(nsub, nblk, 3)/3, constraint=constraints.simplex)
-        prd2 = param('prd2', ones(nsub, nblk, 2)/2, constraint=constraints.simplex)
-        
-        tmp2 = zeros(nsub, nblk, 3)
-        tmp2[..., :2] = prd2
-        
-        prd3 = zeros(nsub, nblk, 3)
-        prd3[..., 0] = 1.
-        
-        prd = torch.stack([prd3, tmp2, prd1], 0)
-        
-        for b in markov(range(nblk)):
-            cndtn = self.conditions[..., b][-1] - 1
-            for t in markov(range(3)):
-                valid = self.mask[:, b, t]
-                N = self.N[b, t]
-                if N > 0:
-                    probs = prd[cndtn - t, range(nsub), b][valid]
-                    with plate('responses_{}_{}'.format(b, t), N):
-                        d.append(sample('d_{}_{}'.format(b, t),
-                              dist.Categorical(probs=probs),
-                              infer={"enumerate": "parallel"}))
         
         return {'mu': mu, 'tau': tau, 'locs': locs, 'pc1': probsc1, 'pc2': probsc2, 'nuc1': nuc1, 'nuc2': nuc2}
     
@@ -308,44 +314,36 @@ class Inferrer(object):
         nblk = self.nblk  # number of blocks
         nsub = self.nsub  # number of subjects
         
-        m_hyp = param('m_hyp', zeros(2*npar))
+        m_hyp = param('m_hyp', zeros(nsub, 2*npar))
         st_hyp = param('scale_tril_hyp', 
-                              torch.eye(2*npar), 
+                              torch.eye(2*npar).repeat(nsub, 1, 1), 
                               constraint=constraints.lower_cholesky)
-        hyp = sample('hyp', dist.MultivariateNormal(m_hyp, 
-                                                  scale_tril=st_hyp), 
-                            infer={'is_auxiliary': True})
-        
-        unc_mu = hyp[:npar]
-        unc_tau = hyp[npar:]
-    
-        trns_tau = biject_to(constraints.positive)
-    
-        c_tau = trns_tau(unc_tau)
-    
-        ld_tau = trns_tau.inv.log_abs_det_jacobian(c_tau, unc_tau)
-        ld_tau = sum_rightmost(ld_tau, ld_tau.dim() - c_tau.dim() + 1)
-    
-        mu = sample("mu", dist.Delta(unc_mu, event_dim=1))
-        tau = sample("tau", dist.Delta(c_tau, log_density=ld_tau, event_dim=1))
-    
+
         m_locs = param('m_locs', zeros(nsub, npar))
         st_locs = param('s_locs', torch.eye(npar).repeat(nsub, 1, 1), 
                    constraint=constraints.lower_cholesky)
-        
-        
-#        l1 = param('l1', zeros(1))
-#        s1 = param('s1', ones(1), constraint=constraints.positive)
-#        nuc1 = sample("nu_c1", dist.LogNormal(loc=l1, scale=s1))
-#        
-#        l2 = param('l2', zeros(1))
-#        s2 = param('s2', ones(1), constraint=constraints.positive)
-#        nuc2 = sample("nu_c2", dist.LogNormal(loc=l2, scale=s2))
         
         alpha1 = param('alpha1', ones(nsub, 2), constraint=constraints.positive)
         alpha2 = param('alpha2', ones(nsub, 3), constraint=constraints.positive)
 
         with plate('subjects', nsub):
+            hyp = sample('hyp', dist.MultivariateNormal(m_hyp, 
+                                          scale_tril=st_hyp), 
+                    infer={'is_auxiliary': True})
+        
+            unc_mu = hyp[..., :npar]
+            unc_tau = hyp[..., npar:]
+        
+            trns_tau = biject_to(constraints.positive)
+        
+            c_tau = trns_tau(unc_tau)
+        
+            ld_tau = trns_tau.inv.log_abs_det_jacobian(c_tau, unc_tau)
+            ld_tau = sum_rightmost(ld_tau, ld_tau.dim() - c_tau.dim() + 1)
+            
+            mu = sample("mu", dist.Delta(unc_mu, event_dim=1))
+            tau = sample("tau", dist.Delta(c_tau, log_density=ld_tau, event_dim=1))
+            
             locs = sample("locs", dist.MultivariateNormal(m_locs, scale_tril=st_locs))
             probsc1 = sample("probs_c1", dist.Dirichlet(alpha1))
             probsc2 = sample("probs_c2", dist.Dirichlet(alpha2))
@@ -359,42 +357,10 @@ class Inferrer(object):
                 # define priors over planning depth transition matrix
                 sample("rho_c1", dist.Dirichlet(beta1))
                 sample("rho_c2", dist.Dirichlet(beta2))
-        
-        d = []
-        prd1 = param('prd1', ones(nblk//2, nsub, 2)/2, constraint=constraints.simplex)
-        prd2 = param('prd2', ones(nblk//2, nsub, 3)/3, constraint=constraints.simplex)
-        
-        prd = zeros(2, nblk, nsub, 3)
-        prd[0, :50, :, :2] = prd1
-        prd[1, 50:] = prd2
-        
-        d1 = []
-        prd12 = param('prd12', ones(nblk//2, nsub, 2)/2, constraint=constraints.simplex)
-        prd1 = zeros(2, nblk, nsub, 2)
-        prd1[0, ..., 0] = 1.
-        prd1[1, :50, :, 0] = 1.
-        prd1[1, 50:] = prd12
-
-        for b in markov(range(nblk)):
-            N = self.N[b, 0]
-            mt = self.conditions[..., b][-1]
-            probs = prd[:, b]
-            with plate('responses_{}_0'.format(b), N):
-                d.append(sample('d_{}_{}'.format(b, 0),
-                           dist.Categorical(probs=probs[mt-2, range(N)]),
-                           infer={"enumerate": "parallel"}))
-                
-            for t in markov(range(1,2)):
-                N = self.N[b, t]
-                probs = prd1[:, b]
-                with plate('responses_{}_{}'.format(b, t), N):
-                    d1.append(sample('d_{}_{}'.format(b, t),
-                              dist.Categorical(probs=probs[mt-2, range(N)]),
-                              infer={"enumerate": "parallel"}))
                         
         return {'mu': mu, 'tau': tau, 'locs': locs, 'pc1': probsc1, 'pc2': probsc2}
     
-
+    
     def fit(self, 
             num_iterations = 100, 
             num_particles=10,

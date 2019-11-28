@@ -15,18 +15,24 @@ mini-block dependent planning depth.
 """
 
 import torch
-import pandas as pd
-from tasks import SpaceAdventure
-from agents import BackInduction
-from simulate import Simulator
-from inference import Inferrer
+torch.manual_seed(16324)
+
+import pyro
+pyro.enable_validation(True)
 
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-import pyro
-pyro.enable_validation(True)
+import sys
+sys.path.append('../')  
+
+from tasks import SpaceAdventure
+from agents import BackInduction
+from simulate import Simulator
+from inference import Inferrer
+
+
 
 sns.set(context='talk', style='white', color_codes=True)
 
@@ -39,15 +45,10 @@ ns = 6
 no = 5
 
 import scipy.io as io
-exp = io.loadmat('./experiment/experimental_variables.mat')
+exp = io.loadmat('../experiment/experimental_variables_new.mat')
 starts = exp['startsExp'][:, 0] - 1
 planets = exp['planetsExp'] - 1
 vect = np.eye(5)[planets]
-
-#exp = np.load('newexp.npz')
-#vect = exp['arr_0']
-#starts = exp['arr_1']
-
 
 ol1 = torch.from_numpy(vect)
 ol2 = torch.from_numpy(np.vstack([vect[50:], vect[:50]]))
@@ -152,32 +153,39 @@ agent = BackInduction(confs,
                       planning_depth=max_depth)
 
 infer = Inferrer(agent, stimuli, responses, mask)
-infer.fit(num_iterations=200, parametrisation='static')
+infer.fit(num_iterations=200, num_particles=20, parametrisation='static')
 
 plt.figure()
 plt.plot(infer.loss[-150:])
 
-labels = [r'$\beta$', r'$\theta$', r'$\epsilon$']
+labels = [r'$\tilde{\beta}$', r'$\theta$', r'$\tilde{\epsilon}$']
 
 pars_df, scales_df, mg_df, sg_df  = infer.sample_from_posterior(labels, n_samples=1000)
 
-fig, axes = plt.subplots(3, 1, figsize=(15, 10))
+# plot posterior parameter estimates in relation to true parameter values
+fig, axes = plt.subplots(3, 1, figsize=(15, 15))
 m = pars_df.groupby('subject').mean()
 s = pars_df.groupby('subject').std()
 for i, l in enumerate(labels):
     tp = trans_pars[:, i].numpy()
     axes[i].errorbar(tp, m[l], 2*s[l], linestyle='', marker='o')
     axes[i].plot(tp, tp, 'k--')
-    
+    axes[i].set_ylabel('estimated value')
+    axes[i].text(1, 0.5, l, rotation=-90, transform=axes[i].transAxes)
 
+axes[-1].set_xlabel('true value')
+
+# plot correlation between group level mean
 g = sns.PairGrid(mg_df)
 g = g.map_diag(sns.kdeplot)
 g = g.map_offdiag(plt.scatter)
 
+# plot correlation between group level variance
 g = sns.PairGrid(sg_df)
 g = g.map_diag(sns.kdeplot)
 g = g.map_offdiag(plt.scatter)
 
+# print posterior accuracy of parameter estimates
 def posterior_accuracy(labels, df, vals):
     for i, lbl in enumerate(labels):
         std = df.loc[df['parameter'] == lbl].groupby(by='subject').std()
@@ -187,51 +195,67 @@ def posterior_accuracy(labels, df, vals):
 vals = [trans_pars[:,0].numpy(), trans_pars[:, 1].numpy(), trans_pars[:, 2].numpy()]
 posterior_accuracy(labels, pars_df.melt(id_vars='subject', var_name='parameter'), vals)
 
-prd1=pyro.param('prd1').detach()
-prd2=pyro.param('prd2').detach()
+n_samples = 100
+post_marg = infer.sample_posterior_marginal(n_samples=n_samples)
 
-probs = torch.zeros(mini_blocks, max_trials - 1, runs, max_depth)
-probs[50:, 0, :20] = prd1[:20, 50:].transpose(dim1=0, dim0=1)
-probs[50:, 0, 20:] = prd1[20:, :50].transpose(dim1=0, dim0=1)
+post_depth = {0: np.zeros((n_samples, mini_blocks, runs, max_trials)),
+              1: np.zeros((n_samples, mini_blocks, runs, max_trials))}
+for pm in post_marg:
+    b, t = np.array(pm.split('_')[1:]).astype(int)
+    if t in post_depth:
+        post_depth[t][:, b] = post_marg[pm]
 
-probs[:50, 0, :20, :2] = prd2[:20, :50].transpose(dim1=0, dim0=1)
-probs[:50, 0, 20:, :2] = prd2[20:, 50:].transpose(dim1=0, dim0=1)
+# get sample mean over planning depth for the first and second choice
+m_prob = [post_depth[d].mean(0) for d in range(2)]
 
-probs[:50, 1, :runs//2, 0] = 1.
-probs[50:, 1, :runs//2, :2] = prd2[:runs//2, 50:].transpose(dim1=0, dim0=1)
-    
-probs[:50, 1, runs//2:, 0] = 1.
-probs[50:, 1, runs//2:, :2] = prd2[runs//2:, :50].transpose(dim1=0, dim0=1)
+# get sample plannign depth exceedance count of the first and second choice
+# exceedance count => number of times planning depth d had highest posterior probability
+exc_count = [np.array([np.sum(post_depth[t].argmax(-1) == i, 0) for i in range(3)]) for t in range(2)]
 
-probs = probs.numpy()
+true_depths = torch.stack(agents[sim_number].depths).numpy()
 
-trial_count = np.array([np.sum(probs.argmax(-1) == i, axis=-1) for i in range(3)])
-trial_count = trial_count/trial_count.sum(0)
+# plot true planning depth and estimated mean posterior depth of the first choice for two runs (one from each group)
+fig, axes = plt.subplots(1, 2, figsize=(15, 5), sharex=True, sharey=True)
+
+for ns, ax in zip([10, 30], axes):
+    sns.heatmap(m_prob[0][:, ns], cmap='viridis', ax=ax)
+    ax.plot(true_depths[:, ns]+.5, range(mini_blocks), 'wo')
+
+axes[0].set_title('normal order')
+axes[1].set_title('reversed order')
+fig.suptitle('mean probability')
+
+# plot true planning depth and depth exceedance probability of the first choice for two runs (one from each group)
+# plot true planning depth and estimated mean posterior depth of the first choice for two runs (one from each group)
+fig, axes = plt.subplots(1, 2, figsize=(15, 5), sharex=True, sharey=True)
+
+for ns, ax in zip([10, 30], axes):
+    sns.heatmap(exc_count[0][..., ns].T/n_samples, cmap='viridis', ax=ax)
+    ax.plot(true_depths[:, ns]+.5, range(mini_blocks), 'wo')
+
+axes[0].set_title('normal order')
+axes[1].set_title('reversed order')
+fig.suptitle('exceedance probability')
+
+# count number of misclassified mini-blocks and plot distribution
+# the misclassified mini-block corresponds to one where the highest 
+# exceedance probability is associated with the wrong planning depth
+err_class = ~(exc_count[0].argmax(0) == true_depths)
+plt.figure()
+plt.hist(err_class.sum(-1))
+plt.xlabel('number of errors')
+plt.ylabel('count')
+plt.title('misclassification distribution')
+
+# plot group level exceedance probability
+order = conditions[-1, :, 0].numpy() == 2
+ordered_exc_count = np.concatenate([exc_count[0][..., order], 
+                                    np.concatenate([exc_count[0][:, 50:, ~order], exc_count[0][:, :50, ~order]], -2)],
+                                    -1
+                                   )
+e_probs = ordered_exc_count.sum(-1)/(n_samples*runs)
             
-for i in range(max_trials-1):
-    plt.figure(figsize=(10, 5))
-    sns.heatmap(trial_count[..., i], cmap='viridis')
-    plt.ylabel('planning depth')
-    plt.xlabel('mini-block')
-    
-    
-depths = torch.stack(agents[-1].depths).numpy()
-depths[0, :runs//2] = 1
-depths[:, runs//2:] = np.vstack([depths[50:, runs//2:], depths[:50, runs//2:]])
-diff = []
-for sub in range(runs):
-    diff.append(depths[:, sub] != probs[:, 0, sub].argmax(-1))
-
-diff = np.vstack(diff)
-diff[runs//2:] = np.hstack([diff[runs//2:, 50:], diff[runs//2:, :50]])
-plt.figure()
-plt.plot(diff.mean(0));
-
-plt.figure()
-sns.boxplot(data=diff.mean(0).reshape(4, 25).T)
-    
-sub = 0
-plt.figure()
-sns.heatmap(probs[:,0, sub].T, cmap='viridis')
-plt.plot(range(100), depths[:, sub]+.5, 'wo');
-#    plt.savefig('exp_ep_depth_t{}.pdf'.format(i+1), bbox_inches='tight', transparent=True, dpi=600)
+plt.figure(figsize=(8, 5))
+sns.heatmap(e_probs.T, cmap='viridis')
+plt.xlabel('planning depth')
+plt.ylabel('mini-block')
