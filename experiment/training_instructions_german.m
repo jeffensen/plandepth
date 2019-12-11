@@ -1,3 +1,4 @@
+ 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%   TRAINING  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -642,22 +643,27 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%   Training_S_Test %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 NoTrials=18; %change to 18
+NoMiniBlocks = 3; %max. nr of repetitions of the travel pattern training
 
 points = 1000;
 TestStarts = [1,2,3,4,5,6,2,5,1,6,3,4,3,6,4,1,5,2];
 RightAnswer = [5,4,5,6,2,2,4,2,5,2,5,6,5,2,6,5,2,4];
 
-for n = 1:NoMiniBlocks
+MinNoRightAnswers = 17; % at least 17/18 right answers (=94.44% correct)
+
+% loop until training criterion met
+for NoPatternTrainings = 1:NoMiniBlocks
+    NoRightAnswers = 0;
     for t = 1:NoTrials
             start=TestStarts(t);
-            
+
             % draw fuel tank
             draw_point_bar(points, window, xCenter, screenYpixels);
-            
+
             % plot planets for the given mini block
             planetList = Practise;
             draw_planets(planetList, window, PlanetsTexture, planetsPos);
-            
+
             % Draw numbers
             DrawFormattedText(window, '1', xCenter-520, yCenter+30, [1 0 0]);
             DrawFormattedText(window, '2', xCenter-220, yCenter-220, [1 0 0]);
@@ -672,7 +678,7 @@ for n = 1:NoMiniBlocks
 
             % Wait for a key press
             [secs, keyCode, deltaSecs] = KbPressWait;
-            
+
             Resp = KbName(keyCode);
             if iscell(Resp)
                 Resp = Resp{1};
@@ -682,14 +688,14 @@ for n = 1:NoMiniBlocks
                 return;
             end
             Resp = str2double(Resp(1));
-            
+
             % draw fuel tank
             draw_point_bar(points, window, xCenter, screenYpixels);
-            
+
             % plot planets for the given mini block
             planetList = Practise;
             draw_planets(planetList, window, PlanetsTexture, planetsPos);
-            
+
             % Draw numbers
             DrawFormattedText(window, '1', xCenter-520, yCenter+30, [1 0 0]);
             DrawFormattedText(window, '2', xCenter-220, yCenter-220, [1 0 0]);
@@ -702,6 +708,7 @@ for n = 1:NoMiniBlocks
             Screen('DrawTexture', window, RocketTexture, [], rocketPos(:,start)');
 
             if Resp == RightAnswer(t)
+                NoRightAnswers = NoRightAnswers + 1;
                 DrawFormattedText(window, 'Richtig', 'center', 'center', white)
                 vbl = Screen('flip', window);
                 WaitSecs(0.5);
@@ -710,57 +717,67 @@ for n = 1:NoMiniBlocks
                 vbl = Screen('flip', window);
                 WaitSecs(2);
             end  
-                p = state_transition_matrix(2, start, :);
-                next = find(cumsum(p)>=rand,1);
+            p = state_transition_matrix(2, start, :);
+            next = find(cumsum(p)>=rand,1);
 
-                % move the rocket
-                time = 0;
-                locStart = imagePos(start, :);
-                locEnd = imagePos(next, :);
-                points = points + actionCost(2);
+            % move the rocket
+            time = 0;
+            locStart = imagePos(start, :);
+            locEnd = imagePos(next, :);
+            points = points + actionCost(2);
 
-                while time < md
-                    % Position of the square on this frame
-                    xpos = locStart(1) + time/md*(locEnd(1) - locStart(1));
-                    ypos = locStart(2) + time/md*(locEnd(2) - locStart(2));
+            while time < md
+                % Position of the square on this frame
+                xpos = locStart(1) + time/md*(locEnd(1) - locStart(1));
+                ypos = locStart(2) + time/md*(locEnd(2) - locStart(2));
 
-                    % Center the rectangle on the centre of the screen
-                    cRect = CenterRectOnPointd(rocketRect, xpos, ypos);
-                    
-                    % draw fuel tank
-                    draw_point_bar(points, window, xCenter, screenYpixels);
-                    
-                    % draw planets
-                    draw_planets(planetList, window, PlanetsTexture, planetsPos);
-            
-                    % Draw numbers
-                    DrawFormattedText(window, '1', xCenter-520, yCenter+30, [1 0 0]);
-                    DrawFormattedText(window, '2', xCenter-220, yCenter-220, [1 0 0]);
-                    DrawFormattedText(window, '3', xCenter+180, yCenter-220, [1 0 0]);
-                    DrawFormattedText(window, '4', xCenter+480, yCenter+30, [1 0 0]);
-                    DrawFormattedText(window, '5', xCenter+180, yCenter+280, [1 0 0]);
-                    DrawFormattedText(window, '6', xCenter-220, yCenter+280, [1 0 0]);
+                % Center the rectangle on the centre of the screen
+                cRect = CenterRectOnPointd(rocketRect, xpos, ypos);
 
-                    % Draw the rect to the screen
-                    Screen('DrawTexture', window, RocketTexture, [], cRect);
-                    
-                    % Draw travel costs
-                    DrawFormattedText(window, '-5', 'center', yCenter-100, white);
-                    
-                    % Flip to the screen
-                    vbl  = Screen('Flip', window, vbl + 0.5*ifi);
+                % draw fuel tank
+                draw_point_bar(points, window, xCenter, screenYpixels);
 
-                    % Increment the time
-                    time = time + ifi;
-                end
-               
-               WaitSecs(1);
-               Screen('Flip', window);
-               WaitSecs(1);
+                % draw planets
+                draw_planets(planetList, window, PlanetsTexture, planetsPos);
+
+                % Draw numbers
+                DrawFormattedText(window, '1', xCenter-520, yCenter+30, [1 0 0]);
+                DrawFormattedText(window, '2', xCenter-220, yCenter-220, [1 0 0]);
+                DrawFormattedText(window, '3', xCenter+180, yCenter-220, [1 0 0]);
+                DrawFormattedText(window, '4', xCenter+480, yCenter+30, [1 0 0]);
+                DrawFormattedText(window, '5', xCenter+180, yCenter+280, [1 0 0]);
+                DrawFormattedText(window, '6', xCenter-220, yCenter+280, [1 0 0]);
+
+                % Draw the rect to the screen
+                Screen('DrawTexture', window, RocketTexture, [], cRect);
+
+                % Draw travel costs
+                DrawFormattedText(window, '-5', 'center', yCenter-100, white);
+
+                % Flip to the screen
+                vbl  = Screen('Flip', window, vbl + 0.5*ifi);
+
+                % Increment the time
+                time = time + ifi;
+            end
+
+           WaitSecs(1);
+           Screen('Flip', window);
+           WaitSecs(1);
     end 
- end
     
+    if NoRightAnswers >= MinNoRightAnswers
+        break;
+    end
 
+end
+
+% check if participant even failed in last pattern training block
+if (NoPatternTrainings == NoMiniBlocks) && (NoRightAnswers < MinNoRightAnswers)
+    NoPatternTrainings = 99;
+end
+
+disp(strcat('Nr of trainings: ',int2str(NoPatternTrainings)));
 
 
 %%%%%%% SHORT BREAK%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -897,6 +914,7 @@ end
 rnd_val = [0.2320    0.7325    0.9631    0.6932    0.8595    0.8387  ...
     0.0786    0.0716    0.0324    0.9084    0.6857    0.0666];
 NoTrials = 12; %change to 12
+NoMiniBlocks = 1;
 points = 1000;
 for n = 1:NoMiniBlocks
     for t = 1:NoTrials

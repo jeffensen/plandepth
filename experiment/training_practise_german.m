@@ -13,10 +13,11 @@ clear all;
 data = struct;
  
 Pbn_ID = 9901; % fill out
-No_Training= 1; % change if more than one training
+No_Training = 1; % change if there is more than one training practise
 data.Age = 22; % fill out
 data.Gender = 0 ; % 0 = male; 1 = female
 data.Group = 0 ;  % 0 = control; 1 = experimental
+data.NoPatternTrainings = 1; % number of pattern trainings from instructions
 %  
 %  
 % 
