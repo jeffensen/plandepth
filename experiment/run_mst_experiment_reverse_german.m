@@ -10,7 +10,7 @@ rng('shuffle');
 %%%%%%%%%%%%%%%   Modify before experiment %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 data = struct;
  
-Pbn_ID = 9901; % fill out
+Pbn_ID = 9999999; % fill out
 data.Age = 22; % fill out
 data.Gender = 0 ; % 0 = male; 1 = female
 data.Group = 0 ;  % 0 = control; 1 = experimental
@@ -274,7 +274,7 @@ for n = 1:NoMiniBlocks
         secs = GetSecs;
         while true
             [pressed, firstPress] = KbQueueCheck(deviceIndex);
-            press_secs = firstPress(find(firstPress));
+            press_secs = min(firstPress(find(firstPress)));
             if pressed
                 Key = KbName(min(find(firstPress)));
                 break
