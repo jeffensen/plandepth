@@ -14,6 +14,17 @@ Pbn_ID = 9901; % fill out
 data.Age = 22; % fill out
 data.Gender = 0 ; % 0 = male; 1 = female
 data.Group = 0 ;  % 0 = control; 1 = experimental
+
+prompt = {'Enter participant ID','Enter Age', 'Enter Gender (0-male/ 1-female)', 'Enter Group'};
+dlgtitle = 'Input';
+dims = [1 35];
+definput = {num2str(Pbn_ID),'','',''};
+answer = inputdlg(prompt,dlgtitle,dims,definput)
+
+Pbn_ID = str2double(answer{1})
+data.Age = str2double(answer{2});
+data.Gender = str2double(answer{3});
+data.Group = str2double(answer{4});
 %  
 %  
 % 
@@ -100,17 +111,17 @@ text = ['Hallo!' ...
          '\n\n\n\n Ihr Weltraumabenteuer kann nun beginnen.'];
 
 % Some block transition text     
-trans_text = ['In Kürze erreichen Sie ein neues Planetensystem......'];
+trans_text = ['In KÃ¼rze erreichen Sie ein neues Planetensystem......'];
 
 % Some brake text
-break_text1 = ['Bitte nehmen Sie sich etwas Zeit zum Ausruhen, falls Sie sich müde fühlen.'...
-                '\n\n\n\n Achtung, als nächstes reisen Sie in Planetensysteme mit Asteroiden!'];
+break_text1 = ['Bitte nehmen Sie sich etwas Zeit zum Ausruhen, falls Sie sich mÃ¼de fÃ¼hlen.'...
+                '\n\n\n\n Achtung, als nÃ¤chstes reisen Sie in Planetensysteme mit Asteroiden!'];
 
  
-break_text2 = ['Bitte nehmen Sie sich etwas Zeit zum Ausruhen, falls Sie sich müde fühlen.'...
-                '\n\n\n\n Achtung, die Anzahl Ihrer Reiseschritte verändert sich!'];
+break_text2 = ['Bitte nehmen Sie sich etwas Zeit zum Ausruhen, falls Sie sich mÃ¼de fÃ¼hlen.'...
+                '\n\n\n\n Achtung, die Anzahl Ihrer Reiseschritte verÃ¤ndert sich!'];
 
-anykey_text = ['Drücken Sie eine Taste, um fortzufahren.'];
+anykey_text = ['DrÃ¼cken Sie eine Taste, um fortzufahren.'];
 
 % Draw all the text in one go
 DrawFormattedText(window, text,...
@@ -413,12 +424,12 @@ delete('tmpdata.mat');
 
 %% End screen
 end_msg = ['Ende des Experiments.' ...
-           '\n\n Danke für Ihre Teilnahme.'];
+           '\n\n Danke fÃ¼r Ihre Teilnahme.'];
 
        
 gameOver = ['Das Spiel ist zu Ende.' ...
             '\n\n Ihre Treibstoffreserven sind aufgebraucht.' ...
-            '\n\n Danke für Ihre Teilnahme'];       
+            '\n\n Danke fÃ¼r Ihre Teilnahme'];       
 
 % Draw the text
 if points < 0
