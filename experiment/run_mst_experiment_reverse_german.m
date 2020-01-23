@@ -112,17 +112,17 @@ text = ['Hallo!' ...
          '\n\n\n\n Ihr Weltraumabenteuer kann nun beginnen.'];
 
 % Some block transition text     
-trans_text = ['In KÃ¼rze erreichen Sie ein neues Planetensystem......'];
+trans_text = ['In Kürze erreichen Sie ein neues Planetensystem......'];
 
 % Some brake text
-break_text1 = ['Bitte nehmen Sie sich etwas Zeit zum Ausruhen, falls Sie sich mÃ¼de fÃ¼hlen.'...
-                '\n\n\n\n Achtung, als nÃ¤chstes reisen Sie in Planetensysteme mit Asteroiden!'];
+break_text1 = ['Bitte nehmen Sie sich etwas Zeit zum Ausruhen, falls Sie sich müde fühlen.'...
+                '\n\n\n\n Achtung, als nächstes reisen Sie in Planetensysteme mit Asteroiden!'];
 
  
-break_text2 = ['Bitte nehmen Sie sich etwas Zeit zum Ausruhen, falls Sie sich mÃ¼de fÃ¼hlen.'...
-                '\n\n\n\n Achtung, die Anzahl Ihrer Reiseschritte verÃ¤ndert sich!'];
+break_text2 = ['Bitte nehmen Sie sich etwas Zeit zum Ausruhen, falls Sie sich müde fühlen.'...
+                '\n\n\n\n Achtung, die Anzahl Ihrer Reiseschritte verändert sich!'];
 
-anykey_text = ['DrÃ¼cken Sie eine Taste, um fortzufahren.'];
+anykey_text = ['Drücken Sie eine Taste, um fortzufahren.'];
 
 % Draw all the text in one go
 DrawFormattedText(window, text,...
@@ -432,12 +432,12 @@ delete('tmpdata.mat');
 
 %% End screen
 end_msg = ['Ende des Experiments.' ...
-           '\n\n Danke fÃ¼r Ihre Teilnahme.'];
+           '\n\n Danke für Ihre Teilnahme.'];
 
        
 gameOver = ['Das Spiel ist zu Ende' ...
             '\n\n Ihre Treibstoffreserven sind aufgebraucht.' ...
-            '\n\n Danke fÃ¼r Ihre Teilnahme'];       
+            '\n\n Danke für Ihre Teilnahme'];       
 
 % Draw the text
 if points < 0
