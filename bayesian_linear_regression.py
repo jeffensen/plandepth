@@ -45,7 +45,7 @@ class BayesLinRegress(object):
                 lam = npyro.sample('lam', dist.HalfCauchy(1.))
                 var_theta = npyro.sample('var_theta', dist.Normal(0., 1.))
 
-        theta = npyro.deterministic('theta', s * m + np.expand_dims(tau, -1) * lam * var_theta)
+        theta = npyro.deterministic('theta', np.expand_dims(s * m, -2) + np.expand_dims(tau, -1) * lam * var_theta)
 
         beta = npyro.deterministic('beta', vdot(self.R_inv, theta))
 
@@ -63,7 +63,7 @@ class BayesLinRegress(object):
         if summary:
             mcmc.print_summary()
 
-        samples = mcmc.get_samples(group_by_chain=True)
+        samples = mcmc.get_samples(group_by_chain=False)
         self.mcmc = mcmc
         self.samples = samples
 
