@@ -44,10 +44,12 @@ class BayesLinRegress(object):
             with npyro.plate('subs', ns):
                 lam = npyro.sample('lam', dist.HalfCauchy(1.))
                 var_theta = npyro.sample('var_theta', dist.Normal(0., 1.))
-
-        theta = npyro.deterministic('theta', np.expand_dims(s * m, -2) + np.expand_dims(tau, -1) * lam * var_theta)
+        
+        g_theta = s * m
+        theta = npyro.deterministic('theta', np.expand_dims(g_theta, -2) + np.expand_dims(tau, -1) * lam * var_theta)
 
         beta = npyro.deterministic('beta', vdot(self.R_inv, theta))
+        npyro.deterministic('group_beta', self.R_inv.dot(g_theta))
 
         mu = vdot(self.Q, theta)
 
