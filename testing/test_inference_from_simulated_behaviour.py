@@ -99,7 +99,7 @@ for i in range(3):
                           trials=3,
                           planning_depth=i+1)
 
-    m = torch.tensor([0., 0., 0.])
+    m = torch.tensor([+2, 0., -2])
     trans_pars = torch.distributions.Normal(m, 1.).sample((runs,))
     agent.set_parameters(trans_pars)
 
@@ -150,14 +150,14 @@ agent = BackInduction(confs,
                       planning_depth=max_depth)
 
 infer = Inferrer(agent, stimuli, responses, mask)
-infer.fit(num_iterations=500)
+infer.fit(num_iterations=1000)
 
 plt.figure()
 plt.plot(infer.loss[-150:])
 
 labels = [r'$\tilde{\beta}$', r'$\theta$', r'$\tilde{\alpha}$']
 
-pars_df, scales_df, mg_df, sg_df = infer.sample_from_posterior(labels, n_samples=1000)
+pars_df, mg_df, sg_df = infer.sample_from_posterior(labels, n_samples=1000)
 
 # plot posterior parameter estimates in relation to true parameter values
 fig, axes = plt.subplots(3, 1, figsize=(15, 15))

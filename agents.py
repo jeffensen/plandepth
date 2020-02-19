@@ -54,9 +54,9 @@ class BackInduction(object):
             assert trans_par.shape[-1] == self.np
 #            self.tp_mean0 = trans_par[:, :2].sigmoid()  # transition probabilty for action jump
 #            self.tp_scale0 = trans_par[:, 2:4].exp() # precision of beliefs about transition probability
-            self.beta = (trans_par[..., 0]+2).exp()
+            self.beta = (trans_par[..., 0]).exp()
             self.theta = trans_par[..., 1]
-            self.alpha = (trans_par[..., 2]-4).sigmoid()
+            self.alpha = (trans_par[..., 2]).sigmoid()
 
         else:
             self.beta = torch.tensor([10.]).repeat(self.runs)
