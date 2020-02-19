@@ -177,7 +177,7 @@ DebrisTexture = Screen('MakeTexture', window, debris);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % text
-text = ['Sie können die Aufgabe nun ein paar Mal üben'];
+text = ['Sie k?nnen die Aufgabe nun ein paar Mal ?ben'];
 
 
 % Draw all the text in one go
@@ -185,7 +185,7 @@ DrawFormattedText(window, text,...
     'center', screenYpixels*0.25, white);
 
 % Press Key to continue  
-DrawFormattedText(window, 'Drücken Sie eine Taste, um fortzufahren.', ...
+DrawFormattedText(window, 'Dr?cken Sie eine Taste, um fortzufahren.', ...
                   'center', screenYpixels*0.8);
 
 % Flip to the screen
@@ -219,7 +219,7 @@ for n = 1:NoMiniBlocks
         break
     end
    
-    text = ['In Kürze erreichen Sie ein neues Planetensystem...'];
+    text = ['In K?rze erreichen Sie ein neues Planetensystem...'];
     
     % Draw all the text in one go
     DrawFormattedText(window, text,...
@@ -384,9 +384,9 @@ delete('tmpdata.mat');
 %%%%%%%%%%%% END INSTRUCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% End screen
-end_msg = ['Glückwunsch!' ... 
+end_msg = ['Gl?ckwunsch!' ... 
          '\n\n '...
-         '\n\n Sie sind nun bereit dein Weltraumabenteuer zu beginnen' ...
+         '\n\n Sie sind nun bereit Ihr Weltraumabenteuer zu beginnen' ...
          '\n\n '...
          '\n\n Bitte melden Sie sich beim Versuchsleiter.'];
 
