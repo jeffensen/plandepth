@@ -25,7 +25,8 @@ class BayesLinRegress(object):
 
         q, r = vmap(np.linalg.qr)(self.x_data)
         self.Q = q * self.N
-        self.R_inv = vinv(r / self.N)
+        self.R = r / self.N
+        self.R_inv = vinv(self.R)
 
         self.rng_key = random.PRNGKey(time())
 
@@ -33,23 +34,22 @@ class BayesLinRegress(object):
         nf = self.nf
         ns = self.ns
 
-        s = npyro.sample('s', dist.InverseGamma(np.ones(nf)/2., np.ones(nf)/2.))
+        s = npyro.sample('s', dist.Exponential(np.ones(nf)))
         m = npyro.sample('m', dist.Normal(np.zeros(nf), 1.))
 
         sigma = npyro.sample('sigma', dist.InverseGamma(2.*np.ones(ns), 1.))
 
-        tau = npyro.sample('tau', dist.Exponential(np.ones(ns)))
+        tau = npyro.sample('tau', dist.Exponential(100. * np.ones(ns)))
 
         with npyro.plate('facts', nf):
             with npyro.plate('subs', ns):
                 lam = npyro.sample('lam', dist.HalfCauchy(1.))
                 var_theta = npyro.sample('var_theta', dist.Normal(0., 1.))
-        
-        g_theta = s * m
-        theta = npyro.deterministic('theta', np.expand_dims(g_theta, -2) + np.expand_dims(tau, -1) * lam * var_theta)
 
-        beta = npyro.deterministic('beta', vdot(self.R_inv, theta))
-        npyro.deterministic('group_beta', self.R_inv.dot(g_theta))
+        gb = npyro.deterministic('group_beta', m * s)
+        theta = npyro.deterministic('theta', self.R.dot(gb) + np.expand_dims(tau, -1) * lam * var_theta)
+
+        npyro.deterministic('beta', vdot(self.R_inv, theta))
 
         mu = vdot(self.Q, theta)
 
