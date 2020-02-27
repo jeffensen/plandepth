@@ -135,7 +135,7 @@ plt.ylabel('count')
 plt.xlabel('score')
 plt.savefig('finalscore_exp.pdf', bbox_inches='tight', transparent=True, dpi=600)
 
-sim_number = -1
+sim_number = -2
 responses = simulations[sim_number].responses.clone()
 mask = ~torch.isnan(responses)
 
@@ -150,7 +150,7 @@ agent = BackInduction(confs,
                       planning_depth=max_depth)
 
 infer = Inferrer(agent, stimuli, responses, mask)
-infer.fit(num_iterations=1000)
+infer.fit(num_iterations=2000)
 
 plt.figure()
 plt.plot(infer.loss[-150:])

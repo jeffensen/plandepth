@@ -20,7 +20,8 @@ class BackInduction(object):
                  costs=None,
                  utility=None,
                  planning_depth=1,
-                 depths=None):
+                 depths=None,
+                 variable_depth=False):
 
         self.runs = runs
         self.nmb = mini_blocks
@@ -30,7 +31,10 @@ class BackInduction(object):
         self.depth = planning_depth  # maximal planning depth
         if depths is None:
             self.depths = [torch.tensor([planning_depth - 1]).repeat(self.runs)]
-        self.make_depth_transitions()
+        if variable_depth:
+            self.make_depth_transitions(rho=.8)
+        else:
+            self.make_depth_transitions()
         self.na = na  # number of actions
         self.ns = ns  # number of states
 
@@ -83,10 +87,9 @@ class BackInduction(object):
         # response probability
         self.logits = []
 
-    def make_depth_transitions(self):
+    def make_depth_transitions(self, rho=1.):
 
         tm = torch.eye(self.depth).repeat(self.runs, 1, 1)
-        rho = .8
         if self.depth > 1:
             tm = rho*tm + (1-rho)*(ones(self.depth, self.depth) - tm)/(self.depth-1)
 
