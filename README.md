@@ -30,6 +30,5 @@ pip install pyro-ppl
 
 Next we will install numpyro
 ```sh
-conda install fastcache -c conda-forge
 pip install numpyro
 ```
