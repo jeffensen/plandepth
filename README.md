@@ -26,9 +26,5 @@ conda create -n ppl python=3 numpy pandas matplotlib seaborn
 conda activate ppl
 conda install pytorch -c pytorch
 pip install pyro-ppl
-```
-
-Next we will install numpyro
-```sh
 pip install numpyro
 ```
