@@ -12,17 +12,17 @@ randn = torch.randn
 class BackInduction(object):
     def __init__(self,
                  planet_confs,
-                 runs=1,
+                 runs=1, # number of parallel runs (i.e. agents). For each run, one can specify a different set of model parameters.
                  mini_blocks=1,
                  trials=1,
-                 na=2,
-                 ns=6,
+                 na=2, # no of actions
+                 ns=6, # no of states
                  costs=None,
-                 utility=None,
+                 utility=None, # Utility of planet types. Can be set to rewards of the planets
                  planning_depth=1,
                  depths=None,
                  variable_depth=False):
-
+        
         self.runs = runs
         self.nmb = mini_blocks
         self.trials = trials
@@ -53,14 +53,14 @@ class BackInduction(object):
         self.transitions = torch.tensor([4, 3, 4, 5, 1, 1])
 
     def set_parameters(self, trans_par=None):
-
+        
         if trans_par is not None:
             assert trans_par.shape[-1] == self.np
 #            self.tp_mean0 = trans_par[:, :2].sigmoid()  # transition probabilty for action jump
 #            self.tp_scale0 = trans_par[:, 2:4].exp() # precision of beliefs about transition probability
-            self.beta = (trans_par[..., 0]).exp()
-            self.theta = trans_par[..., 1]
-            self.alpha = (trans_par[..., 2]).sigmoid()
+            self.beta = (trans_par[..., 0]).exp() # Response noise
+            self.theta = trans_par[..., 1] # Bias term in sigmoid function fot action-selection
+            self.alpha = (trans_par[..., 2]).sigmoid() # Learning rate for belief update
 
         else:
             self.beta = torch.tensor([10.]).repeat(self.runs)
@@ -73,6 +73,7 @@ class BackInduction(object):
 
         self.tau = torch.tensor(1e10).expand(self.batch_shape)
 
+        # (Estimated) probability of successful jump
         self.tp_mean = [self.tp_mean0]
 
         # state transition matrices
@@ -96,6 +97,8 @@ class BackInduction(object):
         self.tm_depths = tm
 
     def make_transition_matrix(self, p):
+        # INPUT: p = probability of successful jump
+        # Give p as tensor with #runs entries.
         na = self.na  # number of actions
         ns = self.ns  # number of states
         shape = self.batch_shape  # number of runs
