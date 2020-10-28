@@ -53,15 +53,24 @@ class BackInduction(object):
 
         self.transitions = torch.tensor([4, 3, 4, 5, 1, 1])
 
-    def set_parameters(self, trans_par=None):
-        
+    def set_parameters(self, trans_par=None, true_params=False):
+        # [INPUT]
+        # 1) None OR
+        # 2) torch.tensor([a, b, c]), where a = ln(beta), b = theta, and c = logit(alpha) OR
+        # 3) torch.tensor([a, b, c], true_params=True), where a = beta, b = theta, and c = alpha
+
         if trans_par is not None:
-            assert trans_par.shape[-1] == self.np
-#            self.tp_mean0 = trans_par[:, :2].sigmoid()  # transition probabilty for action jump
-#            self.tp_scale0 = trans_par[:, 2:4].exp() # precision of beliefs about transition probability
-            self.beta = (trans_par[..., 0]).exp() # Response noise
-            self.theta = trans_par[..., 1] # Bias term in sigmoid function fot action-selection
-            self.alpha = (trans_par[..., 2]).sigmoid() # Learning rate for belief update
+            if true_params:
+                self.beta = (trans_par[..., 0]) # Response noise
+                self.theta = trans_par[..., 1] # Bias term in sigmoid function fot action-selection
+                self.alpha = (trans_par[..., 2]) # Learning rate for belief update     
+            else:
+                assert trans_par.shape[-1] == self.np
+                #self.tp_mean0 = trans_par[:, :2].sigmoid()  # transition probabilty for action jump
+                #self.tp_scale0 = trans_par[:, 2:4].exp() # precision of beliefs about transition probability
+                self.beta = (trans_par[..., 0]).exp() # Response noise
+                self.theta = trans_par[..., 1] # Bias term in sigmoid function fot action-selection
+                self.alpha = (trans_par[..., 2]).sigmoid() # Learning rate for belief update                
 
         else:
             self.beta = torch.tensor([10.]).repeat(self.runs)
@@ -83,7 +92,7 @@ class BackInduction(object):
         # expected state value
         self.Vs = []
 
-        # action value difference: Q(a=right) - Q(a=jump)
+        # action value difference: Q(a=jump) - Q(a=move)
         self.D = []
 
         # response probability
@@ -138,7 +147,7 @@ class BackInduction(object):
 
         Vs = [torch.sum(utility * self.pc[:, block], -1).expand(shape+(self.ns,))]
 
-        # action value difference: Q(a=right) - Q(a=jump)
+        # action value difference: Q(a=jump) - Q(a=move)
         D = []
 
         R = torch.einsum('...ijkl,...il->...ikj', tm, Vs[-1]) + self.costs
@@ -163,7 +172,6 @@ class BackInduction(object):
         self.D.append(torch.stack(D, -1))
 
     def update_beliefs(self, block, trial, states, conditions, responses=None):
-        
         # conditions is a (2 x #runs x #miniblocks) tensor
         # conditions[0, :, :] is noise condition (0: lownoise, 1: highnoise)
         # conditions[1, :, :] is no of steps in miniblocks
@@ -207,7 +215,6 @@ class BackInduction(object):
 
         beta = self.beta[..., None]
         theta = self.theta[..., None]
-        breakpoint();
         self.logits.append(D * beta + theta)
         
     def sample_responses(self, block, trial):
@@ -223,9 +230,12 @@ class BackInduction(object):
         d = self.max_trials - trial - 1
         loc = d > depths
         d[loc] = depths[loc]
-
+        
         logits = self.logits[-1]
-
+        
+        # logit(x) = log(x/(1-x))
+        # p = 1/(1+exp(-x))
+        # -> logit(p) = x
         bern = Bernoulli(logits=logits[range(self.runs), d])
 
         res = bern.sample()
