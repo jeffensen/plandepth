@@ -11,7 +11,7 @@ randn = torch.randn
 
 class BackInduction(object):
     def __init__(self,
-                 planet_confs,
+                 planet_confs, # Matrix of zeros and ones
                  runs=1, # number of parallel runs (i.e. agents). For each run, one can specify a different set of model parameters.
                  mini_blocks=1,
                  trials=1,
@@ -40,6 +40,7 @@ class BackInduction(object):
 
         # matrix containing planet type in each state
         self.pc = planet_confs
+        
         if costs is not None:
             self.costs = costs
         else:
@@ -137,6 +138,7 @@ class BackInduction(object):
 
         Vs = [torch.sum(utility * self.pc[:, block], -1).expand(shape+(self.ns,))]
 
+        # action value difference: Q(a=right) - Q(a=jump)
         D = []
 
         R = torch.einsum('...ijkl,...il->...ikj', tm, Vs[-1]) + self.costs
@@ -161,7 +163,10 @@ class BackInduction(object):
         self.D.append(torch.stack(D, -1))
 
     def update_beliefs(self, block, trial, states, conditions, responses=None):
-
+        
+        # conditions is a (2 x #runs x #miniblocks) tensor
+        # conditions[0, :, :] is noise condition (0: lownoise, 1: highnoise)
+        # conditions[1, :, :] is no of steps in miniblocks
         self.noise = conditions[0]
         self.max_trials = conditions[1]
 
@@ -191,7 +196,7 @@ class BackInduction(object):
 
             self.make_transition_matrix(probs_new)
 
-        # set beliefs about state to observed states
+        # set beliefs about state (i.e. location of agent) to observed states
         self.states = states
 
     def plan_actions(self, block, trial):
@@ -202,9 +207,9 @@ class BackInduction(object):
 
         beta = self.beta[..., None]
         theta = self.theta[..., None]
-
+        breakpoint();
         self.logits.append(D * beta + theta)
-
+        
     def sample_responses(self, block, trial):
         if trial == 0 and block > 0:
             probs = self.tm_depths[range(self.runs), self.depths[0]]
