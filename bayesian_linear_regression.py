@@ -5,6 +5,7 @@ from time import time_ns as time
 import jax.numpy as np
 from jax import random, vmap
 from jax.scipy.special import logsumexp
+from numpyro.infer.reparam import TransformReparam
 
 import numpyro as npyro
 
@@ -12,6 +13,7 @@ import numpyro.distributions as dist
 from numpyro.infer import MCMC, NUTS, log_likelihood, Predictive
 from numpyro.distributions.transforms import Transform, AffineTransform, ComposeTransform
 from numpyro.distributions import constraints
+from numpyro import handlers
 
 vdot = vmap(np.dot)
 vinv = vmap(np.linalg.inv)
@@ -21,6 +23,7 @@ class RTransform(Transform):
     def __init__(self, R, R_inv, domain=constraints.real):
         self.R = R
         self.R_inv = R_inv
+        self.domain = domain
 
     @property
     def codomain(self):
@@ -55,31 +58,6 @@ class BayesLinRegress(object):
 
         self.rng_key = random.PRNGKey(time())
 
-    def model_tmp(self):
-        nf = self.nf
-        ns = self.ns
-
-        s = npyro.sample('s', dist.Exponential(np.ones(nf)))
-        m = npyro.sample('m', dist.Normal(np.zeros(nf), 1.))
-
-        sigma = npyro.sample('sigma', dist.InverseGamma(2.*np.ones(ns), 1.))
-
-        tau = npyro.sample('tau', dist.Exponential(100. * np.ones(ns)))
-
-        with npyro.plate('facts', nf):
-            with npyro.plate('subs', ns):
-                lam = npyro.sample('lam', dist.HalfCauchy(1.))
-                var_theta = npyro.sample('var_theta', dist.Normal(0., 1.))
-
-        gb = npyro.deterministic('group_beta', m * s)
-        theta = npyro.deterministic('theta', self.R.dot(gb) + np.expand_dims(tau, -1) * lam * var_theta)
-
-        npyro.deterministic('beta', vdot(self.R_inv, theta))
-
-        mu = vdot(self.Q, theta)
-
-        npyro.sample('obs', dist.Normal(mu, np.expand_dims(sigma, -1)), obs=self.y_data)
-
     def model(self):
         nf = self.nf
         ns = self.ns
@@ -93,11 +71,14 @@ class BayesLinRegress(object):
         with npyro.plate('facts', nf):
             with npyro.plate('subs', ns):
                 lam = npyro.sample('lam', dist.HalfCauchy(1.))
-                z = dist.Normal(0., 1.)
                 rt = RTransform(self.R, self.R_inv)
                 afft = AffineTransform(m * s, np.expand_dims(tau, -1) * lam)
                 cmp_trns = ComposeTransform([afft, rt])
-                theta = npyro.sample('theta', dist.TransformedDistribution(z, cmp_trns))
+                with handlers.reparam(config={"theta": TransformReparam()}):
+                    theta = npyro.sample(
+                        'theta', 
+                        dist.TransformedDistribution(dist.Normal(np.zeros_like(lam), np.ones_like(lam)), cmp_trns)
+                    )
 
         npyro.deterministic('group_beta', m * s)
         npyro.deterministic('beta', rt.inv(theta))
@@ -121,11 +102,14 @@ class BayesLinRegress(object):
 
         return samples
 
-    def post_pred_log_likelihood(self):
+    def waic(self):
 
         log_lk = log_likelihood(self.model, self.samples)['obs']
         n = log_lk.shape[0]
-        return (logsumexp(log_lk, 0) - np.log(n)).sum()
+
+        lpd = logsumexp(log_lk, 0) - np.log(n)
+        p_waic = n * log_lk.var(0)/(n - 1)
+        return np.sum(lpd - p_waic)
 
     def predictions(self):
         self.rng_key, rng_key_ = random.split(self.rng_key)
