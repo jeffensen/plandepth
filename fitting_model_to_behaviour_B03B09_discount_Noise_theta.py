@@ -84,7 +84,6 @@ def load_and_format_behavioural_data(local_path, filenames): #kann es nicht als 
         read_file = open(f,"r", encoding='utf-8-sig')
         tmp = json.loads(json.load(read_file)['data']) # assume json file
         read_file.close()
-        #print("tmp = ", tmp) # LG
         if all(flag <= 0 for (_, _, flag) in tmp['points']) or len(tmp['points']) != len(tmp['conditions']['noise']): fnames.remove(fnames[i])
         
     runs = len(fnames)  # number of subjects
@@ -129,7 +128,8 @@ def load_and_format_behavioural_data(local_path, filenames): #kann es nicht als 
         
         #ID = f.split('\\')[0].split('/')[-1]
         #ids.append(ID)        
-        if f.split('//')[0] != f:
+        
+        if f.split('\\')[0] != f:            
             ID = f.split('\\')[0].split('/')[-1]
         else:
             ID = f.split('/')[-2]
@@ -171,7 +171,7 @@ def variational_inference(stimuli, mask, responses):
 
     # load inference module and start model fitting
     infer = Inferrer(agent, stimuli, responses, mask)
-    infer.fit(num_iterations=1000, num_particles=100, optim_kwargs={'lr': .010}) # 1000 # lr=.1
+    infer.fit(num_iterations=2, num_particles=100, optim_kwargs={'lr': .010}) # 1000 # lr=.1
     
     return infer
 
@@ -183,7 +183,8 @@ path1 =  "/Dokumente/plandepth/Experimental_Data/OA_xtra"   # change to correct 
 path2 =  "/Dokumente/plandepth/Experimental_Data/YA_xtra" 
 path1 = 'P:/037/B3_BEHAVIORAL_STUDY/04_Experiment/LOG_Files/full_datasets_OA/'
 path2 = 'P:/037/B3_BEHAVIORAL_STUDY/04_Experiment/LOG_Files/full_datasets_YA/'
-localpath = 'H:/Sesyn/TRR265-B09/Analysis_SAT-PD2_Sophia/SAT_PD_Inference_Scripts' # LG
+#localpath = 'H:/Sesyn/TRR265-B09/Analysis_SAT-PD2_Sophia/SAT_PD_Inference_Scripts' # LG # 
+localpath = 'H:/Sesyn/TRR265-B09/Analysis_SAT-PD2_Sophia/SAT_PD_Inference_Scripts/Results_discount_Noise_theta' # LG # 
 
 filenames = ["space_adventure_pd-results.json",
              "space_adventure_pd_inv-results.json"]    # posible filenames of SAT logfiles
@@ -226,8 +227,7 @@ axes.plot(infer_oa.loss[100:])  # 100:
 df_loss = pd.DataFrame(infer_oa.loss)    
 axes.plot(range(len(df_loss[0].rolling(window=25).mean())-100), df_loss[0].rolling(window=25).mean()[100:], lw=1)    #                 
 axes.set_title('ELBO Testdaten')
-fig.savefig('ELBO Testdaten_oa_lossaversion_discount_Noise_theta_0cost.jpg')
-#fig.savefig('ELBO Testdaten_oa_discount_hiLoNoise_500-1000.jpg')
+fig.savefig(localpath + '/ELBO Testdaten_oa_lossaversion_discount_Noise_theta_0cost.jpg')
 
 
 g = sns.FacetGrid(pars_df_oa, col="parameter", height=5, sharey=False);
@@ -236,7 +236,7 @@ g = g.map(errorplot, 'subject', 'value').add_legend();
 #g.axes[0,1].set_ylim([0, 7])
 #g.axes[0,2].set_ylim([0, 1])
 
-g.fig.savefig('parameter_participant_oa_lossaversion_discount_Noise_theta_0cost.jpg')
+g.fig.savefig(localpath + '/parameter_participant_oa_lossaversion_discount_Noise_theta_0cost.jpg')
 
 # In[6]:
 
@@ -266,8 +266,7 @@ axes.plot(infer_ya.loss[100:])  # 100:
 df_loss = pd.DataFrame(infer_ya.loss)    
 axes.plot(range(len(df_loss[0].rolling(window=25).mean())-100), df_loss[0].rolling(window=25).mean()[100:], lw=1)    #                 
 axes.set_title('ELBO Testdaten')
-fig.savefig('ELBO Testdaten_ya_lossaversion_discount_Noise_theta_0cost.jpg')
-#fig.savefig('ELBO Testdaten_ya_discount_hiLoNoise_500-1000.jpg')
+fig.savefig(localpath + '/ELBO Testdaten_ya_lossaversion_discount_Noise_theta_0cost.jpg')
 
 # In[8]:
 
@@ -283,7 +282,7 @@ g = g.map(errorplot, 'subject', 'value').add_legend();
 #g.axes[0,1].set_ylim([0, 7])
 #g.axes[0,2].set_ylim([0, 1])
 
-g.fig.savefig('parameter_participant_ya_lossaversion_discount_Noise_theta_0cost.jpg')
+g.fig.savefig(localpath + '/parameter_participant_ya_lossaversion_discount_Noise_theta_0cost.jpg')
 
 # In[9]:
 
@@ -296,14 +295,14 @@ pars_df = pars_df_oa.append(pars_df_ya, ignore_index=True)
 
 g = sns.FacetGrid(pars_df, col="parameter", hue='group', height=5, sharey=False, sharex=False, palette='Set1');
 g = g.map(sns.kdeplot, 'value').add_legend();
-g.fig.savefig('post_group_parameters_OA_YA_lossaversion_discount_Noise_theta_0cost.pdf', dpi=300)
+g.fig.savefig(localpath + '/post_group_parameters_OA_YA_lossaversion_discount_Noise_theta_0cost.pdf', dpi=300)
 
 
 # In[10]:
 
 
 pars_df = pars_df_oa.append(pars_df_ya)
-pars_df.to_csv('pars_post_samples_lossaversion_discount_Noise_theta_0cost.csv')
+pars_df.to_csv(localpath + '/pars_post_samples_lossaversion_discount_Noise_theta_0cost.csv')
 
 
 # In[11]:
@@ -383,10 +382,10 @@ def get_posterior_stats(post_marg, mini_blocks=140):
 
 
 post_depth_oa, m_prob_oa, exc_count_oa = get_posterior_stats(post_marg_oa)
-np.savez('oa_plandepth_stats_B03_lossaversion_discount_Noise_theta_0cost', post_depth_oa, m_prob_oa, exc_count_oa)
+np.savez(localpath + '/oa_plandepth_stats_B03_lossaversion_discount_Noise_theta_0cost', post_depth_oa, m_prob_oa, exc_count_oa)
 
 post_depth_ya, m_prob_ya, exc_count_ya = get_posterior_stats(post_marg_ya)
-np.savez('ya_plandepth_stats_B03_lossaversion_discount_Noise_theta_0cost', post_depth_ya, m_prob_ya, exc_count_ya)
+np.savez(localpath + '/ya_plandepth_stats_B03_lossaversion_discount_Noise_theta_0cost', post_depth_ya, m_prob_ya, exc_count_ya)
 
 
 
@@ -553,7 +552,7 @@ dict_nll_oa['pseudo_Rsquare_1staction_120_mean'] = pseudo_rsquare_120_mean_oa
 dict_nll_oa['pseudo_Rsquare_1staction_hinoise_120_mean'] = pseudo_rsquare_hinoise_120_mean_oa
 dict_nll_oa['pseudo_Rsquare_1staction_lonoise_120_mean'] = pseudo_rsquare_lonoise_120_mean_oa   
 df_nll_oa = pd.DataFrame(data=dict_nll_oa)
-df_nll_oa.to_csv('NLL_oa_group_lossaversion_discount_Noise_theta_0cost.csv') 
+df_nll_oa.to_csv(localpath + '/NLL_oa_group_lossaversion_discount_Noise_theta_0cost.csv') 
 
 
 dict_nll_ya = {}
@@ -567,7 +566,7 @@ dict_nll_ya['pseudo_Rsquare_1staction_120_mean'] = pseudo_rsquare_120_mean_ya
 dict_nll_ya['pseudo_Rsquare_1staction_hinoise_120_mean'] = pseudo_rsquare_hinoise_120_mean_ya
 dict_nll_ya['pseudo_Rsquare_1staction_lonoise_120_mean'] = pseudo_rsquare_lonoise_120_mean_ya     
 df_nll_ya = pd.DataFrame(data=dict_nll_ya)
-df_nll_ya.to_csv('NLL_ya_group_lossaversion_discount_Noise_theta_0cost.csv') 
+df_nll_ya.to_csv(localpath + '/NLL_ya_group_lossaversion_discount_Noise_theta_0cost.csv') 
 
 
 
