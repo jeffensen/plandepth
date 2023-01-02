@@ -171,7 +171,7 @@ def variational_inference(stimuli, mask, responses):
 
     # load inference module and start model fitting
     infer = Inferrer(agent, stimuli, responses, mask)
-    infer.fit(num_iterations=2, num_particles=100, optim_kwargs={'lr': .010}) # 1000 # lr=.1
+    infer.fit(num_iterations=1000, num_particles=100, optim_kwargs={'lr': .010}) # 1000 # lr=.1
     
     return infer
 
@@ -394,8 +394,12 @@ file = b = np.load(localpath + '/oa_plandepth_stats_B03_lossaversion_discount_No
 fs = file.files # names of the stored arrays (['post_depth_oa', 'm_prob_oa', 'exc_count_oa'])
 post_meanPD_firstAction_oa = np.matmul(file[fs[1]][0,:,:,:], np.arange(1,4))
 import pandas as pd
-#pd.DataFrame(post_meanPD_firstAction_oa).to_csv("/home/sass/Dokumente/plandepth/meanPD_1st_action_oa.csv")
-pd.DataFrame(post_meanPD_firstAction_oa).to_csv(localpath + '/meanPD_1st_action_oa_single_lossaversion_discount_Noise_theta_0cost.csv')
+dict_ids_oa={}
+dict_ids_oa['ID'] = ids_oa
+pd.DataFrame(dict_ids_oa).to_csv(localpath + '/IDs_OA.csv')
+df_oa_meanPD = pd.DataFrame(post_meanPD_firstAction_oa) # Without subject IDs
+#df_oa_meanPD = np.transpose(pd.DataFrame(dict_ids_oa)).append(pd.DataFrame(post_meanPD_firstAction_oa)) # With subject IDs
+pd.DataFrame(df_oa_meanPD).to_csv(localpath + '/meanPD_1st_action_oa_single_lossaversion_discount_Noise_theta_0cost.csv')
 file.close()
 
 
@@ -404,10 +408,18 @@ file.close()
 file = b = np.load(localpath + '/ya_plandepth_stats_B03_lossaversion_discount_Noise_theta_0cost.npz', allow_pickle=True)
 fs = file.files # names of the stored arrays (['post_depth_ya', 'm_prob_ya', 'exc_count_ya'])
 post_meanPD_firstAction_ya = np.matmul(file[fs[1]][0,:,:,:], np.arange(1,4))
-import pandas as pd
-#pd.DataFrame(post_meanPD_firstAction_ya).to_csv("/home/sass/Dokumente/plandepth/meanPD_1st_action_ya.csv")
-pd.DataFrame(post_meanPD_firstAction_ya).to_csv(localpath + '/meanPD_1st_action_ya_single_lossaversion_discount_Noise_theta_0cost.csv')
+
+df_ya_meanPD = pd.DataFrame(post_meanPD_firstAction_ya) # Without subject IDs
+pd.DataFrame(df_ya_meanPD).to_csv(localpath + '/meanPD_1st_action_ya_single_lossaversion_discount_Noise_theta_0cost.csv')
+dict_ids_ya={}
+dict_ids_ya['ID'] = ids_ya
+pd.DataFrame(dict_ids_ya).to_csv(localpath + '/IDs_YA.csv')
+#df_ya_meanPD = np.transpose(pd.DataFrame(dict_ids_ya)).append(pd.DataFrame(post_meanPD_firstAction_oa)) # With subject IDs
+
+
 file.close()
+
+
 
 
 
