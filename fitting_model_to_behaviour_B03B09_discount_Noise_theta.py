@@ -184,7 +184,8 @@ path2 =  "/Dokumente/plandepth/Experimental_Data/YA_xtra"
 path1 = 'P:/037/B3_BEHAVIORAL_STUDY/04_Experiment/LOG_Files/full_datasets_OA/'
 path2 = 'P:/037/B3_BEHAVIORAL_STUDY/04_Experiment/LOG_Files/full_datasets_YA/'
 #localpath = 'H:/Sesyn/TRR265-B09/Analysis_SAT-PD2_Sophia/SAT_PD_Inference_Scripts' # LG # 
-localpath = 'H:/Sesyn/TRR265-B09/Analysis_SAT-PD2_Sophia/SAT_PD_Inference_Scripts/Results_discount_Noise_theta' # LG # 
+#localpath = 'H:/Sesyn/TRR265-B09/Analysis_SAT-PD2_Sophia/SAT_PD_Inference_Scripts/Results_discount_Noise_theta' # LG # 
+localpath = 'H:/Sesyn/TRR265-B09/Analysis_SAT-PD2_Sophia/SAT_PD_Inference_Scripts/Results_discount_Noise_theta/1000_iterations' # LG # 
 
 filenames = ["space_adventure_pd-results.json",
              "space_adventure_pd_inv-results.json"]    # posible filenames of SAT logfiles
@@ -563,6 +564,7 @@ dict_nll_oa['BIC_lonoise_120_mean'] = BIC_lonoise_120_oa
 dict_nll_oa['pseudo_Rsquare_1staction_120_mean'] = pseudo_rsquare_120_mean_oa
 dict_nll_oa['pseudo_Rsquare_1staction_hinoise_120_mean'] = pseudo_rsquare_hinoise_120_mean_oa
 dict_nll_oa['pseudo_Rsquare_1staction_lonoise_120_mean'] = pseudo_rsquare_lonoise_120_mean_oa   
+dict_nll_oa['ID'] = ids_oa
 df_nll_oa = pd.DataFrame(data=dict_nll_oa)
 df_nll_oa.to_csv(localpath + '/NLL_oa_group_discount_Noise_theta_0cost.csv') 
 
@@ -577,6 +579,7 @@ dict_nll_ya['BIC_lonoise_120_mean'] = BIC_lonoise_120_ya
 dict_nll_ya['pseudo_Rsquare_1staction_120_mean'] = pseudo_rsquare_120_mean_ya
 dict_nll_ya['pseudo_Rsquare_1staction_hinoise_120_mean'] = pseudo_rsquare_hinoise_120_mean_ya
 dict_nll_ya['pseudo_Rsquare_1staction_lonoise_120_mean'] = pseudo_rsquare_lonoise_120_mean_ya     
+dict_nll_ya['ID'] = ids_ya
 df_nll_ya = pd.DataFrame(data=dict_nll_ya)
 df_nll_ya.to_csv(localpath + '/NLL_ya_group_discount_Noise_theta_0cost.csv') 
 

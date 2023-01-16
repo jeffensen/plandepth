@@ -57,13 +57,13 @@ read_file.close()
 starts0 = exp1['startsExp']
 import numpy
 starts0 = numpy.asarray(starts0)
-starts0 = starts0[19:139]
+starts0 = starts0[20:140] # [19:139]
 starts0 = starts0 -1
 
 # load planet configurations for each mini-block
 planets0 = exp1['planetsExp']
 planets0 = numpy.asarray(planets0)
-planets0 = planets0[19:139,:]
+planets0 = planets0[20:140] # [19:139,:]
 planets0 = planets0 -1
 
 
@@ -85,12 +85,12 @@ for i in range(len(noise0)):
     noise0[i] = 0
     
 noise0 = numpy.asarray(noise0)
-noise0 = noise0[19:139]
+noise0 = noise0[20:140] # [19:139]
 
 # number of actions for each mini-block 
 trials0 = exp1['conditionsExp']['notrials']
 trials0 = numpy.asarray(trials0)
-trials0 = trials0[19:139]
+trials0 = trials0[20:140] # [19:139]
 
 # load action costs (all zero)
 costs0 = numpy.asarray(exp1['actionCost'])
@@ -159,11 +159,14 @@ mixed_gain_per_miniblock_map_oa = np.nan * np.ones([len(id_list_oa), mini_blocks
 parameters_oa = np.nan * np.ones([len(id_list_oa), 3])
 
 
-# TODO:
+
 # For each subject, add a simulation of 100 (?) agents based on the inferred parameters, for 3 planning depths!
 # Store gain per plannning depth for each subject.   
 # Based on the MAP estimate of planning depth (alternatively, based on a mixture model),
 # "mix" the gain per miniblock according to the estimated planning depth per miniblock.
+
+# TODO:
+# Repeat for YA subjects    
 
 
 for i_subj in range(len(id_list_oa)):
@@ -271,3 +274,64 @@ df_mixed_gain = pd.DataFrame(dict_mixed_gain_map_oa['Gain_Mixed_agents_MAP'])
 # With IDs:
 #df_mixed_gain = np.transpose(pd.DataFrame(id_list_oa)).append(pd.DataFrame(dict_mixed_gain_map_oa['Gain_Mixed_agents_MAP'])) # With subject IDs
 df_mixed_gain.to_csv(datapath + '/Gain_Mixed_agents_MAP_oa.csv')     
+
+
+
+# TODO:
+# Comparison with subjects' data (gain)
+
+date_inference = '20220412' # '20211207'
+data_behav_ya = pd.read_csv('P:/037/B3_BEHAVIORAL_STUDY/04_Experiment/Analysis_Scripts/SAT_Results/Results_Inference_behavioral_'+date_inference+'/data_ya.csv')
+data_behav_oa = pd.read_csv('P:/037/B3_BEHAVIORAL_STUDY/04_Experiment/Analysis_Scripts/SAT_Results/Results_Inference_behavioral_'+date_inference+'/data_oa.csv')
+data_PD_1staction_ya = pd.read_csv('P:/037/B3_BEHAVIORAL_STUDY/04_Experiment/Analysis_Scripts/SAT_Results/Results_Inference_behavioral_'+date_inference+'/meanPD_1st_action_ya.csv')
+data_PD_1staction_oa = pd.read_csv('P:/037/B3_BEHAVIORAL_STUDY/04_Experiment/Analysis_Scripts/SAT_Results/Results_Inference_behavioral_'+date_inference+'/meanPD_1st_action_oa.csv')
+data_inferredparams_ya = pd.read_csv('P:/037/B3_BEHAVIORAL_STUDY/04_Experiment/Analysis_Scripts/SAT_Results/Results_Inference_behavioral_'+date_inference+'/pars_post_samples.csv')
+n_subjects_ya = int(data_behav_ya['subject'].shape[0] / 140)
+n_subjects_oa = int(data_behav_oa['subject'].shape[0] / 140)
+#number_per_mb_ya = np.reshape(np.array(data_behav_ya['block_number']), (n_subjects, 140)) # test - 1st dim (0) is subjects, 2nd dim (1) is miniblocks
+gain_per_mb_ya = np.reshape(np.array(data_behav_ya['gain']), (n_subjects_ya, 140))
+gain_per_mb_oa = np.reshape(np.array(data_behav_oa['gain']), (n_subjects_oa, 140))
+
+index_hiNoise_120 = np.where(noise0 == 1)
+index_loNoise_120 = np.where(noise0 == 0)
+
+index_hiNoise_120_140 = (index_hiNoise_120 + np.array(20))[0]
+index_loNoise_120_140 = (index_loNoise_120 + np.array(20))[0]
+
+gain_per_mb_ya.mean(0)[index_hiNoise_120].sum()
+gain_per_mb_ya.mean(0)[index_loNoise_120].sum()
+
+#mixed_gain_per_miniblock_map_ya.mean(0)[index_hiNoise_120].sum()
+#mixed_gain_per_miniblock_map_ya.mean(0)[index_loNoise_120].sum()
+
+gain_per_mb_oa.mean(0)[index_hiNoise_120_140].sum()
+gain_per_mb_oa.mean(0)[index_loNoise_120_140].sum()
+
+mixed_gain_per_miniblock_map_oa.mean(0)[index_hiNoise_120].sum()
+mixed_gain_per_miniblock_map_oa.mean(0)[index_loNoise_120].sum()
+
+mean_gain_per_miniblock_oa[:, 1, :].mean(0)[index_hiNoise_120].sum()
+mean_gain_per_miniblock_oa[:, 1, :].mean(0)[index_loNoise_120].sum()
+
+
+base_path = 'H:/Sesyn/TRR265-B09/Analysis_SAT-PD2_Sophia/SAT_PD_Inference_Scripts/'
+index_loNoise_sorted = pd.read_csv(base_path+'index_loNoise_sorted_by_PD3_agentgain.csv')['loNoise'].values  
+index_hiNoise_sorted = pd.read_csv(base_path+'index_hiNoise_sorted_by_PD3_agentgain.csv')['hiNoise'].values    
+
+import scipy.stats as st
+#plt.plot(mixed_gain_per_miniblock_map_oa.mean(0), gain_per_mb_oa.mean(0)[20:], '.'); plt.plot([-30,40],[-30,40], 'k--')
+plt.plot(mixed_gain_per_miniblock_map_oa.mean(0)[index_hiNoise_120], gain_per_mb_oa.mean(0)[index_hiNoise_120_140], '.', label='high noise'); 
+plt.plot([-30,40],[-30,40], 'k--', lw=1)
+plt.plot(mixed_gain_per_miniblock_map_oa.mean(0)[index_loNoise_120], gain_per_mb_oa.mean(0)[index_loNoise_120_140], '.', color='C1', label='low noise'); #plt.plot([-30,40],[-30,40], 'k--')
+plt.legend()
+linreg_oa_hinoise = st.linregress( mixed_gain_per_miniblock_map_oa.mean(0)[index_hiNoise_120], gain_per_mb_oa.mean(0)[(index_hiNoise_120 + np.array(20))[0]] )
+plt.plot(np.arange(-30, 40), linreg_oa_hinoise.slope * np.arange(-30, 40) + linreg_oa_hinoise.intercept, '--', color='C0', lw=2)
+
+linreg_oa_lonoise = st.linregress( mixed_gain_per_miniblock_map_oa.mean(0)[index_loNoise_120], gain_per_mb_oa.mean(0)[(index_loNoise_120 + np.array(20))[0]] )
+plt.plot(np.arange(-30, 40), linreg_oa_lonoise.slope * np.arange(-30, 40) + linreg_oa_lonoise.intercept, '--', color='C1', lw=2)
+plt.xlabel('Gain per miniblock (mixed individual rational agents)')
+plt.ylabel('Mean gain per miniblock (subjects)')
+
+
+plt.plot(post_meanPD_firstAction_oa.mean(1)[index_hiNoise_120_140], gain_per_mb_oa.mean(0)[index_hiNoise_120_140], '.', label='high noise'); 
+plt.plot(post_meanPD_firstAction_oa.mean(1)[index_loNoise_120_140], gain_per_mb_oa.mean(0)[index_loNoise_120_140], '.', label='low noise'); 
