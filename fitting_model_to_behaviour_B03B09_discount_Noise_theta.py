@@ -11,7 +11,7 @@ from scipy import io
 
 import pandas as pd
 
-from torch import zeros, ones
+#from torch import zeros, ones
 
 import numpy as np
 
@@ -21,131 +21,19 @@ import seaborn as sns
 sns.set(context = 'talk', style = 'white')
 sns.set_palette("colorblind", n_colors=5, color_codes=True)
 
-# function for plotting asymetric errorbars
-def errorplot(*args, **kwargs):
-    subjects = args[0]
-    values = args[1].values
-    
-    unique_subjects = np.unique(subjects)
-    nsub = len(unique_subjects)
-    
-    values = values.reshape(-1, nsub)
-    
-    quantiles = np.percentile(values, [5, 50, 95], axis=0)
-    
-    low_perc = quantiles[0]
-    up_perc = quantiles[-1]
-    
-    x = unique_subjects
-    y = quantiles[1]
-
-    assert np.all(low_perc <= y)
-    assert np.all(y <= up_perc)
-    
-    kwargs['yerr'] = [y-low_perc, up_perc-y]
-    kwargs['linestyle'] = ''
-    kwargs['marker'] = 'o'
-    
-    plt.errorbar(x, y, **kwargs)
-    
-# function for mapping strings ('high', 'low') to numbers 0, 1
-
-def map_noise_to_values(strings):
-    for s in strings:
-        if s[0] == 'high':
-            yield 1
-        elif s[0] == 'low':
-            yield 0
-        else:
-            yield np.nan
 
 
 # In[2]:
 
 
-from pathlib import Path
+#from pathlib import Path
 from os.path import expanduser, isdir, join
 from os import listdir, walk
-import json
-    
-def load_and_format_behavioural_data(local_path, filenames): #kann es nicht als komplette funktion, nur wenn ich alles einzeln abspiele und die paths per Hand ergänze
-    
-    # search local_path and all subdirectories for files named like filename
-    home = str(Path.home())    
-    #path = home + local_path # muss man immer händisch machen 
-    path = local_path # LG
-    fnames = []
-    for paths, dirs, files in walk(path): # hier kennt es immer die Filenames nicht, da sie unten erst definiert werden?
-        for filename in [f for f in files if f in filenames]:
-            fnames.append(join(paths, filename))  # get full paths of alle filename files
-   
-    # check for exclusion (gameover by negative points or incomplete data)
-    for i,f in enumerate(fnames):
-        read_file = open(f,"r", encoding='utf-8-sig')
-        tmp = json.loads(json.load(read_file)['data']) # assume json file
-        read_file.close()
-        if all(flag <= 0 for (_, _, flag) in tmp['points']) or len(tmp['points']) != len(tmp['conditions']['noise']): fnames.remove(fnames[i])
-        
-    runs = len(fnames)  # number of subjects
-    
-    mini_blocks = 140  # number of mini blocks in each run
-    max_trials = 3  # maximal number of trials within a mini block
-    max_depth = 3  # maximal planning depth
+#import json
 
-    na = 2  # number of actions
-    ns = 6 # number of states/locations
-    no = 5 # number of outcomes/rewards
-
-    responses = zeros(runs, mini_blocks, max_trials)
-    states = zeros(runs, mini_blocks, max_trials+1, dtype=torch.long)
-    scores = zeros(runs, mini_blocks, max_depth)
-    conditions = zeros(2, runs, mini_blocks, dtype=torch.long)
-    confs = zeros(runs, mini_blocks, 6, dtype=torch.long)
-    balance_cond = zeros(runs)
-    ids = []
-    subj_IDs = []    
+from helper_files import load_and_format_behavioural_data, get_posterior_stats, errorplot#, map_noise_to_values
     
-    for i,f in enumerate(fnames):
-        read_file = open(f,"r", encoding='utf-8-sig')
-        # assume json file
-        tmp = json.loads(json.load(read_file)['data'])
-        read_file.close()
-        
-        responses[i] = torch.from_numpy(np.array(tmp['responses']['actions']) -1)
-        states[i] = torch.from_numpy(np.array(tmp['states']) - 1).long()
-        confs[i] = torch.from_numpy(np.array(tmp['planetConfigurations']) - 1).long()
-        scores[i] = torch.from_numpy(np.array(tmp['points']))
-        strings = tmp['conditions']['noise']
-        
-        conditions[0, i] = torch.tensor(np.unique(strings, return_inverse=True)[1]*(-1) + 1 , dtype=torch.long)  # "low" -> 0 | "high" -> 1
-        conditions[1, i] = torch.from_numpy(np.array(tmp['conditions']['notrials'])).long() 
-        
-        balance_cond[i] = tmp['balancingCondition'] - 1
-        
-        # here, ids are just numbered starting from one
-        # better would be to include IDs in .json file
-        #ids.append(i+1)
-        
-        #ID = f.split('\\')[0].split('/')[-1]
-        #ids.append(ID)        
-        
-        if f.split('\\')[0] != f:            
-            ID = f.split('\\')[0].split('/')[-1]
-        else:
-            ID = f.split('/')[-2]
-        ids.append(ID)                
 
-    states[states < 0] = -1
-    confs = torch.eye(no)[confs]
-
-    # define dictionary containing information which participants recieved on each trial
-    stimuli = {'conditions': conditions,
-               'states': states, 
-               'configs': confs}
-
-    mask = ~torch.isnan(responses)
-    
-    return stimuli, mask, responses, conditions, ids
 
 
 # Probabilistic inference
@@ -171,7 +59,7 @@ def variational_inference(stimuli, mask, responses):
 
     # load inference module and start model fitting
     infer = Inferrer(agent, stimuli, responses, mask)
-    infer.fit(num_iterations=1000, num_particles=100, optim_kwargs={'lr': .010}) # 1000 # lr=.1
+    infer.fit(num_iterations=2, num_particles=100, optim_kwargs={'lr': .010}) # 1000 
     
     return infer
 
@@ -306,80 +194,12 @@ pars_df = pars_df_oa.append(pars_df_ya)
 pars_df.to_csv(localpath + '/pars_post_samples_discount_Noise_theta_0cost.csv')
 
 
-# In[11]:
-
-
-# def logit(x):
-#     return -np.log(1/x - 1)
-
-# ns_oa = len(np.unique(pars_df_oa.subject.values))
-# ns_ya = len(np.unique(pars_df_ya.subject.values))
-
-# pdf_oa = pars_df_oa.copy()
-
-# pdf_ya = pars_df_ya.copy()
-# pdf_ya['sample'] = np.broadcast_to(np.arange(1000)[:, None], (1000, 3 * ns_ya)).reshape(-1)
-
-# diff = {}
-# for g1, g2 in zip(pdf_oa.groupby('parameter'), pdf_ya.groupby('parameter')):
-#     g_oa = g1[1].copy()
-#     g_oa['sample'] = np.broadcast_to(np.arange(1000)[:, None], (1000, ns_oa)).reshape(-1)
-    
-#     g_ya = g2[1].copy()
-#     g_ya['sample'] = np.broadcast_to(np.arange(1000)[:, None], (1000, ns_ya)).reshape(-1)
-
-#     smpl_oa = g_oa.pivot(index='sample', columns='subject', values='value')
-#     smpl_ya = g_ya.pivot(index='sample', columns='subject', values='value')
-    
-#     lbl = g1[0]
-#     if lbl == r'$\beta$':
-#         lbl = r'$\ln \beta$'
-#         smpl_oa = smpl_oa.transform(np.log)
-#         smpl_ya = smpl_ya.transform(np.log)
-#     elif lbl == r'$\alpha$':
-#         lbl = r'$logit(\alpha)$'
-#         smpl_oa = smpl_oa.transform(logit)
-#         smpl_ya = smpl_ya.transform(logit)
-        
-#     t_score = []
-#     p_value = []
-#     for s1, s2 in zip(smpl_oa.values, smpl_ya.values):
-#         res = ttest_ind(s1, s2)
-
-#         t = res[0]
-#         p = res[1]
-#         t_score.append(t)
-#         p_value.append(p)
-        
-#     print(lbl, 't-test stats =', np.mean(t_score), 'p-value = ', np.mean(p_value))
-#     diff[lbl] = smpl_oa.values.mean(-1) - smpl_ya.values.mean(-1)
-    
-# df = pd.DataFrame(diff)
-# df.to_csv('params_diffs.csv')
-
 
 # In what follows we will compute the posterior marginal over planning depth, compute exceedanace probability and plot the results for individual subjects and for the group level results.
 
 # In[12]:
 
 
-def get_posterior_stats(post_marg, mini_blocks=140):
-    n_samples, runs, max_trials = post_marg['d_0_0'].shape
-    post_depth = {0: np.zeros((n_samples, mini_blocks, runs, max_trials)),
-              1: np.zeros((n_samples, mini_blocks, runs, max_trials))}
-    for pm in post_marg:
-        b, t = np.array(pm.split('_')[1:]).astype(int)
-        if t in post_depth:
-            post_depth[t][:, b] = post_marg[pm]
-
-    # get sample mean over planning depth for the first and second choice
-    m_prob = [post_depth[c].mean(0) for c in range(2)]
-
-    # get sample plannign depth exceedance count of the first and second choice
-    # exceedance count => number of times planning depth d had highest posterior probability
-    exc_count = [np.array([np.sum(post_depth[t].argmax(-1) == i, 0) for i in range(3)]) for t in range(2)]
-    
-    return post_depth, m_prob, exc_count
 
 
 post_depth_oa, m_prob_oa, exc_count_oa = get_posterior_stats(post_marg_oa)
@@ -619,67 +439,6 @@ exc_count_ya_PD3 = exc_count_ya_1[2] [:] [:]
 import pandas as pd
 pd.DataFrame(exc_count_ya_PD3).to_csv(localpath+"/exc_PD3_ya_discount_Noise_theta_0cost.csv")
 file.close()
-
-
-# In[13]:
-
-
-# plot true planning depth and estimated mean posterior depth of the first action for up to five subjects of group
-
-nplots = min(len(ids_oa),5)
-fig, axes = plt.subplots(1, nplots, figsize=(15, 5), sharex=True, sharey=True)
-
-for ns, ax in zip(range(nplots), axes):
-    sns.heatmap(m_prob_oa[0][:, ns], cmap='viridis', ax=ax, cbar=True)
-    ax.set_xticklabels([1, 2, 3])
-    ax.set_xlabel('depth')
-    
-axes[0].set_ylabel('mini-block index')
-fig.suptitle('mean probability', fontsize=24)
-
-# plot true planning depth and depth exceedance probability of the first action for up to five subjects of group
-# plot true planning depth and estimated mean posterior depth of the first action for up to five subjects of group
-fig, axes = plt.subplots(1, nplots, figsize=(15, 5), sharex=True, sharey=True)
-
-for ns, ax in zip(range(nplots), axes):
-    sns.heatmap(exc_count_oa[0][..., ns].T/n_samples, cmap='viridis', ax=ax, cbar=True)
-    ax.set_xticklabels([1, 2, 3])
-    ax.set_xlabel('depth')
-
-axes[0].set_ylabel('mini-block index')
-fig.suptitle('exceedance probability', fontsize=24);
-
-
-# In[14]:
-
-
-# plot true planning depth and estimated mean posterior depth of the second action for up to five subjects of group
-
-nplots = min(len(ids_ya),5)
-fig, axes = plt.subplots(1, nplots, figsize=(15, 5), sharex=True, sharey=True)
-
-for ns, ax in zip(range(nplots), axes):
-    sns.heatmap(m_prob_oa[1][:, ns], cmap='viridis', ax=ax, cbar=True)
-    ax.set_xticklabels([1, 2, 3])
-    ax.set_xlabel('depth')
-    
-axes[0].set_ylabel('mini-block index')
-fig.suptitle('mean probability', fontsize=24)
-
-# plot true planning depth and depth exceedance probability of the second action for up to five subjects of group
-# plot true planning depth and estimated mean posterior depth of the second action for up to five subjects of group
-fig, axes = plt.subplots(1, nplots, figsize=(15, 5), sharex=True, sharey=True)
-
-for ns, ax in zip(range(nplots), axes):
-    sns.heatmap(exc_count_oa[1][..., ns].T/n_samples, cmap='viridis', ax=ax, cbar=True)
-    ax.set_xticklabels([1, 2, 3])
-    ax.set_xlabel('depth')
-
-axes[0].set_ylabel('mini-block index')
-fig.suptitle('exceedance probability', fontsize=24);
-
-
-# In[ ]:
 
 
 
