@@ -440,7 +440,7 @@ nll_120_mean_oa = np.nan * np.ones([n_subj_oa])
 pseudo_rsquare_120_mean_oa = np.nan * np.ones([n_subj_oa])
 pseudo_rsquare_hinoise_120_mean_oa = np.nan * np.ones([n_subj_oa])
 pseudo_rsquare_lonoise_120_mean_oa = np.nan * np.ones([n_subj_oa])
-m_param_count = len(np.unique(pars_df_ya['parameter'])) # 
+m_param_count = len(np.unique(pars_df_ya['parameter'])) #  WRONG! Correct solution:  m_param_count = infer_oa.agent.np
 BIC_120_mean_oa = np.nan * np.ones([n_subj_oa])
 BIC_hinoise_120_oa = np.nan * np.ones([n_subj_oa])
 BIC_lonoise_120_oa = np.nan * np.ones([n_subj_oa])
