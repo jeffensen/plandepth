@@ -171,12 +171,19 @@ responses_depth['anchor_pruning'] = []
 responses_depth['discount_noise_theta_learnprobs'] = []
 responses_depth['discount_noise_theta_anchor_pruning'] = []
 
+final_points = {}
+final_points['rational'] = []
+final_points['discount_noise_theta'] = []
+final_points['discount_noise_theta2'] = []
+final_points['anchor_pruning'] = []
+final_points['discount_noise_theta_learnprobs'] = []
+final_points['discount_noise_theta_anchor_pruning'] = []
+
 agents = {}
 
 m0 = {} # mean parameter values
 trans_pars0 = {}
 
-#agent_key = 'rational'
 for agent_key in ['rational', 'discount_noise_theta', 'discount_noise_theta2', \
                   'anchor_pruning', 'discount_noise_theta_learnprobs', 'discount_noise_theta_anchor_pruning']:
 
@@ -292,6 +299,14 @@ for agent_key in ['rational', 'discount_noise_theta', 'discount_noise_theta2', \
         points_depth[agent_key].append(points0)
         responses_depth[agent_key].append(responses0)
 
+        final_points[agent_key].append(points_depth[agent_key][i][:,:,:].numpy().sum(2).sum(1).mean())
+ 
+
+
+
+datapath = 'P:/037/B3_BEHAVIORAL_STUDY/04_Experiment/Analysis_Scripts/SAT_Results/Model fitting'
+np.transpose(pd.DataFrame(final_points)).to_csv(datapath + '/mean_points_agents.csv')
+
 # In[3]
 # plotting agent's behavior for planning depth 1:3
 '''#
@@ -315,6 +330,8 @@ plt.xlabel('score')
 #plt.savefig('finalscore_exp.pdf', bbox_inches='tight', transparent=True, dpi=600)
 #plt.savefig('finalscore_exp.png', bbox_inches='tight', transparent=True, dpi=600)
 '''
+
+
 
 plt.figure(figsize=(12,8))
 fsize=12
