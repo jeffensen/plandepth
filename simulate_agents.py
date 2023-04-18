@@ -34,6 +34,7 @@ from agents_discount_Noise_theta import BackInductionDiscountNoiseTheta
 from agents_anchor_pruning import BackInductionAnchorPruning
 from agents_discount_Noise_theta_learnprobs import BackInductionDiscountNoiseThetaLearnprobs
 from agents_discount_Noise_theta_anchor_pruning import BackInductionDiscountNoiseThetaAnchorPruning
+from agents_discount_Noise_theta_fitprobs import BackInductionDiscountNoiseThetaFitprobs
 from simulate import Simulator
 from inference import Inferrer
 
@@ -121,71 +122,71 @@ conditions0[0] = torch.tensor(noise0, dtype=torch.long)[None, :]
 conditions0[1] = torch.tensor(trials0, dtype=torch.long)
 
 
-# In[2]:
-#agents = []
-#states = []
-#simulations_rational = []
-#performance_rational = []
-#trans_pars_depth_rational = [] # LG
-#points_depth_rational = [] # LG
-#responses_depth_rational = [] # LG
 
 simulations = {}
 simulations['rational'] = []
-simulations['discount_noise_theta'] = []
-simulations['discount_noise_theta2'] = []
+simulations['discount_noise_theta_gamma0.7'] = []
+simulations['discount_noise_theta_gamma0.3'] = []
 simulations['anchor_pruning'] = []
 simulations['discount_noise_theta_learnprobs'] = []
 simulations['discount_noise_theta_anchor_pruning'] = []
+simulations['discount_noise_theta_fitprobs'] = []
 
 performance = {}
 performance['rational'] = []
-performance['discount_noise_theta'] = []
-performance['discount_noise_theta2'] = []
+performance['discount_noise_theta_gamma0.7'] = []
+performance['discount_noise_theta_gamma0.3'] = []
 performance['anchor_pruning'] = []
 performance['discount_noise_theta_learnprobs'] = []
 performance['discount_noise_theta_anchor_pruning'] = []
-
+performance['discount_noise_theta_fitprobs'] = []
 
 trans_pars_depth = {}
 trans_pars_depth['rational'] = []
-trans_pars_depth['discount_noise_theta'] = []
-trans_pars_depth['discount_noise_theta2'] = []
+trans_pars_depth['discount_noise_theta_gamma0.7'] = []
+trans_pars_depth['discount_noise_theta_gamma0.3'] = []
 trans_pars_depth['anchor_pruning'] = []
 trans_pars_depth['discount_noise_theta_learnprobs'] = []
 trans_pars_depth['discount_noise_theta_anchor_pruning'] = []
+trans_pars_depth['discount_noise_theta_fitprobs'] = []
 
 points_depth = {}
 points_depth['rational'] = []
-points_depth['discount_noise_theta'] = []
-points_depth['discount_noise_theta2'] = []
+points_depth['discount_noise_theta_gamma0.7'] = []
+points_depth['discount_noise_theta_gamma0.3'] = []
 points_depth['anchor_pruning'] = []
 points_depth['discount_noise_theta_learnprobs'] = []
 points_depth['discount_noise_theta_anchor_pruning'] = []
+points_depth['discount_noise_theta_fitprobs'] = []
 
 responses_depth = {}
 responses_depth['rational'] = []
-responses_depth['discount_noise_theta'] = []
-responses_depth['discount_noise_theta2'] = []
+responses_depth['discount_noise_theta_gamma0.7'] = []
+responses_depth['discount_noise_theta_gamma0.3'] = []
 responses_depth['anchor_pruning'] = []
 responses_depth['discount_noise_theta_learnprobs'] = []
 responses_depth['discount_noise_theta_anchor_pruning'] = []
+responses_depth['discount_noise_theta_fitprobs'] = []
 
 final_points = {}
 final_points['rational'] = []
-final_points['discount_noise_theta'] = []
-final_points['discount_noise_theta2'] = []
+final_points['discount_noise_theta_gamma0.7'] = []
+final_points['discount_noise_theta_gamma0.3'] = []
 final_points['anchor_pruning'] = []
 final_points['discount_noise_theta_learnprobs'] = []
 final_points['discount_noise_theta_anchor_pruning'] = []
+final_points['discount_noise_theta_fitprobs'] = []
 
 agents = {}
 
 m0 = {} # mean parameter values
 trans_pars0 = {}
 
-for agent_key in ['rational', 'discount_noise_theta', 'discount_noise_theta2', \
-                  'anchor_pruning', 'discount_noise_theta_learnprobs', 'discount_noise_theta_anchor_pruning']:
+for agent_key in ['rational', 'discount_noise_theta_gamma0.7', 'discount_noise_theta_gamma0.3', \
+                  'anchor_pruning', 'discount_noise_theta_learnprobs', 'discount_noise_theta_anchor_pruning', \
+                  'discount_noise_theta_fitprobs']:
+    
+#for agent_key in ['discount_noise_theta_fitprobs']:    
 
     for i in range(3):
     # define space adventure task with aquired configurations
@@ -210,8 +211,8 @@ for agent_key in ['rational', 'discount_noise_theta', 'discount_noise_theta2', \
             #m0['rational'] = torch.tensor([1.099, 0., 0.0])# beta= 3, because 1.099=np.log(3); alpha = 0.5 (too high!!!)
             m0['rational'] = torch.tensor([1.099, 0., -2.])#            
             
-        elif agent_key == 'discount_noise_theta': 
-            agents['discount_noise_theta'] = BackInductionDiscountNoiseTheta(confs0,
+        elif agent_key == 'discount_noise_theta_gamma0.7': 
+            agents['discount_noise_theta_gamma0.7'] = BackInductionDiscountNoiseTheta(confs0,
                           runs=runs0,
                           mini_blocks=mini_blocks0,
                           trials=3,
@@ -219,10 +220,10 @@ for agent_key in ['rational', 'discount_noise_theta', 'discount_noise_theta2', \
                           planning_depth=i+1)
 
             # set beta, theta and gamma (discounting) parameters 
-            m0['discount_noise_theta'] = torch.tensor([1.099, 0., 0.85])# beta= 3, because 1.099=np.log(3) // gamma=0.7=sigmoid(0.85)
+            m0['discount_noise_theta_gamma0.7'] = torch.tensor([1.099, 0., 0.85])# beta= 3, because 1.099=np.log(3) // gamma=0.7=sigmoid(0.85)
 
-        elif agent_key == 'discount_noise_theta2': 
-            agents['discount_noise_theta2'] = BackInductionDiscountNoiseTheta(confs0,
+        elif agent_key == 'discount_noise_theta_gamma0.3': 
+            agents['discount_noise_theta_gamma0.3'] = BackInductionDiscountNoiseTheta(confs0,
                           runs=runs0,
                           mini_blocks=mini_blocks0,
                           trials=3,
@@ -230,7 +231,7 @@ for agent_key in ['rational', 'discount_noise_theta', 'discount_noise_theta2', \
                           planning_depth=i+1)
 
             # set beta, theta and gamma (discounting) parameters 
-            m0['discount_noise_theta2'] = torch.tensor([1.099, 0., -0.85])# beta= 3, because 1.099=np.log(3) // gamma=0.3=sigmoid(-0.85)  
+            m0['discount_noise_theta_gamma0.3'] = torch.tensor([1.099, 0., -0.85])# beta= 3, because 1.099=np.log(3) // gamma=0.3=sigmoid(-0.85)  
 
         elif agent_key == 'anchor_pruning': 
             agents['anchor_pruning'] = BackInductionAnchorPruning(confs0,
@@ -265,7 +266,21 @@ for agent_key in ['rational', 'discount_noise_theta', 'discount_noise_theta2', \
 
             # set beta, theta and alpha parameters as a normal distribution around a certain value
             m0['discount_noise_theta_anchor_pruning'] = torch.tensor([1.099, 0., 0.85])# beta= 3, because 1.099=np.log(3), theta=0, gamma=0.7
-  
+ 
+        elif agent_key == 'discount_noise_theta_fitprobs':    
+            agents['discount_noise_theta_fitprobs'] = BackInductionDiscountNoiseThetaFitprobs(confs0,
+                          runs=runs0,
+                          mini_blocks=mini_blocks0,
+                          trials=3,
+                          costs = torch.tensor([0., 0.]), 
+                          planning_depth=i+1)
+
+            # set beta, theta and alpha parameters as a normal distribution around a certain value
+            #m0['discount_noise_theta_fitprobs'] = torch.tensor([1.099, 0., 10, 0, 0.85])# beta= 3, because 1.099=np.log(3), theta=0, prob_lonoise=0.99, prob_hinoise=0.5, gamma=0.7: 1716 points on average - very good!
+            #m0['discount_noise_theta_fitprobs'] = torch.tensor([1.099, 0., 2.2, 0, 0.85])# beta= 3, because 1.099=np.log(3), theta=0, prob_lonoise=0.9, prob_hinoise=0.5, gamma=0.7: 1711 points on average - very good!
+            #m0['discount_noise_theta_fitprobs'] = torch.tensor([1.099, 0., 2.2, 2.2, 0.85])# beta= 3, because 1.099=np.log(3), theta=0, prob_lonoise=0.9, prob_hinoise=0.9, gamma=0.7: 1673 points on average - still pretty good!           
+            m0['discount_noise_theta_fitprobs'] = torch.tensor([1.099, 0., 10, 10, 0.85]) # beta= 3, because 1.099=np.log(3), theta=0, prob_lonoise=0.99, prob_hinoise=0.99, gamma=0.7: 1658 points on average - still pretty good!                      
+      
         
         #trans_pars0[agent_key] = torch.distributions.Normal(m0[agent_key], 1.).sample((runs0,))
         trans_pars0[agent_key] = torch.distributions.Normal(m0[agent_key], 0.5).sample((runs0,)) # lower variability in parameters!
@@ -302,6 +317,16 @@ for agent_key in ['rational', 'discount_noise_theta', 'discount_noise_theta2', \
         final_points[agent_key].append(points_depth[agent_key][i][:,:,:].numpy().sum(2).sum(1).mean())
  
 
+    dict_mb_gain = {}
+    dict_mb_gain['Mean_gain_PD3'] = points_depth[agent_key][2][:,:,:].numpy().sum(2).mean(0)
+    dict_mb_gain['Std_gain_PD3'] = points_depth[agent_key][2][:,:,:].numpy().sum(2).std(0)
+    dict_mb_gain['Mean_gain_PD2'] = points_depth[agent_key][1][:,:,:].numpy().sum(2).mean(0)
+    dict_mb_gain['Std_gain_PD2'] = points_depth[agent_key][1][:,:,:].numpy().sum(2).std(0)
+    dict_mb_gain['Mean_gain_PD1'] = points_depth[agent_key][0][:,:,:].numpy().sum(2).mean(0)
+    dict_mb_gain['Std_gain_PD1'] = points_depth[agent_key][0][:,:,:].numpy().sum(2).std(0)
+    df_mean_std_permb = pd.DataFrame(data=dict_mb_gain)
+    df_mean_std_permb.to_csv('miniblock_gain_mean_std_'+agent_key+'.csv')
+
 
 
 datapath = 'P:/037/B3_BEHAVIORAL_STUDY/04_Experiment/Analysis_Scripts/SAT_Results/Model fitting'
@@ -336,16 +361,16 @@ plt.xlabel('score')
 plt.figure(figsize=(12,8))
 fsize=12
 bp1 = plt.boxplot([points_depth['rational'][2][:,:,:].numpy().sum(2).sum(1), #.mean(0),
-                   points_depth['discount_noise_theta'][2][:,:,:].numpy().sum(2).sum(1),
-                   points_depth['discount_noise_theta2'][2][:,:,:].numpy().sum(2).sum(1),
+                   points_depth['discount_noise_theta_gamma0.7'][2][:,:,:].numpy().sum(2).sum(1),
+                   points_depth['discount_noise_theta_gamma0.3'][2][:,:,:].numpy().sum(2).sum(1),
                    points_depth['anchor_pruning'][2][:,:,:].numpy().sum(2).sum(1),
                    points_depth['discount_noise_theta_learnprobs'][2][:,:,:].numpy().sum(2).sum(1),
                    points_depth['discount_noise_theta_anchor_pruning'][2][:,:,:].numpy().sum(2).sum(1)], \
                 positions=[1, 1.6, 2.2, 2.8, 3.4, 4], showmeans=True,
                 patch_artist=True, boxprops=dict(facecolor="C0", alpha=0.3))
 bp2 = plt.boxplot([points_depth['rational'][1][:,:,:].numpy().sum(2).sum(1),
-                   points_depth['discount_noise_theta'][1][:,:,:].numpy().sum(2).sum(1),
-                   points_depth['discount_noise_theta2'][1][:,:,:].numpy().sum(2).sum(1),
+                   points_depth['discount_noise_theta_gamma0.7'][1][:,:,:].numpy().sum(2).sum(1),
+                   points_depth['discount_noise_theta_gamma0.3'][1][:,:,:].numpy().sum(2).sum(1),
                    points_depth['anchor_pruning'][1][:,:,:].numpy().sum(2).sum(1),
                    points_depth['discount_noise_theta_learnprobs'][1][:,:,:].numpy().sum(2).sum(1),
                    points_depth['discount_noise_theta_anchor_pruning'][1][:,:,:].numpy().sum(2).sum(1)], \

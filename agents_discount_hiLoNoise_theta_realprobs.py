@@ -9,7 +9,7 @@ ones = torch.ones
 randn = torch.randn
 
 
-class BackInductionDiscountNoiseThetaFitprobs(object):
+class BackInductionDiscountHiLoNoiseTheta_realprobs(object):
     def __init__(self,
                  planet_confs, # Matrix of zeros and ones
                  runs=1, # number of parallel runs (i.e. agents). For each run, one can specify a different set of model parameters.
@@ -26,7 +26,7 @@ class BackInductionDiscountNoiseThetaFitprobs(object):
         self.runs = runs
         self.nmb = mini_blocks
         self.trials = trials
-        self.np = 5  # number of free model parameters
+        self.np = 4  # number of free model parameters
 
         self.depth = planning_depth  # maximal planning depth
         if depths is None:
@@ -63,29 +63,33 @@ class BackInductionDiscountNoiseThetaFitprobs(object):
             if true_params:
                 self.beta = (trans_par[..., 0]) # Response noise
                 self.theta = trans_par[..., 1] # Bias term in sigmoid function fot action-selection
-                self.prob_lonoise = (trans_par[..., 2]) # Assumed jump success probability     
-                self.prob_hinoise = (trans_par[..., 3]) # Assumed jump success probability                     
-                self.gamma = (trans_par[..., 4]) # Discount factor for Q values in low + high noise                                
+                #self.alpha = (trans_par[..., 2]) # Learning rate for belief update     
+                self.gamma_loNoise = (trans_par[..., 2]) # Discount factor for Q values in high noise                
+                self.gamma_hiNoise = (trans_par[..., 3]) # Discount factor for Q values in high noise
             else:
                 assert trans_par.shape[-1] == self.np
                 #self.tp_mean0 = trans_par[:, :2].sigmoid()  # transition probabilty for action jump
                 #self.tp_scale0 = trans_par[:, 2:4].exp() # precision of beliefs about transition probability
                 self.beta = (trans_par[..., 0]).exp() # Response noise
                 self.theta = trans_par[..., 1] # Bias term in sigmoid function fot action-selection
-                self.prob_lonoise = (trans_par[..., 2]).sigmoid() # Assumed jump success probability
-                self.prob_hinoise = (trans_par[..., 3]).sigmoid() # Assumed jump success probability                
-                self.gamma = (trans_par[..., 4]).sigmoid() # Discount factor for Q values in low+high noise                
+                #self.alpha = (trans_par[..., 2]).sigmoid() # Learning rate for belief update                
+                #self.gamma = (trans_par[..., 2]).sigmoid() # Discount factor for Q values in high noise               
+                self.gamma_loNoise = (trans_par[..., 2]).sigmoid() # Discount factor for Q values in high noise                
+                self.gamma_hiNoise = (trans_par[..., 3]).sigmoid() # Discount factor for Q values in high noise
                 
         else:
             self.beta = torch.tensor([10.]).repeat(self.runs)
             self.theta = zeros(self.runs)
-            self.prob = zeros(self.runs)
-            self.gamma = zeros(self.runs)             
+            #self.alpha = zeros(self.runs)
+            #self.gamma = zeros(self.runs)   
+            self.gamma_loNoise = zeros(self.runs) 
+            self.gamma_hiNoise = zeros(self.runs) 
+            
 
         self.batch_shape = self.beta.shape
 
         # hier kann man den start wert von der transitionsmatrix setzen
-        self.tp_mean0 = torch.tensor([self.prob_lonoise[0], self.prob_hinoise[0]]).expand(self.batch_shape + (2,))
+        self.tp_mean0 = torch.tensor([.9, .5]).expand(self.batch_shape + (2,))
 
         self.tau = torch.tensor(1e10).expand(self.batch_shape)
 
@@ -149,7 +153,8 @@ class BackInductionDiscountNoiseThetaFitprobs(object):
         tm = self.tm[-1]  # transition matrix
         depth = self.depth  # planning depth
         shape = self.batch_shape
-        gamma = self.gamma        
+        gamma_loNoise = self.gamma_loNoise
+        gamma_hiNoise = self.gamma_hiNoise        
 
         utility = self.utility
 
@@ -166,7 +171,9 @@ class BackInductionDiscountNoiseThetaFitprobs(object):
             #dQ = Q[..., 1] - Q[..., 0] # Note(LG): Default model
             
             # Note (LG): Apply changes to value function here!!!
-            Qjump = torch.einsum('...i, ...ij ->...ij', gamma, Q[...,1]) # Corrected            
+            #Qjump = torch.einsum('...i, ...ij ->...ij', (self.tp_mean[0][...,self.noise[0]]==0.9) *gamma + (self.tp_mean[0][...,self.noise[0]]==0.5) * 1.0,  Q[...,1]) # 27.06.2022 ERROR! Gamma was applied to low noise, not high noise!!!
+            #Qjump = torch.einsum('...i, ...ij ->...ij', (self.tp_mean[0][...,self.noise[0]]==0.5) *gamma_hiNoise + (self.tp_mean[0][...,self.noise[0]]==0.9) * gamma_loNoise,  Q[...,1]) # 30.06.2022 Stil wrong!!! tp_mean isn't updated!!!
+            Qjump = torch.einsum('...i, ...ij ->...ij', (self.noise[0]==1) * self.gamma_hiNoise + (self.noise[0]==0) * self.gamma_loNoise,  Q[...,1]) # Corrected
             
             # LG: Does self.noise[0] change across miniblovks, or is it the noise value for miniblock zero?!
             dQ = Qjump - Q[..., 0]
@@ -226,18 +233,17 @@ class BackInductionDiscountNoiseThetaFitprobs(object):
             #else:
             #    lr = responses * alpha
             #succesful_transitions = (self.transitions[self.states] == states).float()
-            probs = self.tp_mean[-1][..., subs, self.noise]
+            #probs = self.tp_mean[-1][..., subs, self.noise]
 
             #probs_new = probs + lr * (succesful_transitions - probs)
-            probs_new = self.tp_mean[-1][..., subs, self.noise]            
 
             tp_mean = self.tp_mean[-1].clone()
 
-            tp_mean[..., subs, self.noise] = probs_new
+            #tp_mean[..., subs, self.noise] = probs_new
 
             self.tp_mean.append(tp_mean)
 
-            self.make_transition_matrix(probs_new)
+            #self.make_transition_matrix(probs_new)
 
         # set beliefs about state (i.e. location of agent) to observed states
         self.states = states
