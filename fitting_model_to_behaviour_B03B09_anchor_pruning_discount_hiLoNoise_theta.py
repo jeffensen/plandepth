@@ -65,11 +65,13 @@ def variational_inference(stimuli, mask, responses):
 # In[3]:
 
 # load and format behavioural data
-path1 =  "/Dokumente/plandepth/Experimental_Data/OA_xtra"   # change to correct path
-path2 =  "/Dokumente/plandepth/Experimental_Data/YA_xtra" 
 path1 = 'P:/037/B3_BEHAVIORAL_STUDY/04_Experiment/LOG_Files/full_datasets_OA/'
 path2 = 'P:/037/B3_BEHAVIORAL_STUDY/04_Experiment/LOG_Files/full_datasets_YA/'
 localpath = 'P:/037/B3_BEHAVIORAL_STUDY/04_Experiment/Analysis_Scripts/SAT_Results/Results_anchor_pruning_discount_hiLoNoise_theta' # LG
+
+#path1 = '/home/h7/goenner/TRR265-B09/LOG_Files/full_datasets_OA/'
+#path2 = '/home/h7/goenner/TRR265-B09/LOG_Files/full_datasets_YA/'
+#localpath = '/home/h7/goenner/TRR265-B09/Analysis SAT-PD2-Sophia/plandepth/'
 
 filenames = ["space_adventure_pd-results.json",
              "space_adventure_pd_inv-results.json"]    # posible filenames of SAT logfiles
