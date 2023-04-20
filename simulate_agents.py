@@ -67,14 +67,16 @@ read_file.close()
 starts0 = exp1['startsExp']
 import numpy
 starts0 = numpy.asarray(starts0)
-starts0 = starts0[19:139]
+#starts0 = starts0[19:139]
+starts0 = starts0[20:140]
 starts0 = starts0 -1
 
 # load planet configurations for each mini-block
 planets0 = exp1['planetsExp']
 planets0 = numpy.asarray(planets0)
 planets11 = planets0
-planets0 = planets0[19:139,:]
+#planets0 = planets0[19:139,:]
+planets0 = planets0[20:140,:]
 planets0 = planets0 -1
 
 
@@ -96,12 +98,15 @@ for i in range(len(noise0)):
     noise0[i] = 0
     
 noise0 = numpy.asarray(noise0)
-noise0 = noise0[19:139]
+#noise0 = noise0[19:139]
+noise0 = noise0[20:140]
+
 
 # number of actions for each mini-block 
 trials0 = exp1['conditionsExp']['notrials']
 trials0 = numpy.asarray(trials0)
-trials0 = trials0[19:139]
+#trials0 = trials0[19:139]
+trials0 = trials0[20:140]
 
 # load action costs (all zero)
 costs0 = numpy.asarray(exp1['actionCost'])
@@ -131,6 +136,7 @@ simulations['anchor_pruning'] = []
 simulations['discount_noise_theta_learnprobs'] = []
 simulations['discount_noise_theta_anchor_pruning'] = []
 simulations['discount_noise_theta_fitprobs'] = []
+simulations['random'] = []
 
 performance = {}
 performance['rational'] = []
@@ -140,6 +146,7 @@ performance['anchor_pruning'] = []
 performance['discount_noise_theta_learnprobs'] = []
 performance['discount_noise_theta_anchor_pruning'] = []
 performance['discount_noise_theta_fitprobs'] = []
+performance['random'] = []
 
 trans_pars_depth = {}
 trans_pars_depth['rational'] = []
@@ -149,6 +156,7 @@ trans_pars_depth['anchor_pruning'] = []
 trans_pars_depth['discount_noise_theta_learnprobs'] = []
 trans_pars_depth['discount_noise_theta_anchor_pruning'] = []
 trans_pars_depth['discount_noise_theta_fitprobs'] = []
+trans_pars_depth['random'] = []
 
 points_depth = {}
 points_depth['rational'] = []
@@ -158,6 +166,7 @@ points_depth['anchor_pruning'] = []
 points_depth['discount_noise_theta_learnprobs'] = []
 points_depth['discount_noise_theta_anchor_pruning'] = []
 points_depth['discount_noise_theta_fitprobs'] = []
+points_depth['random'] = []
 
 responses_depth = {}
 responses_depth['rational'] = []
@@ -167,6 +176,7 @@ responses_depth['anchor_pruning'] = []
 responses_depth['discount_noise_theta_learnprobs'] = []
 responses_depth['discount_noise_theta_anchor_pruning'] = []
 responses_depth['discount_noise_theta_fitprobs'] = []
+responses_depth['random'] = []
 
 final_points = {}
 final_points['rational'] = []
@@ -176,6 +186,7 @@ final_points['anchor_pruning'] = []
 final_points['discount_noise_theta_learnprobs'] = []
 final_points['discount_noise_theta_anchor_pruning'] = []
 final_points['discount_noise_theta_fitprobs'] = []
+final_points['random'] = []
 
 agents = {}
 
@@ -184,7 +195,7 @@ trans_pars0 = {}
 
 for agent_key in ['rational', 'discount_noise_theta_gamma0.7', 'discount_noise_theta_gamma0.3', \
                   'anchor_pruning', 'discount_noise_theta_learnprobs', 'discount_noise_theta_anchor_pruning', \
-                  'discount_noise_theta_fitprobs']:
+                  'discount_noise_theta_fitprobs', 'random']:
     
 #for agent_key in ['discount_noise_theta_fitprobs']:    
 
@@ -275,12 +286,22 @@ for agent_key in ['rational', 'discount_noise_theta_gamma0.7', 'discount_noise_t
                           costs = torch.tensor([0., 0.]), 
                           planning_depth=i+1)
 
+        
+
             # set beta, theta and alpha parameters as a normal distribution around a certain value
             #m0['discount_noise_theta_fitprobs'] = torch.tensor([1.099, 0., 10, 0, 0.85])# beta= 3, because 1.099=np.log(3), theta=0, prob_lonoise=0.99, prob_hinoise=0.5, gamma=0.7: 1716 points on average - very good!
             #m0['discount_noise_theta_fitprobs'] = torch.tensor([1.099, 0., 2.2, 0, 0.85])# beta= 3, because 1.099=np.log(3), theta=0, prob_lonoise=0.9, prob_hinoise=0.5, gamma=0.7: 1711 points on average - very good!
             #m0['discount_noise_theta_fitprobs'] = torch.tensor([1.099, 0., 2.2, 2.2, 0.85])# beta= 3, because 1.099=np.log(3), theta=0, prob_lonoise=0.9, prob_hinoise=0.9, gamma=0.7: 1673 points on average - still pretty good!           
             m0['discount_noise_theta_fitprobs'] = torch.tensor([1.099, 0., 10, 10, 0.85]) # beta= 3, because 1.099=np.log(3), theta=0, prob_lonoise=0.99, prob_hinoise=0.99, gamma=0.7: 1658 points on average - still pretty good!                      
       
+        elif agent_key == 'random':    
+            agents['random'] = BackInduction(confs0,
+                          runs=runs0,
+                          mini_blocks=mini_blocks0,
+                          trials=3,
+                          costs = torch.tensor([0., 0.]), 
+                          planning_depth=i+1)        
+            m0['random'] = torch.tensor([-10, 0., 0.]) # beta close to zero
         
         #trans_pars0[agent_key] = torch.distributions.Normal(m0[agent_key], 1.).sample((runs0,))
         trans_pars0[agent_key] = torch.distributions.Normal(m0[agent_key], 0.5).sample((runs0,)) # lower variability in parameters!
@@ -354,6 +375,14 @@ plt.ylabel('count')
 plt.xlabel('score')
 #plt.savefig('finalscore_exp.pdf', bbox_inches='tight', transparent=True, dpi=600)
 #plt.savefig('finalscore_exp.png', bbox_inches='tight', transparent=True, dpi=600)
+
+
+for i in range(3):
+    plt.figure()
+    plt.plot(performance['random'][i].numpy().cumsum(axis=-1).T + starting_points, 'C'+str(i))    
+    plt.ylabel('points')
+    plt.xlabel('nb of mini-blocks')
+    plt.ylim([-500,2700])
 '''
 
 
