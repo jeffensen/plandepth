@@ -92,8 +92,8 @@ def format_posterior_samples(infer):
     pars_df, mg_df, sg_df = infer.sample_from_posterior(labels)
     
     # transform sampled parameter values to the true parameter range
-    pars_df[r'$\tilde{\beta}_{loNoise}$'] = torch.from_numpy(pars_df[r'$\tilde{\beta}_{loNoise}$'].values).exp().numpy()
-    pars_df[r'$\tilde{\beta}_{hiNoise}$'] = torch.from_numpy(pars_df[r'$\tilde{\beta}_{hiNoise}$'].values).exp().numpy()    
+    pars_df[r'$\beta_{loNoise}$'] = torch.from_numpy(pars_df[r'$\tilde{\beta}_{loNoise}$'].values).exp().numpy()
+    pars_df[r'$\beta_{hiNoise}$'] = torch.from_numpy(pars_df[r'$\tilde{\beta}_{hiNoise}$'].values).exp().numpy()    
     pars_df[r'$\gamma$'] = torch.from_numpy(pars_df[r'$\gamma$'].values).sigmoid().numpy()
 
     pars_df.drop([r'$\tilde{\beta}_{loNoise}$'], axis=1, inplace=True) # , r'$\gamma_{loNoise}$', r'$\gamma_{hiNoise}$'
