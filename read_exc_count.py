@@ -16,6 +16,7 @@ import json
 sys.path.append('../')
 from tasks import SpaceAdventure
 from agents import BackInduction
+from agents_discount_Noise_theta_anchor_pruning import BackInductionDiscountNoiseThetaAnchorPruning
 from simulate import Simulator
 
 
@@ -113,7 +114,7 @@ conditions0[1] = torch.tensor(trials0, dtype=torch.long)
 
 
 
-#'''#
+'''#
 datapath = 'H:\Sesyn\TRR265-B09\Analysis_SAT-PD2_Sophia\SAT_PD_Inference_Scripts\Results_inference_group_NLL_0cost_1000it_lr0-01_20220706'
 modelname = 'rational'
 df_exc_pd1_oa = pd.read_csv(datapath + '\exc_PD1_oa_0cost.csv')
@@ -122,23 +123,36 @@ df_exc_pd3_oa = pd.read_csv(datapath + '\exc_PD3_oa_0cost.csv')
 df_params_all = pd.read_csv(datapath + '/pars_post_samples_0cost.csv')
 file_oa = np.load(datapath + '/oa_plandepth_stats_B03.npz', allow_pickle=True)
 file_ya = np.load(datapath + '/ya_plandepth_stats_B03.npz', allow_pickle=True)
-#'''
+'''
 
 '''#
 datapath = 'H:\Sesyn\TRR265-B09\Analysis_SAT-PD2_Sophia\SAT_PD_Inference_Scripts\Results_inference_group_discount_Noise_theta_0cost_20220706'
 modelname = 'discount_Noise_theta'
-df_exc_pd1_oa = pd.read_csv(datapath + '\exc_PD1_oa_discount_Noise_theta_0cost.csv')
-df_exc_pd2_oa = pd.read_csv(datapath + '\exc_PD2_oa_discount_Noise_theta_0cost.csv')
-df_exc_pd3_oa = pd.read_csv(datapath + '\exc_PD3_oa_discount_Noise_theta_0cost.csv')
+df_exc_pd1_oa = pd.read_csv(datapath + '\exc_PD1_oa_0cost.csv')
+df_exc_pd2_oa = pd.read_csv(datapath + '\exc_PD2_oa_0cost.csv')
+df_exc_pd3_oa = pd.read_csv(datapath + '\exc_PD3_oa_0cost.csv')
 df_params_all = pd.read_csv(datapath + '/pars_post_samples_discount_Noise_theta_0cost.csv')
 file_oa = np.load(datapath + '/oa_plandepth_stats_B03_discount_Noise_theta_0cost.npz', allow_pickle=True)  
 file_ya = np.load(datapath + '/ya_plandepth_stats_B03_discount_Noise_theta_0cost.npz', allow_pickle=True)  
 '''
 
+datapath = 'P:/037/B3_BEHAVIORAL_STUDY/04_Experiment/Analysis_Scripts/SAT_Results/Results_anchor_pruning_discount_Noise_theta'
+modelname = 'discount_Noise_theta_anchor_pruning'
+#df_exc_pd1_oa = pd.read_csv(datapath + '\exc_PD1_oa_anchor_pruning_discount_Noise_theta.csv')
+#df_exc_pd2_oa = pd.read_csv(datapath + '\exc_PD2_oa_anchor_pruning_discount_Noise_theta.csv')
+#df_exc_pd3_oa = pd.read_csv(datapath + '\exc_PD1_oa_anchor_pruning_discount_Noise_theta.csv')
+#df_exc_pd1_ya = pd.read_csv(datapath + '\exc_PD1_ya_anchor_pruning_discount_Noise_theta.csv')
+#df_exc_pd2_ya = pd.read_csv(datapath + '\exc_PD2_ya_anchor_pruning_discount_Noise_theta.csv')
+#df_exc_pd3_ya = pd.read_csv(datapath + '\exc_PD1_ya_anchor_pruning_discount_Noise_theta.csv')
+df_params_all = pd.read_csv(datapath + '/pars_post_samples_anchor_pruning_discount_Noise_theta.csv')
+file_oa = np.load(datapath + '/oa_plandepth_stats_B03_anchor_pruning_discount_Noise_theta.npz', allow_pickle=True)  
+file_ya = np.load(datapath + '/ya_plandepth_stats_B03_anchor_pruning_discount_Noise_theta.npz', allow_pickle=True)  
+
 fs = file_oa.files # names of the stored arrays (['post_depth_oa', 'm_prob_oa', 'exc_count_oa'])
 post_meanPD_firstAction_oa = np.matmul(file_oa[fs[1]][0,:,:,:], np.arange(1,4))
 exc_count_firstAction_oa = file_oa[fs[2]][0,:,:,:]
 pd_map_estimate_oa = np.argmax(file_oa[fs[2]][0,:,:,:], 0)
+pd_posterior_probs_oa = file_oa[fs[1]][0,:,:,:]
 file_oa.close()
 
 
@@ -146,6 +160,7 @@ fs = file_ya.files # names of the stored arrays (['post_depth_ya', 'm_prob_ya', 
 post_meanPD_firstAction_ya = np.matmul(file_ya[fs[1]][0,:,:,:], np.arange(1,4))
 exc_count_firstAction_ya = file_ya[fs[2]][0,:,:,:]
 pd_map_estimate_ya = np.argmax(file_ya[fs[2]][0,:,:,:], 0)
+pd_posterior_probs_ya = file_ya[fs[1]][0,:,:,:]
 file_ya.close()
 
 
@@ -184,6 +199,8 @@ mean_gain_per_miniblock_oa = np.nan * np.ones([len(id_list_oa), 3, mini_blocks0]
 
 mixed_agent_gain_per_miniblock_map = np.nan * np.ones([n_groups, max_group_size, mini_blocks0])
 mixed_agent_gain_per_miniblock_map_oa = np.nan * np.ones([len(id_list_oa), mini_blocks0])
+
+mixed_agent_gain_per_miniblock_meanPD = np.nan * np.ones([n_groups, max_group_size, mini_blocks0])
 
 parameters = np.nan * np.ones([n_groups, max_group_size, 3])
 parameters_oa = np.nan * np.ones([len(id_list_oa), 3])
@@ -225,9 +242,14 @@ for i_group in range(n_groups):
 
         # Back-transformed parameters:
 
+        #m0 = [np.log(torch.tensor(float(str(mean_beta[i_group, i_subj])))), \
+        #  torch.tensor(float(str(mean_theta[i_group, i_subj]))), \
+        #  inverse_sigmoid(torch.tensor(float(str(mean_alpha[i_group, i_subj]))))] # for default agent (rational)
+
         m0 = [np.log(torch.tensor(float(str(mean_beta[i_group, i_subj])))), \
           torch.tensor(float(str(mean_theta[i_group, i_subj]))), \
-          inverse_sigmoid(torch.tensor(float(str(mean_alpha[i_group, i_subj]))))]        
+          inverse_sigmoid(torch.tensor(float(str(mean_gamma[i_group, i_subj]))))] # for discounting
+
 
         parameters[i_group, i_subj, :] = m0
         #parameters_oa[i_subj, :] = m0
@@ -242,7 +264,14 @@ for i_group in range(n_groups):
                                   mini_blocks=mini_blocks0,
                                   trials=max_trials0)
 
-            agent0 = BackInduction(confs0,
+            #agent0 = BackInduction(confs0,
+            #                  runs=runs0,
+            #                  mini_blocks=mini_blocks0,
+            #                  trials=3,
+            #                  costs = torch.tensor([0., 0.]), # Neu (LG)                              
+            #                  planning_depth=i_pd+1) # Default agent, rational planning
+            
+            agent0 = BackInductionDiscountNoiseThetaAnchorPruning(confs0,
                               runs=runs0,
                               mini_blocks=mini_blocks0,
                               trials=3,
@@ -289,9 +318,12 @@ for i_group in range(n_groups):
             for i_mb in range(0, 120):
                 #print(i_mb, (mean_gain_per_miniblock_oa[i_subj, pd_map_estimate_oa[i_mb+20, i_subj], i_mb] ))
                 if i_group == i_group_oa:
-                    mixed_agent_gain_per_miniblock_map[i_group, i_subj, i_mb] = mean_gain_per_miniblock[i_group, i_subj, pd_map_estimate_oa[i_mb+20, i_subj], i_mb]                
+                    mixed_agent_gain_per_miniblock_map[i_group, i_subj, i_mb] = mean_gain_per_miniblock[i_group, i_subj, pd_map_estimate_oa[i_mb+20, i_subj], i_mb]
+                    mixed_agent_gain_per_miniblock_meanPD[i_group, i_subj, i_mb] = np.average(mean_gain_per_miniblock[i_group, i_subj, :, i_mb], weights = pd_posterior_probs_oa[i_mb, i_subj, :])
+                    # post_meanPD_firstAction_oa
                 elif i_group == i_group_ya:                
                     mixed_agent_gain_per_miniblock_map[i_group, i_subj, i_mb] = mean_gain_per_miniblock[i_group, i_subj, pd_map_estimate_ya[i_mb+20, i_subj], i_mb]                                
+                    mixed_agent_gain_per_miniblock_meanPD[i_group, i_subj, i_mb] = np.average(mean_gain_per_miniblock[i_group, i_subj, :, i_mb], weights = pd_posterior_probs_ya[i_mb, i_subj, :])                    
                 #mixed_agent_gain_per_miniblock_map_oa[i_subj, i_mb] = mean_gain_per_miniblock_oa[i_subj, pd_map_estimate_oa[i_mb+20, i_subj], i_mb]
     
 
@@ -353,9 +385,9 @@ df_mixed_gain_ya.to_csv(datapath + '/Gain_Mixed_agents_MAP_ya.csv')
 date_inference = '20220412' # '20211207'
 data_behav_ya = pd.read_csv('P:/037/B3_BEHAVIORAL_STUDY/04_Experiment/Analysis_Scripts/SAT_Results/Results_Inference_behavioral_'+date_inference+'/data_ya.csv')
 data_behav_oa = pd.read_csv('P:/037/B3_BEHAVIORAL_STUDY/04_Experiment/Analysis_Scripts/SAT_Results/Results_Inference_behavioral_'+date_inference+'/data_oa.csv')
-data_PD_1staction_ya = pd.read_csv('P:/037/B3_BEHAVIORAL_STUDY/04_Experiment/Analysis_Scripts/SAT_Results/Results_Inference_behavioral_'+date_inference+'/meanPD_1st_action_ya.csv')
-data_PD_1staction_oa = pd.read_csv('P:/037/B3_BEHAVIORAL_STUDY/04_Experiment/Analysis_Scripts/SAT_Results/Results_Inference_behavioral_'+date_inference+'/meanPD_1st_action_oa.csv')
-data_inferredparams_ya = pd.read_csv('P:/037/B3_BEHAVIORAL_STUDY/04_Experiment/Analysis_Scripts/SAT_Results/Results_Inference_behavioral_'+date_inference+'/pars_post_samples.csv')
+#data_PD_1staction_ya = pd.read_csv('P:/037/B3_BEHAVIORAL_STUDY/04_Experiment/Analysis_Scripts/SAT_Results/Results_Inference_behavioral_'+date_inference+'/meanPD_1st_action_ya.csv')
+#data_PD_1staction_oa = pd.read_csv('P:/037/B3_BEHAVIORAL_STUDY/04_Experiment/Analysis_Scripts/SAT_Results/Results_Inference_behavioral_'+date_inference+'/meanPD_1st_action_oa.csv')
+#data_inferredparams_ya = pd.read_csv('P:/037/B3_BEHAVIORAL_STUDY/04_Experiment/Analysis_Scripts/SAT_Results/Results_Inference_behavioral_'+date_inference+'/pars_post_samples.csv')
 n_subjects_ya = int(data_behav_ya['subject'].shape[0] / 140)
 n_subjects_oa = int(data_behav_oa['subject'].shape[0] / 140)
 #number_per_mb_ya = np.reshape(np.array(data_behav_ya['block_number']), (n_subjects, 140)) # test - 1st dim (0) is subjects, 2nd dim (1) is miniblocks
@@ -394,7 +426,7 @@ ax.set_xticklabels(['YA subjects, \n high noise', \
                      'matched \n agents, \n high noise', \
                          'YA subjects, \n low noise', \
                              'matched \n agents, \n low noise'])
-ax.set_ylim([300,850])    
+ax.set_ylim([0,850])    
 plt.savefig('gain_subjects_and_mixed_individual_agents_'+modelname+'_ya.png', dpi=300)
 
 plt.figure()
@@ -407,9 +439,36 @@ ax.set_xticklabels(['OA subjects, \n high noise', \
                      'matched \n agents, \n high noise', \
                          'OA subjects, \n low noise', \
                              'matched \n agents, \n low noise'])
-ax.set_ylim([300,850])        
+ax.set_ylim([0,850])        
 plt.savefig('gain_subjects_and_mixed_individual_agents_'+modelname+'_oa.png', dpi=300)    
+
+'''#
+plt.figure()
+plt.bar([0,3], [gain_per_mb_ya.mean(0)[index_hiNoise_120_140].sum(), gain_per_mb_ya.mean(0)[index_loNoise_120_140].sum()])
+plt.bar([1,4], [np.nanmean(mixed_agent_gain_per_miniblock_meanPD[i_group_ya,:,:], 0)[index_hiNoise_120].sum(),
+np.nanmean(mixed_agent_gain_per_miniblock_meanPD[i_group_ya,:,:], 0)[index_loNoise_120].sum()])
+ax=plt.gca()
+ax.set_xticks([0,1,3,4])
+ax.set_xticklabels(['YA subjects, \n high noise', \
+                     'matched \n agents, \n high noise', \
+                         'YA subjects, \n low noise', \
+                             'matched \n agents, \n low noise'])
+ax.set_ylim([0,850])    
+plt.savefig('gain_subjects_and_mixed_individual_agents_'+modelname+'_ya_meanPD.png', dpi=300)
     
+plt.figure()
+plt.bar([0,3], [gain_per_mb_oa.mean(0)[index_hiNoise_120_140].sum(), gain_per_mb_oa.mean(0)[index_loNoise_120_140].sum()])
+plt.bar([1,4], [np.nanmean(mixed_agent_gain_per_miniblock_meanPD[i_group_oa,:,:], 0)[index_hiNoise_120].sum(),
+np.nanmean(mixed_agent_gain_per_miniblock_meanPD[i_group_oa,:,:], 0)[index_loNoise_120].sum()])
+ax=plt.gca()
+ax.set_xticks([0,1,3,4])
+ax.set_xticklabels(['OA subjects, \n high noise', \
+                     'matched \n agents, \n high noise', \
+                         'OA subjects, \n low noise', \
+                             'matched \n agents, \n low noise'])
+ax.set_ylim([0,850])        
+plt.savefig('gain_subjects_and_mixed_individual_agents_'+modelname+'_oa_meanPD.png', dpi=300)    
+'''
 np.nanmean(mean_gain_per_miniblock[i_group_oa, :, 1, :], 0)[index_hiNoise_120].sum()
 np.nanmean(mean_gain_per_miniblock[i_group_oa, :, 1, :], 0)[index_loNoise_120].sum()
 
