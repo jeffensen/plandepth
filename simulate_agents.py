@@ -49,7 +49,7 @@ pyro.enable_validation(True)
 
 sns.set(context='talk', style='white', color_codes=True)
 
-runs0 = 1000 # 40            #number of simulations 
+runs0 = 1000 # 1000 # 40            #number of simulations 
 mini_blocks0 = 120     #+20 for training which will be removed in the following
 max_trials0 = 3        #maximum number of actions per mini-block
 max_depth0 = 3         #maximum planning depth
@@ -202,17 +202,23 @@ final_points['random'] = []
 final_points['discount_noise_theta_realprobs_gamma0.7'] = []
 final_points['discount_noise_theta_realprobs_gamma0.3'] = []
 
+datapath = 'P:/037/B3_BEHAVIORAL_STUDY/04_Experiment/Analysis_Scripts/SAT_Results/Model fitting'
+
 agents = {}
 
 m0 = {} # mean parameter values
 trans_pars0 = {}
 
+'''#
 for agent_key in ['rational', 'discount_noise_theta_gamma0.7', 'discount_noise_theta_gamma0.3', \
                   'anchor_pruning', 'discount_noise_theta_learnprobs', 'discount_noise_theta_anchor_pruning', \
                   'discount_noise_theta_fitprobs', 'random',  \
                   'discount_noise_theta_realprobs_gamma0.7', 'discount_noise_theta_realprobs_gamma0.3']:
+'''
     
 #for agent_key in ['discount_noise_theta_fitprobs']:    
+    
+for agent_key in ['rational']:    
 
     for i in range(3):
     # define space adventure task with aquired configurations
@@ -374,6 +380,7 @@ for agent_key in ['rational', 'discount_noise_theta_gamma0.7', 'discount_noise_t
         final_points[agent_key].append(points_depth[agent_key][i][:,:,:].numpy().sum(2).sum(1).mean())
  
 
+    #'''#
     dict_mb_gain = {}
     dict_mb_gain['Mean_gain_PD3'] = points_depth[agent_key][2][:,:,:].numpy().sum(2).mean(0)
     dict_mb_gain['Std_gain_PD3'] = points_depth[agent_key][2][:,:,:].numpy().sum(2).std(0)
@@ -382,11 +389,11 @@ for agent_key in ['rational', 'discount_noise_theta_gamma0.7', 'discount_noise_t
     dict_mb_gain['Mean_gain_PD1'] = points_depth[agent_key][0][:,:,:].numpy().sum(2).mean(0)
     dict_mb_gain['Std_gain_PD1'] = points_depth[agent_key][0][:,:,:].numpy().sum(2).std(0)
     df_mean_std_permb = pd.DataFrame(data=dict_mb_gain)
-    df_mean_std_permb.to_csv('miniblock_gain_mean_std_'+agent_key+'.csv')
+    df_mean_std_permb.to_csv(datapath + '/miniblock_gain_mean_std_'+agent_key+'_'+str(runs0)+'.csv')
+    #'''
 
 
 
-datapath = 'P:/037/B3_BEHAVIORAL_STUDY/04_Experiment/Analysis_Scripts/SAT_Results/Model fitting'
 np.transpose(pd.DataFrame(final_points)).to_csv(datapath + '/mean_points_agents.csv')
 
 # In[3]
@@ -468,4 +475,5 @@ plt.ylabel('Mean points', fontsize=15) #  per miniblock
 #             points_depth['rational'][2][:,:,:].numpy().sum(2).mean(0)[index_difficult])
 #plt.text(3.1, 44, '***')    
 #plt.text(3.1, 42, 'p='+str(round(pval,5)), fontsize=13)    
-plt.savefig('Distribution_agents_points.png', bbox_inches='tight', dpi=600)  
+#plt.savefig('Distribution_agents_points.png', bbox_inches='tight', dpi=600)  
+plt.savefig(datapath+'/Distribution_agents_points.png', bbox_inches='tight', dpi=600)  
