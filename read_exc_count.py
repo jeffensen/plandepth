@@ -19,6 +19,8 @@ from agents import BackInduction
 from agents_discount_Noise_theta_anchor_pruning import BackInductionDiscountNoiseThetaAnchorPruning
 from simulate import Simulator
 
+plt.plot(np.random.rand(10))
+
 
 def inverse_sigmoid(x):
     # Inverse function of torch.sigmoid
@@ -28,7 +30,6 @@ def inverse_sigmoid(x):
         return - np.inf
     else:
         return -np.log(1.0 / x - 1)
-
 
 
 
@@ -138,12 +139,6 @@ file_ya = np.load(datapath + '/ya_plandepth_stats_B03_discount_Noise_theta_0cost
 
 datapath = 'P:/037/B3_BEHAVIORAL_STUDY/04_Experiment/Analysis_Scripts/SAT_Results/Results_anchor_pruning_discount_Noise_theta'
 modelname = 'discount_Noise_theta_anchor_pruning'
-#df_exc_pd1_oa = pd.read_csv(datapath + '\exc_PD1_oa_anchor_pruning_discount_Noise_theta.csv')
-#df_exc_pd2_oa = pd.read_csv(datapath + '\exc_PD2_oa_anchor_pruning_discount_Noise_theta.csv')
-#df_exc_pd3_oa = pd.read_csv(datapath + '\exc_PD1_oa_anchor_pruning_discount_Noise_theta.csv')
-#df_exc_pd1_ya = pd.read_csv(datapath + '\exc_PD1_ya_anchor_pruning_discount_Noise_theta.csv')
-#df_exc_pd2_ya = pd.read_csv(datapath + '\exc_PD2_ya_anchor_pruning_discount_Noise_theta.csv')
-#df_exc_pd3_ya = pd.read_csv(datapath + '\exc_PD1_ya_anchor_pruning_discount_Noise_theta.csv')
 df_params_all = pd.read_csv(datapath + '/pars_post_samples_anchor_pruning_discount_Noise_theta.csv')
 file_oa = np.load(datapath + '/oa_plandepth_stats_B03_anchor_pruning_discount_Noise_theta.npz', allow_pickle=True)  
 file_ya = np.load(datapath + '/ya_plandepth_stats_B03_anchor_pruning_discount_Noise_theta.npz', allow_pickle=True)  
@@ -510,6 +505,71 @@ plt.ylabel('Mean gain per miniblock (subjects)')
 plt.title('YA subjects')
 plt.savefig('gain_subjects_vs_mixed_individual_agents_'+modelname+'_ya.png', dpi=300)
 
+plt.figure()
+plt.plot(np.nansum(mixed_agent_gain_per_miniblock_map[i_group_ya,:,:], 0)[index_hiNoise_120], gain_per_mb_ya.sum(0)[index_hiNoise_120_140], '.', label='high noise'); 
+plt.plot([-1500,2500],[-1500,2500], 'k--', lw=1)
+Delta=200
+plt.plot([-1500,2500],[-1500+Delta,2500+Delta], 'r--', lw=1)
+plt.plot([-1500,2500],[-1500-Delta,2500-Delta], 'b--', lw=1)
+plt.plot(np.nansum(mixed_agent_gain_per_miniblock_map[i_group_ya,:,:], 0)[index_loNoise_120], gain_per_mb_ya.sum(0)[index_loNoise_120_140], '.', color='C1', label='low noise'); #plt.plot([-30,40],[-30,40], 'k--')
+plt.legend()
+linreg_ya_hinoise = st.linregress( np.nansum(mixed_agent_gain_per_miniblock_map[i_group_ya,:,:], 0)[index_hiNoise_120], gain_per_mb_ya.sum(0)[(index_hiNoise_120 + np.array(20))[0]] )
+plt.text(-20,20, 'r= '+str(np.round(linreg_ya_hinoise.rvalue, 2))+', p= '+str(np.round(linreg_ya_hinoise.pvalue, 2)), color='C0', fontsize=12)
+plt.plot(np.arange(-30, 40), linreg_ya_hinoise.slope * np.arange(-30, 40) + linreg_ya_hinoise.intercept, '--', color='C0', lw=2)
+linreg_ya_lonoise = st.linregress( np.nansum(mixed_agent_gain_per_miniblock_map[i_group_ya,:,:], 0)[index_loNoise_120], gain_per_mb_ya.sum(0)[(index_loNoise_120 + np.array(20))[0]] )
+plt.plot(np.arange(-30, 40), linreg_ya_lonoise.slope * np.arange(-30, 40) + linreg_ya_lonoise.intercept, '--', color='C1', lw=2)
+plt.text(20, -10, 'r= '+str(np.round(linreg_ya_lonoise.rvalue, 2))+', p= '+str(np.round(linreg_ya_lonoise.pvalue, 2)), color='C1', fontsize=12)
+plt.xlabel('Total gain (mixed individual rational agents)')
+plt.ylabel('Mean total gain (subjects)')
+plt.title('YA subjects')
+
+
+plt.figure()
+plt.boxplot([(abs(mixed_agent_gain_per_miniblock_map[i_group_ya,:,:] - gain_per_mb_ya[:,20:])[:, index_hiNoise_120])[:,0,:].mean(1), \
+             (abs(mixed_agent_gain_per_miniblock_map[i_group_ya,:,:] - gain_per_mb_ya[:,20:])[:, index_loNoise_120])[:,0,:].mean(1)])
+ax=plt.gca()
+ax.set_xticklabels(['YA High noise','YA low noise'])
+plt.ylabel('Mean absolute difference (points)')
+
+plt.figure()
+plt.boxplot([(abs(mixed_agent_gain_per_miniblock_map[i_group_oa,:-4,:] - gain_per_mb_oa[:,20:])[:, index_hiNoise_120])[:,0,:].mean(1), \
+             (abs(mixed_agent_gain_per_miniblock_map[i_group_oa,:-4,:] - gain_per_mb_oa[:,20:])[:, index_loNoise_120])[:,0,:].mean(1)])
+ax=plt.gca()
+ax.set_xticklabels(['OA High noise','OA low noise'])
+plt.ylabel('Mean absolute difference (points)')
+
+plt.subplot(221)
+plt.plot(gain_per_mb_ya[:,:][:, index_loNoise_120 + np.array(20)][:,0,:], mixed_agent_gain_per_miniblock_map[i_group_ya,:,:][:, index_loNoise_120][:,0,:],  'b.', alpha=0.01); plt.plot([-40,40],[-40,40],'k--')
+plt.xlabel('Subject gain (single miniblocks)')
+plt.ylabel('Mean agent gain')
+plt.title('YA low noise')
+plt.subplot(222)
+plt.plot(gain_per_mb_ya[:,20:][:, index_hiNoise_120][:,0,:], mixed_agent_gain_per_miniblock_map[i_group_ya,:,:][:, index_loNoise_120][:,0,:],  'r.', alpha=0.01); plt.plot([-40,40],[-40,40],'k--')
+plt.xlabel('Subject gain (single miniblocks)')
+plt.title('YA high noise')
+plt.subplot(223)
+plt.plot(gain_per_mb_oa[:,20:][:, index_loNoise_120][:,0,:], mixed_agent_gain_per_miniblock_map[i_group_oa,:-4,:][:, index_loNoise_120][:,0,:],  'b.', alpha=0.01); plt.plot([-40,40],[-40,40],'k--')
+plt.xlabel('Subject gain (single miniblocks)')
+plt.ylabel('Mean agent gain')
+plt.title('OA low noise')
+plt.subplot(224)
+plt.plot(gain_per_mb_oa[:,20:][:, index_hiNoise_120][:,0,:], mixed_agent_gain_per_miniblock_map[i_group_oa,:-4,:][:, index_loNoise_120][:,0,:],  'r.', alpha=0.01); plt.plot([-40,40],[-40,40],'k--')
+plt.xlabel('Subject gain (single miniblocks)')
+plt.title('OA high noise')
+plt.tight_layout()
+
+linreg_ya_lonoise_all = st.linregress( np.reshape( mixed_agent_gain_per_miniblock_map[i_group_ya,:,:][:, index_loNoise_120][:,0,:], 60*60), np.reshape(gain_per_mb_ya[:, index_loNoise_120 + np.array(20)][:,0,:], 60*60) )
+linreg_ya_hinoise_all = st.linregress( np.reshape( mixed_agent_gain_per_miniblock_map[i_group_ya,:,:][:, index_hiNoise_120][:,0,:], 60*60), np.reshape(gain_per_mb_ya[:, index_hiNoise_120 + np.array(20)][:,0,:], 60*60) )
+
+pval_linreg_ya_lonoise_persubj= np.nan * np.ones(60)
+rval_linreg_ya_lonoise_persubj= np.nan * np.ones(60)
+for i_subj in range(60):
+    linreg_ya_lonoise_persubj = st.linregress(  mixed_agent_gain_per_miniblock_map[i_group_ya, i_subj,:][index_loNoise_120], \
+                                              gain_per_mb_ya[i_subj, index_loNoise_120 + np.array(20)] )
+    pval_linreg_ya_lonoise_persubj[i_subj] = linreg_ya_lonoise_persubj.pvalue
+    rval_linreg_ya_lonoise_persubj[i_subj] = linreg_ya_lonoise_persubj.rvalue    
+
+    
 '''#
 plt.figure()
 plt.plot(gain_per_mb_oa.mean(0)[index_hiNoise_120_140], post_meanPD_firstAction_oa.mean(1)[index_hiNoise_120_140], '.', label='high noise'); 

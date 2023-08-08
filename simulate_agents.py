@@ -43,13 +43,17 @@ from inference import Inferrer
 # changes in task: new planet configs, no action costs, 140 trials in total, first 20 are training trials
 #                  noise conditions are pseudo-randomized (no blocks), only mini-blocks of 3 actions 
 
+import pylab as plt
+import numpy as np
+plt.plot(np.random.rand(10))
+
 # set global variables
 torch.manual_seed(16324)
 pyro.enable_validation(True)
 
 sns.set(context='talk', style='white', color_codes=True)
 
-runs0 = 1000 # 1000 # 40            #number of simulations 
+runs0 = 10 # 1000 # 40            #number of simulations 
 mini_blocks0 = 120     #+20 for training which will be removed in the following
 max_trials0 = 3        #maximum number of actions per mini-block
 max_depth0 = 3         #maximum planning depth
@@ -202,6 +206,18 @@ final_points['random'] = []
 final_points['discount_noise_theta_realprobs_gamma0.7'] = []
 final_points['discount_noise_theta_realprobs_gamma0.3'] = []
 
+states = {}
+states['rational'] = []
+states['discount_noise_theta_gamma0.7'] = []
+states['discount_noise_theta_gamma0.3'] = []
+states['anchor_pruning'] = []
+states['discount_noise_theta_learnprobs'] = []
+states['discount_noise_theta_anchor_pruning'] = []
+states['discount_noise_theta_fitprobs'] = []
+states['random'] = []
+states['discount_noise_theta_realprobs_gamma0.7'] = []
+states['discount_noise_theta_realprobs_gamma0.3'] = []
+
 datapath = 'P:/037/B3_BEHAVIORAL_STUDY/04_Experiment/Analysis_Scripts/SAT_Results/Model fitting'
 
 agents = {}
@@ -209,16 +225,16 @@ agents = {}
 m0 = {} # mean parameter values
 trans_pars0 = {}
 
-'''#
+#'''#
 for agent_key in ['rational', 'discount_noise_theta_gamma0.7', 'discount_noise_theta_gamma0.3', \
                   'anchor_pruning', 'discount_noise_theta_learnprobs', 'discount_noise_theta_anchor_pruning', \
                   'discount_noise_theta_fitprobs', 'random',  \
                   'discount_noise_theta_realprobs_gamma0.7', 'discount_noise_theta_realprobs_gamma0.3']:
-'''
+#'''
     
 #for agent_key in ['discount_noise_theta_fitprobs']:    
     
-for agent_key in ['rational']:    
+#for agent_key in ['rational']:    
 
     for i in range(3):
     # define space adventure task with aquired configurations
@@ -364,6 +380,7 @@ for agent_key in ['rational']:
         sim0.simulate_experiment()
 
         simulations[agent_key].append(sim0)
+        states[agent_key].append(space_advent0.states.clone())        
 
         responses0 = simulations[agent_key][-1].responses.clone() #response actions in simulation for every mini-block 
         responses0[torch.isnan(responses0)] = -1.
@@ -393,8 +410,21 @@ for agent_key in ['rational']:
     #'''
 
 
+# Question:
+    # How similar are the actions predicted by the different agent models?
+agent_keys = ['rational', 'discount_noise_theta_gamma0.7', 'discount_noise_theta_gamma0.3', \
+                  'anchor_pruning', 'discount_noise_theta_learnprobs', 'discount_noise_theta_anchor_pruning', \
+                  'discount_noise_theta_fitprobs', 'random',  \
+                  'discount_noise_theta_realprobs_gamma0.7', 'discount_noise_theta_realprobs_gamma0.3']
+corr_pvals = np.nan * np.ones(len(agent_keys))
+corr_rhovals = np.nan * np.ones(len(agent_keys))
 
-np.transpose(pd.DataFrame(final_points)).to_csv(datapath + '/mean_points_agents.csv')
+for i_agent in range(len(agent_keys)):
+    agent_key = agent_keys[i_agent]
+    corr_rhovals[i_agent], corr_pvals[i_agent] = st.pearsonr(responses_depth['rational'][0][0,:,0], responses_depth[agent_key][0][0,:,0])
+    # take mean across all agents ?!
+
+#np.transpose(pd.DataFrame(final_points)).to_csv(datapath + '/mean_points_agents.csv')
 
 # In[3]
 # plotting agent's behavior for planning depth 1:3
@@ -477,3 +507,119 @@ plt.ylabel('Mean points', fontsize=15) #  per miniblock
 #plt.text(3.1, 42, 'p='+str(round(pval,5)), fontsize=13)    
 #plt.savefig('Distribution_agents_points.png', bbox_inches='tight', dpi=600)  
 plt.savefig(datapath+'/Distribution_agents_points.png', bbox_inches='tight', dpi=600)  
+
+
+#sim_number0 = 0                                             # here we set the planning depth for the 
+                                                            # inference (where 0 referd to PD = 1)
+
+sim_number0 = 2
+# This is where inference starts
+
+n_iter = 10 # 100
+
+agent2_rational = {}
+agent2_anchor_pruning = {}
+agent2_discount_noise_theta_gamma07 = {}
+
+for simulated_agent_key in ['rational', 'anchor_pruning', 'discount_noise_theta_gamma0.7']: # , 
+    
+    responses0 = simulations[simulated_agent_key][sim_number0].responses.clone()
+    mask0 = ~torch.isnan(responses0)
+
+    stimuli0 = {'conditions': conditions0,
+           'states': states[simulated_agent_key][sim_number0],
+           'configs': confs0}
+
+    if simulated_agent_key == 'rational':    
+        agent2_rational['rational'] = BackInduction(confs0,
+                          runs=runs0,
+                          mini_blocks=mini_blocks0,
+                          trials=3,
+                          costs = torch.tensor([0., 0.]), 
+                          planning_depth=i+1)
+        
+        agent2_anchor_pruning['rational'] = BackInductionAnchorPruning(confs0,
+                          runs=runs0,
+                          mini_blocks=mini_blocks0,
+                          trials=3,
+                          costs = torch.tensor([0., 0.]), 
+                          planning_depth=i+1)        
+
+        agent2_discount_noise_theta_gamma07['rational'] = BackInductionDiscountNoiseTheta(confs0,
+                          runs=runs0,
+                          mini_blocks=mini_blocks0,
+                          trials=3,
+                          costs = torch.tensor([0., 0.]), 
+                          planning_depth=i+1)     
+
+    elif simulated_agent_key == 'anchor_pruning':    
+        agent2_rational['anchor_pruning'] = BackInduction(confs0,
+                          runs=runs0,
+                          mini_blocks=mini_blocks0,
+                          trials=3,
+                          costs = torch.tensor([0., 0.]), 
+                          planning_depth=i+1)    
+        
+        agent2_anchor_pruning['anchor_pruning'] = BackInductionAnchorPruning(confs0,
+                          runs=runs0,
+                          mini_blocks=mini_blocks0,
+                          trials=3,
+                          costs = torch.tensor([0., 0.]), 
+                          planning_depth=i+1)             
+
+        agent2_discount_noise_theta_gamma07['anchor_pruning'] = BackInductionDiscountNoiseTheta(confs0,
+                          runs=runs0,
+                          mini_blocks=mini_blocks0,
+                          trials=3,
+                          costs = torch.tensor([0., 0.]), 
+                          planning_depth=i+1)     
+        
+    elif simulated_agent_key == 'discount_noise_theta_gamma0.7':    
+        agent2_rational['discount_noise_theta_gamma0.7'] = BackInduction(confs0,
+                          runs=runs0,
+                          mini_blocks=mini_blocks0,
+                          trials=3,
+                          costs = torch.tensor([0., 0.]), 
+                          planning_depth=i+1)
+        
+        agent2_anchor_pruning['discount_noise_theta_gamma0.7'] = BackInductionAnchorPruning(confs0,
+                          runs=runs0,
+                          mini_blocks=mini_blocks0,
+                          trials=3,
+                          costs = torch.tensor([0., 0.]), 
+                          planning_depth=i+1)        
+
+        agent2_discount_noise_theta_gamma07['discount_noise_theta_gamma0.7'] = BackInductionDiscountNoiseTheta(confs0,
+                          runs=runs0,
+                          mini_blocks=mini_blocks0,
+                          trials=3,
+                          costs = torch.tensor([0., 0.]), 
+                          planning_depth=i+1)           
+
+    for fitting_agent_key in ['rational', 'anchor_pruning', 'discount_noise_theta_gamma0.7']:
+        if fitting_agent_key == 'rational':
+            infer = Inferrer(agent2_rational[simulated_agent_key], stimuli0, responses0, mask0)
+            #infer.fit(num_iterations=2000, num_particles=100)#, optim_kwargs={'lr': 0.5}) # 500  # change the number of iterations here if you like
+            infer.fit(num_iterations = n_iter, num_particles=100, optim_kwargs={'lr': 0.1})#) # 500  # change the number of iterations here if you like
+
+        elif fitting_agent_key == 'anchor_pruning':
+            infer = Inferrer(agent2_anchor_pruning[simulated_agent_key], stimuli0, responses0, mask0)
+            #infer.fit(num_iterations=2000, num_particles=100)#, optim_kwargs={'lr': 0.5}) # 500  # change the number of iterations here if you like
+            infer.fit(num_iterations = n_iter, num_particles=100, optim_kwargs={'lr': 0.1})#) # 500  # change the number of iterations here if you like
+
+        elif fitting_agent_key == 'discount_noise_theta_gamma0.7':
+            infer = Inferrer(agent2_discount_noise_theta_gamma07[simulated_agent_key], stimuli0, responses0, mask0)
+            #infer.fit(num_iterations=2000, num_particles=100)#, optim_kwargs={'lr': 0.5}) # 500  # change the number of iterations here if you like
+            infer.fit(num_iterations = n_iter, num_particles=100, optim_kwargs={'lr': 0.1})#) # 500  # change the number of iterations here if you like
+
+            
+        # plotting the ELBO for the given inference 
+        plt.figure()
+        plt.plot(infer.loss[:]) #change section you want to see here 
+        #plt.plot(np.log(infer.loss[100:])) #change section you want to see here 
+        plt.ylabel('ELBO')  
+        plt.xlabel('x')
+        plt.savefig('ELBO_PD3_sim_' + simulated_agent_key + '_fit_' + fitting_agent_key + '.pdf', dpi=600, bbox_inches='tight')
+        plt.savefig('ELBO_PD3_sim_' + simulated_agent_key + '_fit_' + fitting_agent_key + '.png', dpi=600, bbox_inches='tight')
+
+        labels = [r'$\tilde{\beta}$', r'$\theta$',   r'$\tilde{\alpha}$'] #these refer to the next plots and calculations
