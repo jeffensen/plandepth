@@ -64,8 +64,8 @@ class BackInductionDiscountHyperbolicThetaAlphakmax30(object):
                 self.beta = (trans_par[..., 0]) # Response noise
                 self.theta = trans_par[..., 1] # Bias term in sigmoid function fot action-selection
                 self.alpha = (trans_par[..., 2]) # Learning rate for belief update     
-                #self.k = (trans_par[..., 2]) # Discounting rate in the hyperbolic discounting model
-                self.k = 30*(trans_par[..., 2]).sigmoid() # k in [0,30]                
+                #self.k = (trans_par[..., 3]) # Discounting rate in the hyperbolic discounting model
+                self.k = 30*(trans_par[..., 3]).sigmoid() # k in [0,30]                
             else:
                 assert trans_par.shape[-1] == self.np
                 #self.tp_mean0 = trans_par[:, :2].sigmoid()  # transition probabilty for action jump
@@ -73,8 +73,8 @@ class BackInductionDiscountHyperbolicThetaAlphakmax30(object):
                 self.beta = (trans_par[..., 0]).exp() # Response noise
                 self.theta = trans_par[..., 1] # Bias term in sigmoid function fot action-selection
                 self.alpha = (trans_par[..., 2]).sigmoid() # Learning rate for belief update                
-                #self.k = (trans_par[..., 2]).exp() # Discounting rate in the hyperbolic discounting model
-                self.k = 30*(trans_par[..., 2]).sigmoid() # k in [0,30]
+                #self.k = (trans_par[..., 3]).exp() # Discounting rate in the hyperbolic discounting model
+                self.k = 30*(trans_par[..., 3]).sigmoid() # k in [0,30]
         else:
             self.beta = torch.tensor([10.]).repeat(self.runs)
             self.theta = zeros(self.runs)
