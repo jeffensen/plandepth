@@ -7,7 +7,7 @@ Created on Tue Aug  8 15:58:30 2023
 
 import numpy as np
 
-def calc_BIC(inferrer, responses, conditions, m_prob):
+def calc_BIC(inferrer, responses, conditions, m_prob, n_actions_considered = 1):
     # Evaluate (log-)likelihood of actual choices, given the inferred model parameters:    
     n_subj = len(responses)
     n_miniblocks = responses.shape[1]
@@ -33,7 +33,7 @@ def calc_BIC(inferrer, responses, conditions, m_prob):
 
 
     for i_mblk in range(n_miniblocks):
-        for i_action in range(1): # Consider only first action; use range(3) to consider all action steps
+        for i_action in range(n_actions_considered): # Consider only first action; use range(3) to consider all action steps
             #resp = inferrer.responses[0][i_mblk].numpy()[i_action]      # Index 0 to get rid of "duplicate" data
             #logits_depths = inferrer.agent.logits[3*i_mblk + i_action].detach().numpy()[0] # agent.logits = Value difference between Jump and Move            
             # CAUTION: If there are as many logit values as particles (e.g., 100), we have to extract the mean rather than index 0!
@@ -63,15 +63,15 @@ def calc_BIC(inferrer, responses, conditions, m_prob):
                 nll_lonoise_120_mean[i_subj] = np.matmul(nll_firstaction_mean[i_subj, 20:].transpose(), 1 - conditions[0][i_subj, 20:].numpy()) 
                 nll_120_mean[i_subj] = nll_hinoise_120_mean[i_subj] + nll_lonoise_120_mean[i_subj]
 
-                nll_random_120 = -np.log(0.5)*120
-                nll_random_60 = -np.log(0.5)*60    
+                nll_random_120 = -np.log(0.5)*120 * n_actions_considered
+                nll_random_60 = -np.log(0.5)*60 * n_actions_considered    
                 pseudo_rsquare_120_mean[i_subj] = 1 - (nll_120_mean[i_subj] / nll_random_120)
                 pseudo_rsquare_hinoise_120_mean[i_subj] = 1 - (nll_hinoise_120_mean[i_subj] / nll_random_60)    
                 pseudo_rsquare_lonoise_120_mean[i_subj] = 1 - (nll_lonoise_120_mean[i_subj] / nll_random_60)        
 
-                BIC_120_mean[i_subj] = 2*nll_120_mean[i_subj] + m_param_count*np.log(120)
-                BIC_hinoise_120[i_subj] = 2*nll_hinoise_120_mean[i_subj] + m_param_count*np.log(60)
-                BIC_lonoise_120[i_subj] = 2*nll_lonoise_120_mean[i_subj] + m_param_count*np.log(60)    
+                BIC_120_mean[i_subj] = 2*nll_120_mean[i_subj] + m_param_count*np.log(120 * n_actions_considered)
+                BIC_hinoise_120[i_subj] = 2*nll_hinoise_120_mean[i_subj] + m_param_count*np.log(60 * n_actions_considered)
+                BIC_lonoise_120[i_subj] = 2*nll_lonoise_120_mean[i_subj] + m_param_count*np.log(60 * n_actions_considered)    
                 
     return pseudo_rsquare_120_mean, BIC_120_mean, \
            pseudo_rsquare_hinoise_120_mean, BIC_hinoise_120, \

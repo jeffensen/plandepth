@@ -135,17 +135,19 @@ conditions0 = torch.zeros(2, runs0, mini_blocks0, dtype=torch.long)
 conditions0[0] = torch.tensor(noise0, dtype=torch.long)[None, :]
 conditions0[1] = torch.tensor(trials0, dtype=torch.long)
 
-#'''#
+
+'''#
 agent_keys = ['rational', 'nolearning_hilonoise', 'discount_noise_theta_gamma0.7', 'discount_noise_theta_gamma0.3', \
                   'anchor_pruning', 'discount_noise_theta_learnprobs', 'discount_noise_theta_anchor_pruning', \
                   'discount_noise_theta_fitprobs', 'random',  \
                   'discount_noise_theta_realprobs_gamma0.7', 'discount_noise_theta_realprobs_gamma0.3']
-#'''
+'''
 
    
 #agent_keys = ['discount_noise_theta_fitprobs']:    
     
 #agent_keys = ['rational', 'nolearning_hilonoise']   
+agent_keys = ['rational']
 
 simulations = {}
 performance = {}
@@ -164,6 +166,8 @@ for agent_key in agent_keys:
     final_points[agent_key] = []    
     states[agent_key] = []        
 
+
+
 datapath = 'P:/037/B3_BEHAVIORAL_STUDY/04_Experiment/Analysis_Scripts/SAT_Results/Model fitting'
 
 agents = {}
@@ -171,305 +175,8 @@ agents = {}
 m0 = {} # mean parameter values
 trans_pars0 = {}
 
+
  
-for agent_key in agent_keys:    
-
-    for i in range(3):
-    # define space adventure task with aquired configurations
-    # set number of trials to the max number of actions per mini-block
-        space_advent0 = SpaceAdventure(conditions0,
-                                  outcome_likelihoods=confs0,
-                                  init_states=starts0,
-                                  runs=runs0,
-                                  mini_blocks=mini_blocks0,
-                                  trials=max_trials0)
-
-    # define the optimal agent, each with a different maximal planning depth
-        if agent_key == 'rational':    
-            agents['rational'] = BackInduction(confs0,
-                          runs=runs0,
-                          mini_blocks=mini_blocks0,
-                          trials=3,
-                          costs = torch.tensor([0., 0.]), 
-                          planning_depth=i+1)
-
-            # set beta, theta and alpha parameters as a normal distribution around a certain value
-            #m0['rational'] = torch.tensor([1.099, 0., 0.0])# beta= 3, because 1.099=np.log(3); alpha = 0.5 (too high!!!)
-            m0['rational'] = torch.tensor([1.099, 0., -2.])#            
-
-        elif agent_key == 'nolearning_hilonoise':    
-            agents['nolearning_hilonoise'] = BackInductionNoLearning(confs0,
-                          runs=runs0,
-                          mini_blocks=mini_blocks0,
-                          trials=3,
-                          costs = torch.tensor([0., 0.]), 
-                          planning_depth=i+1)
-
-            # set beta, theta and alpha parameters as a normal distribution around a certain value
-            #m0['rational'] = torch.tensor([1.099, 0., 0.0])# beta= 3, because 1.099=np.log(3);
-            m0['nolearning_hilonoise'] = torch.tensor([1.099, 0.])#     
-            
-        elif agent_key == 'discount_noise_theta_gamma0.7': 
-            agents['discount_noise_theta_gamma0.7'] = BackInductionDiscountNoiseTheta(confs0,
-                          runs=runs0,
-                          mini_blocks=mini_blocks0,
-                          trials=3,
-                          costs = torch.tensor([0., 0.]), 
-                          planning_depth=i+1)
-
-            # set beta, theta and gamma (discounting) parameters 
-            m0['discount_noise_theta_gamma0.7'] = torch.tensor([1.099, 0., 0.85])# beta= 3, because 1.099=np.log(3) // gamma=0.7=sigmoid(0.85)
-
-        elif agent_key == 'discount_noise_theta_gamma0.3': 
-            agents['discount_noise_theta_gamma0.3'] = BackInductionDiscountNoiseTheta(confs0,
-                          runs=runs0,
-                          mini_blocks=mini_blocks0,
-                          trials=3,
-                          costs = torch.tensor([0., 0.]), 
-                          planning_depth=i+1)
-
-            # set beta, theta and gamma (discounting) parameters 
-            m0['discount_noise_theta_gamma0.3'] = torch.tensor([1.099, 0., -0.85])# beta= 3, because 1.099=np.log(3) // gamma=0.3=sigmoid(-0.85)  
-
-        elif agent_key == 'anchor_pruning': 
-            agents['anchor_pruning'] = BackInductionAnchorPruning(confs0,
-                          runs=runs0,
-                          mini_blocks=mini_blocks0,
-                          trials=3,
-                          costs = torch.tensor([0., 0.]), 
-                          planning_depth=i+1)
-
-            # set beta, theta and gamma (discounting) parameters 
-            m0['anchor_pruning'] = torch.tensor([1.099, 0.])# beta= 3, because 1.099=np.log(3) 
-
-        elif agent_key == 'discount_noise_theta_learnprobs':    
-            agents['discount_noise_theta_learnprobs'] = BackInductionDiscountNoiseThetaLearnprobs(confs0,
-                          runs=runs0,
-                          mini_blocks=mini_blocks0,
-                          trials=3,
-                          costs = torch.tensor([0., 0.]), 
-                          planning_depth=i+1)
-
-            # set beta, theta and alpha parameters as a normal distribution around a certain value
-            #m0['discount_noise_theta_learnprobs'] = torch.tensor([1.099, 0., -2, 10.0])# beta= 3, because 1.099=np.log(3), theta=0, alpha=0.1, gamma=0.99 - same performance as a learning rational agent with alpha=0.1
-            m0['discount_noise_theta_learnprobs'] = torch.tensor([1.099, 0., -2, 0.85])# beta= 3, because 1.099=np.log(3), theta=0, alpha=0.1, gamma=0.7
-   
-        elif agent_key == 'discount_noise_theta_anchor_pruning':    
-            agents['discount_noise_theta_anchor_pruning'] = BackInductionDiscountNoiseThetaAnchorPruning(confs0,
-                          runs=runs0,
-                          mini_blocks=mini_blocks0,
-                          trials=3,
-                          costs = torch.tensor([0., 0.]), 
-                          planning_depth=i+1)
-
-            # set beta, theta and alpha parameters as a normal distribution around a certain value
-            m0['discount_noise_theta_anchor_pruning'] = torch.tensor([1.099, 0., 0.85])# beta= 3, because 1.099=np.log(3), theta=0, gamma=0.7
- 
-        elif agent_key == 'discount_noise_theta_fitprobs':    
-            agents['discount_noise_theta_fitprobs'] = BackInductionDiscountNoiseThetaFitprobs(confs0,
-                          runs=runs0,
-                          mini_blocks=mini_blocks0,
-                          trials=3,
-                          costs = torch.tensor([0., 0.]), 
-                          planning_depth=i+1)
-
-            # set beta, theta and alpha parameters as a normal distribution around a certain value
-            #m0['discount_noise_theta_fitprobs'] = torch.tensor([1.099, 0., 10, 0, 0.85])# beta= 3, because 1.099=np.log(3), theta=0, prob_lonoise=0.99, prob_hinoise=0.5, gamma=0.7: 1716 points on average - very good!
-            #m0['discount_noise_theta_fitprobs'] = torch.tensor([1.099, 0., 2.2, 0, 0.85])# beta= 3, because 1.099=np.log(3), theta=0, prob_lonoise=0.9, prob_hinoise=0.5, gamma=0.7: 1711 points on average - very good!
-            #m0['discount_noise_theta_fitprobs'] = torch.tensor([1.099, 0., 2.2, 2.2, 0.85])# beta= 3, because 1.099=np.log(3), theta=0, prob_lonoise=0.9, prob_hinoise=0.9, gamma=0.7: 1673 points on average - still pretty good!           
-            m0['discount_noise_theta_fitprobs'] = torch.tensor([1.099, 0., 10, 10, 0.85]) # beta= 3, because 1.099=np.log(3), theta=0, prob_lonoise=0.99, prob_hinoise=0.99, gamma=0.7: 1658 points on average - still pretty good!                      
-  
-        elif agent_key == 'random':    
-            agents['random'] = BackInduction(confs0,
-                          runs=runs0,
-                          mini_blocks=mini_blocks0,
-                          trials=3,
-                          costs = torch.tensor([0., 0.]), 
-                          planning_depth=i+1)        
-            m0['random'] = torch.tensor([-10, 0., 0.]) # beta close to zero
-        
-   
-        elif agent_key == 'discount_noise_theta_realprobs_gamma0.7':
-             agents['discount_noise_theta_realprobs_gamma0.7'] = BackInductionDiscountNoiseThetaRealprobs(confs0,
-                          runs=runs0,
-                          mini_blocks=mini_blocks0,
-                          trials=3,
-                          costs = torch.tensor([0., 0.]), 
-                          planning_depth=i+1)
-
-            # set beta, theta and gamma (discounting) parameters 
-             m0['discount_noise_theta_realprobs_gamma0.7'] = torch.tensor([1.099, 0., 0.85])# beta= 3, because 1.099=np.log(3) // gamma=0.7=sigmoid(0.85)
-
-        elif agent_key == 'discount_noise_theta_realprobs_gamma0.3':
-             agents['discount_noise_theta_realprobs_gamma0.3'] = BackInductionDiscountNoiseThetaRealprobs(confs0,
-                          runs=runs0,
-                          mini_blocks=mini_blocks0,
-                          trials=3,
-                          costs = torch.tensor([0., 0.]), 
-                          planning_depth=i+1)
-
-            # set beta, theta and gamma (discounting) parameters 
-             m0['discount_noise_theta_realprobs_gamma0.3'] = torch.tensor([1.099, 0., -0.85])# beta= 3, because 1.099=np.log(3) // gamma=0.7=sigmoid(0.85)
-    
-
-        #trans_pars0[agent_key] = torch.distributions.Normal(m0[agent_key], 1.).sample((runs0,))
-        trans_pars0[agent_key] = torch.distributions.Normal(m0[agent_key], 0.5).sample((runs0,)) # lower variability in parameters!
-        agents[agent_key].set_parameters(trans_pars0[agent_key])
-     
-    #fixed values for parameters
-       #trans_pars0[agent_key] = torch.tensor([2.,0.,0.5]).repeat(runs0,1) # this line sets beta, theta and alpha
-       #agents[agent_key].set_parameters(trans_pars0[agent_key])
-
-
-    # simulate behavior
-        sim0 = Simulator(space_advent0,
-                    agents[agent_key],
-                    runs=runs0,
-                    mini_blocks=mini_blocks0,
-                    trials=3)
-        sim0.simulate_experiment()
-
-        simulations[agent_key].append(sim0)
-        states[agent_key].append(space_advent0.states.clone())        
-
-        responses0 = simulations[agent_key][-1].responses.clone() #response actions in simulation for every mini-block 
-        responses0[torch.isnan(responses0)] = -1.
-        responses0 = responses0.long()
-        points0 = (costs0[responses0] + fuel0[simulations[agent_key][-1].outcomes])  #reward for landing on a certain planet in simulation
-
-        points0[simulations[agent_key][-1].outcomes < 0] = 0 #set MB in which points go below 0 on 0 ?
-        performance[agent_key].append(points0.sum(dim=-1))   #sum up the gains 
-    
-        trans_pars_depth[agent_key].append(trans_pars0[agent_key])
-        points_depth[agent_key].append(points0)
-        responses_depth[agent_key].append(responses0)
-
-        final_points[agent_key].append(points_depth[agent_key][i][:,:,:].numpy().sum(2).sum(1).mean())
- 
-
-    #'''#
-    dict_mb_gain = {}
-    dict_mb_gain['Mean_gain_PD3'] = points_depth[agent_key][2][:,:,:].numpy().sum(2).mean(0)
-    dict_mb_gain['Std_gain_PD3'] = points_depth[agent_key][2][:,:,:].numpy().sum(2).std(0)
-    dict_mb_gain['Mean_gain_PD2'] = points_depth[agent_key][1][:,:,:].numpy().sum(2).mean(0)
-    dict_mb_gain['Std_gain_PD2'] = points_depth[agent_key][1][:,:,:].numpy().sum(2).std(0)
-    dict_mb_gain['Mean_gain_PD1'] = points_depth[agent_key][0][:,:,:].numpy().sum(2).mean(0)
-    dict_mb_gain['Std_gain_PD1'] = points_depth[agent_key][0][:,:,:].numpy().sum(2).std(0)
-    df_mean_std_permb = pd.DataFrame(data=dict_mb_gain)
-    df_mean_std_permb.to_csv(datapath + '/miniblock_gain_mean_std_'+agent_key+'_'+str(runs0)+'.csv')
-    #'''
-
-
-# Question:
-    # How similar are the actions predicted by the different agent models?
-
-corr_pvals = np.nan * np.ones(len(agent_keys))
-corr_rhovals = np.nan * np.ones(len(agent_keys))
-
-corr_pvals_agents = np.nan * np.ones([len(agent_keys), runs0])
-corr_rhovals_agents = np.nan * np.ones([len(agent_keys), runs0])
-
-action_overlap_first = np.nan * np.ones([len(agent_keys), runs0])
-action_overlap_all = np.nan * np.ones([len(agent_keys), runs0])
-
-
-for i_agent in range(len(agent_keys)):
-    agent_key = agent_keys[i_agent]
-    corr_rhovals[i_agent], corr_pvals[i_agent] = st.pearsonr(responses_depth['rational'][2][0,:,0], responses_depth[agent_key][2][0,:,0])
-    for i_run in range(runs0):
-        corr_rhovals_agents[i_agent, i_run], corr_pvals_agents[i_agent, i_run] = st.pearsonr(responses_depth['rational'][2][i_run, :, 0], responses_depth[agent_key][2][i_run, :, 0])    # First action only
-        #corr_rhovals_agents[i_agent, i_run], corr_pvals_agents[i_agent, i_run] = st.pearsonr(responses_depth['rational'][2][i_run, :, :].flatten(), responses_depth[agent_key][2][i_run, :, :].flatten())  # All actions          
-        
-        action_overlap_first[i_agent, i_run] = (responses_depth['rational'][2][i_run, :, 0] == responses_depth[agent_key][2][i_run, :, 0]).numpy().mean()
-        action_overlap_all[i_agent, i_run] = (responses_depth['rational'][2][i_run, :, :].flatten() == responses_depth[agent_key][2][i_run, :, :].flatten()).numpy().mean()
-        
-    # take mean across all agents ?! 
-    # corr_rhovals_agents.mean(1)
-
-#np.transpose(pd.DataFrame(final_points)).to_csv(datapath + '/mean_points_agents.csv')
-
-# In[3]
-# plotting agent's behavior for planning depth 1:3
-'''#
-for i in range(3):
-    plt.figure()
-    #plt.plot(performance['rational'][i].numpy().cumsum(axis=-1).T + starting_points, 'b')
-    plt.plot(performance['rational'][i].numpy().cumsum(axis=-1).T + starting_points, 'C'+str(i))    
-    plt.ylabel('points')
-    plt.xlabel('nb of mini-blocks')
-    plt.ylim([0,2700])
-    #plt.savefig('score_PD'+str(i+1)+'.pdf', bbox_inches='tight', transparent=True, dpi=600)    
-    #plt.savefig('score_PD'+str(i+1)+'.png', bbox_inches='tight', transparent=True, dpi=600)        
-
-
-plt.figure(figsize=(10, 5))
-labels = [r'd=1', r'd=2', r'd=3']
-plt.hist(torch.stack(performance['rational']).numpy().cumsum(axis=-1)[..., -1].T+ starting_points, bins=30, stacked=True)
-plt.legend(labels)
-plt.ylabel('count')
-plt.xlabel('score')
-#plt.savefig('finalscore_exp.pdf', bbox_inches='tight', transparent=True, dpi=600)
-#plt.savefig('finalscore_exp.png', bbox_inches='tight', transparent=True, dpi=600)
-
-
-for i in range(3):
-    plt.figure()
-    plt.plot(performance['random'][i].numpy().cumsum(axis=-1).T + starting_points, 'C'+str(i))    
-    plt.ylabel('points')
-    plt.xlabel('nb of mini-blocks')
-    plt.ylim([-500,2700])
-'''
-
-
-
-plt.figure(figsize=(12,8))
-fsize=9
-bp1 = plt.boxplot([points_depth['rational'][2][:,:,:].numpy().sum(2).sum(1), #.mean(0),
-                   points_depth['discount_noise_theta_gamma0.7'][2][:,:,:].numpy().sum(2).sum(1),
-                   points_depth['discount_noise_theta_gamma0.3'][2][:,:,:].numpy().sum(2).sum(1),
-                   points_depth['anchor_pruning'][2][:,:,:].numpy().sum(2).sum(1),
-                   points_depth['discount_noise_theta_learnprobs'][2][:,:,:].numpy().sum(2).sum(1),
-                   points_depth['discount_noise_theta_anchor_pruning'][2][:,:,:].numpy().sum(2).sum(1),
-                   points_depth['discount_noise_theta_gamma0.7'][2][:,:,:].numpy().sum(2).sum(1),
-                   points_depth['discount_noise_theta_gamma0.3'][2][:,:,:].numpy().sum(2).sum(1)                   
-                   ], \
-                #positions=[1, 1.6, 2.2, 2.8, 3.4, 4],                                   
-                positions=np.arange(1, 5.799, 0.6), \
-                showmeans=True,
-                patch_artist=True, boxprops=dict(facecolor="C0", alpha=0.3))
-bp2 = plt.boxplot([points_depth['rational'][1][:,:,:].numpy().sum(2).sum(1),
-                   points_depth['discount_noise_theta_gamma0.7'][1][:,:,:].numpy().sum(2).sum(1),
-                   points_depth['discount_noise_theta_gamma0.3'][1][:,:,:].numpy().sum(2).sum(1),
-                   points_depth['anchor_pruning'][1][:,:,:].numpy().sum(2).sum(1),
-                   points_depth['discount_noise_theta_learnprobs'][1][:,:,:].numpy().sum(2).sum(1),
-                   points_depth['discount_noise_theta_anchor_pruning'][1][:,:,:].numpy().sum(2).sum(1),
-                   points_depth['discount_noise_theta_gamma0.7'][1][:,:,:].numpy().sum(2).sum(1),                   
-                   points_depth['discount_noise_theta_gamma0.3'][1][:,:,:].numpy().sum(2).sum(1)                   
-                   ], \
-                #positions=[4.8, 5.4, 6.0, 6.6, 7.2, 7.8], 
-                positions=np.arange(6.0, 10.799, 0.6), \
-                showmeans=True,
-                patch_artist=True, boxprops=dict(facecolor="C1", alpha=0.3))   
-ax=plt.gca()
-ax.tick_params(axis='y', labelsize=15)
-ax.set_xticklabels(['PD3 \n rational', 'PD3 \n discount \n $\gamma=0.7$', 'PD3 \n discount \n $\gamma=0.3$', \
-                    'PD3 \n anchor \n pruning', 'PD3 \n discount \n learnprobs \n $\gamma=0.7$',\
-                    'PD3 \n discount \n anchor \n pruning \n $\gamma=0.7$', \
-                    'PD3 \n discount \n realprobs \n $\gamma=0.7$', 'PD3 \n discount \n realprobs \n $\gamma=0.3$', \
-                    'PD2 \n rational','PD2 \n discount \n $\gamma=0.7$', 'PD2 \n discount \n $\gamma=0.3$', \
-                    'PD2 \n anchor \n pruning','PD2 \n discount \n learnprobs \n $\gamma=0.7$', \
-                    'PD2 \n discount \n anchor \n pruning \n $\gamma=0.7$', \
-                    'PD3 \n discount \n realprobs \n $\gamma=0.7$', 'PD2 \n discount \n realprobs \n $\gamma=0.3$', \
-                    ], fontsize=fsize)
-#ax.legend([bp1["boxes"][0], bp2["boxes"][0]], ['All'], loc='upper center')
-plt.ylabel('Mean points', fontsize=15) #  per miniblock
-#Tstat, pval = st.ttest_ind(points_depth['rational'][0][:,:,:].numpy().sum(2).mean(0)[index_difficult], \
-#             points_depth['rational'][2][:,:,:].numpy().sum(2).mean(0)[index_difficult])
-#plt.text(3.1, 44, '***')    
-#plt.text(3.1, 42, 'p='+str(round(pval,5)), fontsize=13)    
-#plt.savefig('Distribution_agents_points.png', bbox_inches='tight', dpi=600)  
-plt.savefig(datapath+'/Distribution_agents_points.png', bbox_inches='tight', dpi=600)  
-
 
 #sim_number0 = 0                                             # here we set the planning depth for the 
                                                             # inference (where 0 referd to PD = 1)
@@ -477,11 +184,8 @@ plt.savefig(datapath+'/Distribution_agents_points.png', bbox_inches='tight', dpi
 sim_number0 = 2
 # This is where inference starts
 
-n_iter = 1000 # 100
+n_iter = 10 # 100
 
-agent2_rational = {}
-agent2_anchor_pruning = {}
-agent2_discount_noise_theta_gamma07 = {}
 
 fitting_agents = {}
 elbo = {}
@@ -491,19 +195,23 @@ datapath = 'P:/037/B3_BEHAVIORAL_STUDY/04_Experiment/Analysis_Scripts/SAT_Result
 
 for i_fitted in range(len(agent_keys)):
     fitting_agents['fit-'+agent_keys[i_fitted]] = {}
-    elbo['fit-'+agent_keys[i_fitted]] = {}    
     modelfit['fit-'+agent_keys[i_fitted]] = {}     
    
     for i_simulated in range(len(agent_keys)):    
         print('fitted: '+agent_keys[i_fitted] + ', simulated: '+agent_keys[i_simulated]) 
         
         fitting_agents['fit-'+agent_keys[i_fitted]][ 'sim-'+agent_keys[i_simulated] ] = 'fit-'+str(i_fitted)+'-sim-'+str(i_simulated)
-        elbo['fit-'+agent_keys[i_fitted]][ 'sim-'+agent_keys[i_simulated] ] = 'fit-'+str(i_fitted)+'-sim-'+str(i_simulated)        
         modelfit['fit-'+agent_keys[i_fitted]][ 'sim-'+agent_keys[i_simulated] ] = {}
 
-        responses0 = simulations[agent_keys[i_simulated]][sim_number0].responses.clone()
+        # load simulated responses:
+        file_responses = np.load(datapath + '/responses_depth-default-vs_nolearning_20runs_1000iter_100samp.npz', allow_pickle=True)    
+        fresp = file_responses.files # names of the stored arrays (['post_depth_oa', 'm_prob_oa', 'exc_count_oa'])
+        responses = file_responses[fresp[0]]
+        responses0 = responses.tolist()[agent_keys[i_fitted]]
+
         mask0 = ~torch.isnan(responses0)
 
+        # load simulated conditions / states:
         stimuli0 = {'conditions': conditions0,
            'states': states[agent_keys[i_simulated]][sim_number0],
            'configs': confs0}            

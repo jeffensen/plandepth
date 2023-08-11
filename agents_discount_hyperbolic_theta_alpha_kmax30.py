@@ -148,7 +148,7 @@ class BackInductionDiscountHyperbolicThetaAlphakmax30(object):
         tm = self.tm[-1]  # transition matrix
         depth = self.depth  # planning depth
         shape = self.batch_shape
-        prob = self.tp_mean0[:,self.noise[0]]#[:,self.noise[0]]
+        prob = self.tp_mean[-1][:,self.noise[0]]#[:,self.noise[0]]
         odds_against_success = (1 - prob)/prob
         if len(odds_against_success.shape) == 2:
             gamma = 1.0 / (1 + torch.einsum('...i, ...ij ->...ij', odds_against_success[:,self.noise[0]], self.k))
