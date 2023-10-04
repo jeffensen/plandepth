@@ -39,6 +39,7 @@ from agents_discount_Noise_theta_fitprobs import BackInductionDiscountNoiseTheta
 from agents_discount_Noise_theta_realprobs import BackInductionDiscountNoiseThetaRealprobs
 from agents_discount_hyperbolic_theta_realprobs_kmax30 import BackInductionDiscountHyperbolicThetaRealProbskmax30
 from agents_discount_hyperbolic_theta_anchor_pruning_kmax30 import BackInductionDiscountHyperbolicThetaAnchorPruningkmax30
+
 from simulate import Simulator
 from inference import Inferrer
 from helper_files import get_posterior_stats # load_and_format_behavioural_data
@@ -59,7 +60,7 @@ pyro.enable_validation(True)
 
 sns.set(context='talk', style='white', color_codes=True)
 
-runs0 = 20 # 1000 # 40            #number of simulations 
+runs0 = 30 # 1000 # 20 # 40            #number of simulations 
 mini_blocks0 = 120     #+20 for training which will be removed in the following
 max_trials0 = 3        #maximum number of actions per mini-block
 max_depth0 = 3         #maximum planning depth
@@ -137,17 +138,25 @@ conditions0 = torch.zeros(2, runs0, mini_blocks0, dtype=torch.long)
 conditions0[0] = torch.tensor(noise0, dtype=torch.long)[None, :]
 conditions0[1] = torch.tensor(trials0, dtype=torch.long)
 
-#'''#
+'''#
 agent_keys = ['rational', 'nolearning_hilonoise', 'discount_noise_theta_gamma0.7', 'discount_noise_theta_gamma0.3', \
                   'anchor_pruning', 'discount_noise_theta_learnprobs', 'discount_noise_theta_anchor_pruning', \
                   'discount_noise_theta_fitprobs', 'random',  \
-                  'discount_noise_theta_realprobs_gamma0.7', 'discount_noise_theta_realprobs_gamma0.3']
-#'''
+                  'discount_noise_theta_realprobs_gamma0.7', 'discount_noise_theta_realprobs_gamma0.3', \
+                  'discount_hyperbolic_theta_realprobs_k1.0', 'discount_hyperbolic_theta_realprobs_k20.0']
+'''
 
    
 #agent_keys = ['discount_noise_theta_fitprobs']:    
     
 #agent_keys = ['rational', 'nolearning_hilonoise']   
+
+#agent_keys = ['rational', \
+#              'discount_hyperbolic_theta_realprobs_k1.0', 'discount_hyperbolic_theta_realprobs_k20.0', \
+#              'discount_hyperbolic_theta_anchorpruning_k1.0', 'discount_hyperbolic_theta_anchorpruning_k20.0']
+    
+agent_keys = ['rational', 'anchor_pruning', 'discount_hyperbolic_theta_realprobs_k10.0', \
+              'discount_hyperbolic_theta_anchorpruning_k10.0']   #  Discounting mit Real probs oder mit alpha?    
 
 simulations = {}
 performance = {}
@@ -311,7 +320,75 @@ for agent_key in agent_keys:
                           planning_depth=i+1)
 
             # set beta, theta and gamma (discounting) parameters 
-             m0['discount_noise_theta_realprobs_gamma0.3'] = torch.tensor([1.099, 0., -0.85])# beta= 3, because 1.099=np.log(3) // gamma=0.7=sigmoid(0.85)
+             m0['discount_noise_theta_realprobs_gamma0.3'] = torch.tensor([1.099, 0., -0.85])# beta= 3, because 1.099=np.log(3) // gamma=0.3=sigmoid(-0.85)
+             
+        elif agent_key == 'discount_hyperbolic_theta_realprobs_k1.0':
+             agents['discount_hyperbolic_theta_realprobs_k1.0'] = BackInductionDiscountHyperbolicThetaRealProbskmax30(confs0,
+                          runs=runs0,
+                          mini_blocks=mini_blocks0,
+                          trials=3,
+                          costs = torch.tensor([0., 0.]), 
+                          planning_depth=i+1)
+
+            # set beta, theta and gamma (discounting) parameters 
+             m0['discount_hyperbolic_theta_realprobs_k1.0'] = torch.tensor([1.099, 0., -3.35])# beta= 3, because 1.099=np.log(3) // k=1 = 30*sigmoid(-3.35)
+
+        elif agent_key == 'discount_hyperbolic_theta_realprobs_k10.0':
+             agents['discount_hyperbolic_theta_realprobs_k10.0'] = BackInductionDiscountHyperbolicThetaRealProbskmax30(confs0,
+                          runs=runs0,
+                          mini_blocks=mini_blocks0,
+                          trials=3,
+                          costs = torch.tensor([0., 0.]), 
+                          planning_depth=i+1)
+
+            # set beta, theta and gamma (discounting) parameters 
+             m0['discount_hyperbolic_theta_realprobs_k10.0'] = torch.tensor([1.099, 0., -0.7])# beta= 3, because 1.099=np.log(3) // k=10 = 30*sigmoid(-0.7)
+
+             
+        elif agent_key == 'discount_hyperbolic_theta_realprobs_k20.0':
+             agents['discount_hyperbolic_theta_realprobs_k20.0'] = BackInductionDiscountHyperbolicThetaRealProbskmax30(confs0,
+                          runs=runs0,
+                          mini_blocks=mini_blocks0,
+                          trials=3,
+                          costs = torch.tensor([0., 0.]), 
+                          planning_depth=i+1)
+
+            # set beta, theta and gamma (discounting) parameters 
+             m0['discount_hyperbolic_theta_realprobs_k20.0'] = torch.tensor([1.099, 0., 0.7])# beta= 3, because 1.099=np.log(3) // k=20 = 30*sigmoid(0.7)
+
+        elif agent_key == 'discount_hyperbolic_theta_anchorpruning_k1.0':
+             agents['discount_hyperbolic_theta_anchorpruning_k1.0'] = BackInductionDiscountHyperbolicThetaAnchorPruningkmax30(confs0,
+                          runs=runs0,
+                          mini_blocks=mini_blocks0,
+                          trials=3,
+                          costs = torch.tensor([0., 0.]), 
+                          planning_depth=i+1)
+
+            # set beta, theta and gamma (discounting) parameters 
+             m0['discount_hyperbolic_theta_anchorpruning_k1.0'] = torch.tensor([1.099, 0., -3.35])# beta= 3, because 1.099=np.log(3) //  k=1 = 30*sigmoid(-3.35)
+
+        elif agent_key == 'discount_hyperbolic_theta_anchorpruning_k10.0':
+             agents['discount_hyperbolic_theta_anchorpruning_k10.0'] = BackInductionDiscountHyperbolicThetaAnchorPruningkmax30(confs0,
+                          runs=runs0,
+                          mini_blocks=mini_blocks0,
+                          trials=3,
+                          costs = torch.tensor([0., 0.]), 
+                          planning_depth=i+1)
+
+            # set beta, theta and gamma (discounting) parameters 
+             m0['discount_hyperbolic_theta_anchorpruning_k10.0'] = torch.tensor([1.099, 0., -0.7])# beta= 3, because 1.099=np.log(3) // k=10 = 30*sigmoid(-0.7)
+
+
+        elif agent_key == 'discount_hyperbolic_theta_anchorpruning_k20.0':
+             agents['discount_hyperbolic_theta_anchorpruning_k20.0'] = BackInductionDiscountHyperbolicThetaAnchorPruningkmax30(confs0,
+                          runs=runs0,
+                          mini_blocks=mini_blocks0,
+                          trials=3,
+                          costs = torch.tensor([0., 0.]), 
+                          planning_depth=i+1)
+
+            # set beta, theta and gamma (discounting) parameters 
+             m0['discount_hyperbolic_theta_anchorpruning_k20.0'] = torch.tensor([1.099, 0., 0.7])# beta= 3, because 1.099=np.log(3) // k=20 = 30*sigmoid(0.7)
     
 
         #trans_pars0[agent_key] = torch.distributions.Normal(m0[agent_key], 1.).sample((runs0,))
@@ -470,7 +547,8 @@ plt.ylabel('Mean points', fontsize=15) #  per miniblock
 #plt.text(3.1, 44, '***')    
 #plt.text(3.1, 42, 'p='+str(round(pval,5)), fontsize=13)    
 #plt.savefig('Distribution_agents_points.png', bbox_inches='tight', dpi=600)  
-plt.savefig(datapath+'/Distribution_agents_points.png', bbox_inches='tight', dpi=600)  
+#plt.savefig(datapath+'/Distribution_agents_points.png', bbox_inches='tight', dpi=600)  
+plt.savefig(datapath+'/Distribution_agents_points_subset.png', bbox_inches='tight', dpi=600)  
 
 
 #sim_number0 = 0                                             # here we set the planning depth for the 
@@ -479,7 +557,7 @@ plt.savefig(datapath+'/Distribution_agents_points.png', bbox_inches='tight', dpi
 sim_number0 = 2
 # This is where inference starts
 
-n_iter = 1000 # 100
+n_iter = 10 # 1000 # 100
 
 agent2_rational = {}
 agent2_anchor_pruning = {}
@@ -728,7 +806,7 @@ for simulated_agent_key in agent_keys: # ,
             infer = Inferrer(agent2_discount_noise_theta_gamma07[simulated_agent_key], stimuli0, responses0, mask0)
             #infer.fit(num_iterations=2000, num_particles=100)#, optim_kwargs={'lr': 0.5}) # 500  # change the number of iterations here if you like
             infer.fit(num_iterations = n_iter, num_particles=100, optim_kwargs={'lr': 0.1})#) # 500  # change the number of iterations here if you like
-'''
+
             
         # plotting the ELBO for the given inference 
         plt.figure()
@@ -740,4 +818,4 @@ for simulated_agent_key in agent_keys: # ,
         plt.savefig('ELBO_PD3_sim_' + simulated_agent_key + '_fit_' + fitting_agent_key + '.png', dpi=600, bbox_inches='tight')
 
         labels = [r'$\tilde{\beta}$', r'$\theta$',   r'$\tilde{\alpha}$'] #these refer to the next plots and calculations
-        
+'''        
