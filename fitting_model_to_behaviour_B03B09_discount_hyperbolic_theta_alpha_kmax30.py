@@ -26,10 +26,8 @@ sns.set_palette("colorblind", n_colors=5, color_codes=True)
 # In[2]:
 
 
-#from pathlib import Path
 from os.path import expanduser, isdir, join
 from os import listdir, walk
-#import json
 
 from helper_files import load_and_format_behavioural_data, get_posterior_stats, errorplot#, map_noise_to_values
     
@@ -54,7 +52,7 @@ def variational_inference(stimuli, mask, responses):
                           runs=runs,
                           mini_blocks=mini_blocks,
                           trials=max_trials,
-                          costs = torch.tensor([0,0]), # LG: Forgot to set to zero - corrected on 2022-06-27!!!                          
+                          costs = torch.tensor([0,0]), 
                           planning_depth=max_depth)
 
     # load inference module and start model fitting
@@ -66,15 +64,13 @@ def variational_inference(stimuli, mask, responses):
 
 # In[3]:
 import time as time
-#print("Sleeping for 1 hour!")
-#time.sleep(1*60*60) # time given in seconds
 
 # load and format behavioural data
 path1 = 'P:/037/B3_BEHAVIORAL_STUDY/04_Experiment/LOG_Files/full_datasets_OA/'
 path2 = 'P:/037/B3_BEHAVIORAL_STUDY/04_Experiment/LOG_Files/full_datasets_YA/'
 localpath = 'P:/037/B3_BEHAVIORAL_STUDY/04_Experiment/Analysis_Scripts/SAT_Results/Results_discount_hyperbolic_theta_alpha_kmax30' # LG
 
-#path1 = '/home/h7/goenner/TRR265-B09/LOG_Files/full_datasets_OA/'
+#path1 = '/home/h7/goenner/TRR265-B09/LOG_Files/full_datasets_OA/' # path on TUD HPC cluster
 #path2 = '/home/h7/goenner/TRR265-B09/LOG_Files/full_datasets_YA/'
 #localpath = '/home/h7/goenner/TRR265-B09/Analysis SAT-PD2-Sophia/plandepth/Results_discount_hyperbolic_theta_realprobs/'
 
@@ -113,7 +109,6 @@ pars_df_oa = format_posterior_samples(infer_oa)
 n_samples = 100
 post_marg_oa = infer_oa.sample_posterior_marginal(n_samples=n_samples)
 pars_df_oa['IDs'] = np.array(ids_oa)[pars_df_oa.subject.values - 1]
-#pars_df_oa['subjIDs'] = np.array(subj_IDs_oa)[pars_df_oa.subject.values - 1]
 
 # plot convergence of ELBO bound (approximate value of the negative marginal log likelihood)
 fig, axes = plt.subplots(1, 1, figsize=(15, 5))
@@ -126,14 +121,8 @@ fig.savefig(localpath + '/ELBO discount_hyperbolic_theta_alpha_kmax30.jpg')
 
 g = sns.FacetGrid(pars_df_oa, col="parameter", height=5, sharey=False);
 g = g.map(errorplot, 'subject', 'value').add_legend();
-#g.axes[0,0].set_ylim([-1, 2])
-#g.axes[0,1].set_ylim([0, 7])
-#g.axes[0,2].set_ylim([0, 1])
-
+#g.axes[0,0].set_ylim([-1, 2]) # adapt axis
 g.fig.savefig(localpath + '/parameter_participant_oa_discount_hyperbolic_theta_alpha_kmax30.jpg')
-
-# In[6]:
-
 
 infer_ya = variational_inference(stimuli_ya, mask_ya, responses_ya)
 pars_df_ya = format_posterior_samples(infer_ya)
@@ -143,18 +132,7 @@ post_marg_ya = infer_ya.sample_posterior_marginal(n_samples=n_samples)
 pars_df_ya['IDs'] = np.array(ids_ya)[pars_df_ya.subject.values - 1]
 
 
-
-
-
-# The static parametrisations assumes that the planning depth at the start of every mini block is sampled from the same prior distribution (dependent on the number of choices, 2 or 3), independent on the planning depth in the previous trial. Alternative is to use dynamic parametrisation where planning depth is describes as a hidden markov or hidden semi-markov process. The dynamic representation would be useful to quantify the stability of planning depths within and between groups. For example, certain group of participants might be charachtersied by more varying planning depth between trials than other. 
-# 
-# Unfortuntaly, I still have problems implementing the dynamic representations in a meaningful way. If you would like to work on it, I can explain the details of the current model and related problems. 
-
-# In[7]:
-
-
 # plot convergence of ELBO bound (approximate value of the negative marginal log likelihood)
-
 fig, axes = plt.subplots(1, 1, figsize=(15, 5))
 axes.plot(infer_ya.loss[100:])  # 100:
 df_loss = pd.DataFrame(infer_ya.loss)    
@@ -162,23 +140,14 @@ axes.plot(range(len(df_loss[0].rolling(window=25).mean())-100), df_loss[0].rolli
 axes.set_title('ELBO Testdaten')
 fig.savefig(localpath + '/ELBO Testdaten_ya_discount_hyperbolic_theta_alpha_kmax30.jpg')
 
-# In[8]:
-
-
-# visualize posterior parameter estimates over subjects
-
 
 # visualize posterior parameter estimates over subjects
 
 g = sns.FacetGrid(pars_df_ya, col="parameter", height=5, sharey=False);
 g = g.map(errorplot, 'subject', 'value').add_legend();
-#g.axes[0,0].set_ylim([-1, 2])
-#g.axes[0,1].set_ylim([0, 7])
-#g.axes[0,2].set_ylim([0, 1])
+#g.axes[0,0].set_ylim([-1, 2]) # adapt axis
 
 g.fig.savefig(localpath + '/parameter_participant_ya_discount_hyperbolic_theta_alpha_kmax30.jpg')
-
-# In[9]:
 
 
 # plot posterior distribution over groups
@@ -192,8 +161,6 @@ g = g.map(sns.kdeplot, 'value').add_legend();
 g.fig.savefig(localpath + '/post_group_parameters_OA_YA_discount_hyperbolic_theta_alpha_kmax30.pdf', dpi=300)
 
 
-# In[10]:
-
 
 pars_df = pars_df_oa.append(pars_df_ya)
 pars_df.to_csv(localpath + '/pars_post_samples_discount_hyperbolic_theta_alpha_kmax30.csv')
@@ -202,11 +169,6 @@ pars_df.to_csv(localpath + '/pars_post_samples_discount_hyperbolic_theta_alpha_k
 
 # In what follows we will compute the posterior marginal over planning depth, compute exceedanace probability and plot the results for individual subjects and for the group level results.
 
-# In[12]:
-
-
-
-
 post_depth_oa, m_prob_oa, exc_count_oa = get_posterior_stats(post_marg_oa)
 np.savez(localpath + '/oa_plandepth_stats_B03_discount_hyperbolic_theta_alpha_kmax30', post_depth_oa, m_prob_oa, exc_count_oa)
 
@@ -214,8 +176,6 @@ post_depth_ya, m_prob_ya, exc_count_ya = get_posterior_stats(post_marg_ya)
 np.savez(localpath + '/ya_plandepth_stats_B03_discount_hyperbolic_theta_alpha_kmax30', post_depth_ya, m_prob_ya, exc_count_ya)
 
 
-
-#file = b = np.load('/home/sass/Dokumente/plandepth/oa_plandepth_stats_B03.npz', allow_pickle=True)
 file = b = np.load(localpath + '/oa_plandepth_stats_B03_discount_hyperbolic_theta_alpha_kmax30.npz', allow_pickle=True)
 fs = file.files # names of the stored arrays (['post_depth_oa', 'm_prob_oa', 'exc_count_oa'])
 post_meanPD_firstAction_oa = np.matmul(file[fs[1]][0,:,:,:], np.arange(1,4))
@@ -223,8 +183,7 @@ import pandas as pd
 dict_ids_oa={}
 dict_ids_oa['ID'] = ids_oa
 pd.DataFrame(dict_ids_oa).to_csv(localpath + '/IDs_OA.csv')
-df_oa_meanPD = pd.DataFrame(post_meanPD_firstAction_oa) # Without subject IDs
-#df_oa_meanPD = np.transpose(pd.DataFrame(dict_ids_oa)).append(pd.DataFrame(post_meanPD_firstAction_oa)) # With subject IDs
+df_oa_meanPD = pd.DataFrame(post_meanPD_firstAction_oa) # 
 pd.DataFrame(df_oa_meanPD).to_csv(localpath + '/meanPD_1st_action_oa_single_discount_hyperbolic_theta_alpha_kmax30.csv')
 file.close()
 
@@ -235,13 +194,11 @@ file = b = np.load(localpath + '/ya_plandepth_stats_B03_discount_hyperbolic_thet
 fs = file.files # names of the stored arrays (['post_depth_ya', 'm_prob_ya', 'exc_count_ya'])
 post_meanPD_firstAction_ya = np.matmul(file[fs[1]][0,:,:,:], np.arange(1,4))
 
-df_ya_meanPD = pd.DataFrame(post_meanPD_firstAction_ya) # Without subject IDs
+df_ya_meanPD = pd.DataFrame(post_meanPD_firstAction_ya) 
 pd.DataFrame(df_ya_meanPD).to_csv(localpath + '/meanPD_1st_action_ya_single_discount_hyperbolic_theta_alpha_kmax30.csv')
 dict_ids_ya={}
 dict_ids_ya['ID'] = ids_ya
 pd.DataFrame(dict_ids_ya).to_csv(localpath + '/IDs_YA.csv')
-#df_ya_meanPD = np.transpose(pd.DataFrame(dict_ids_ya)).append(pd.DataFrame(post_meanPD_firstAction_oa)) # With subject IDs
-
 
 file.close()
 
@@ -273,10 +230,7 @@ BIC_lonoise_120_oa = np.nan * np.ones([n_subj_oa])
 
 for i_mblk in range(140):
     for i_action in range(1): # Consider only first action; use range(3) to consider all action steps
-        #resp = infer_oa.responses[0][i_mblk].numpy()[i_action]      # Index 0 to get rid of "duplicate" data
-        #logits_depths = infer_oa.agent.logits[3*i_mblk + i_action].detach().numpy()[0] # agent.logits = Value difference between Jump and Move            
-        # CAUTION: If there are as many logit values as particles (e.g., 100), we have to extract the mean rather than index 0!
-        logits_depths = infer_oa.agent.logits[3*i_mblk + i_action].detach().numpy() #.mean(0) # agent.logits = Value difference between Jump and Move             
+        logits_depths = infer_oa.agent.logits[3*i_mblk + i_action].detach().numpy()  # agent.logits = Value difference between Jump and Move             
         
         for i_subj in range(n_subj_oa):
             resp = infer_oa.responses[i_subj][i_mblk].numpy()[i_action] 
@@ -288,7 +242,6 @@ for i_mblk in range(140):
             elif resp==0:
                 nll = -np.log(p_move_depths)                              
             nll_firstaction_oa_depths[i_subj, i_mblk, :] = nll              
-            #nll_firstaction_oa_mean[i_subj, i_mblk] = np.matmul(nll_firstaction_oa_depths[i_subj, i_mblk, :], m_prob_oa[0][i_mblk,0,:]) # WRONG - m_prob_ya[0] has shape (n_miniblocks, n_subjects, n_steps !!!
             nll_firstaction_oa_mean[i_subj, i_mblk] = np.matmul(nll_firstaction_oa_depths[i_subj, i_mblk, :], m_prob_oa[0][i_mblk, i_subj, :])            
 
             nll_hinoise_all_oa[i_subj, :] = np.matmul(nll_firstaction_oa_depths[i_subj, :, :].transpose(), conditions_oa[0][i_subj, :].numpy()) # Sum of NLL for high noise (noise==1) 
@@ -337,8 +290,7 @@ BIC_lonoise_120_ya = np.nan * np.ones([n_subj_ya])
 
 for i_mblk in range(140):
     for i_action in range(1): # Consider only first action; use range(3) to consider all action steps
-        # CAUTION: If there are as many logit values as particles (e.g., 100), we have to extract the mean rather than index 0!
-        logits_depths = infer_ya.agent.logits[3*i_mblk + i_action].detach().numpy()#.mean(0) # agent.logits = Value difference between Jump and Move             
+        logits_depths = infer_ya.agent.logits[3*i_mblk + i_action].detach().numpy() # agent.logits = Value difference between Jump and Move             
         
         for i_subj in range(n_subj_ya):
             resp = infer_ya.responses[i_subj][i_mblk].numpy()[i_action] 
@@ -350,7 +302,6 @@ for i_mblk in range(140):
             elif resp==0:
                 nll = -np.log(p_move_depths)                              
             nll_firstaction_ya_depths[i_subj, i_mblk, :] = nll              
-            #nll_firstaction_ya_mean[i_subj, i_mblk] = np.matmul(nll_firstaction_ya_depths[i_subj, i_mblk, :], m_prob_ya[0][i_mblk,0,:]) # WRONG - m_prob_ya[0] has shape (n_miniblocks, n_subjects, n_steps !!!
             nll_firstaction_ya_mean[i_subj, i_mblk] = np.matmul(nll_firstaction_ya_depths[i_subj, i_mblk, :], m_prob_ya[0][i_mblk, i_subj, :])            
 
             nll_hinoise_all_ya[i_subj, :] = np.matmul(nll_firstaction_ya_depths[i_subj, :, :].transpose(), conditions_ya[0][i_subj, :].numpy()) # Sum of NLL for high noise (noise==1) 
