@@ -59,25 +59,22 @@ def variational_inference(stimuli, mask, responses):
 
     # load inference module and start model fitting
     infer = Inferrer(agent, stimuli, responses, mask)
-    infer.fit(num_iterations=1000, num_particles=100, optim_kwargs={'lr': .010}) # 1000 
+    infer.fit(num_iterations=1000, num_particles=100, optim_kwargs={'lr': .010}) # 1000 # lr: Learning rate, keep at .010
     
     return infer
 
 
 
-import time as time
-wait_hours = 0 # 4
+#import time as time
+#wait_hours = 0 # Can be used to start inference with a delay of x hours
 #print("Sleeping for %i hour(s)!" %(wait_hours))
-time.sleep(wait_hours*60*60) # time needs to be passed in seconds
+#time.sleep(wait_hours*60*60) # time needs to be passed in seconds
     
 
 # load and format behavioural data
-path1 =  "/Dokumente/plandepth/Experimental_Data/OA_xtra"   # change to correct path
-path2 =  "/Dokumente/plandepth/Experimental_Data/YA_xtra" 
-path1 = 'P:/037/B3_BEHAVIORAL_STUDY/04_Experiment/LOG_Files/full_datasets_OA/'
+path1 = 'P:/037/B3_BEHAVIORAL_STUDY/04_Experiment/LOG_Files/full_datasets_OA/' # change to correct path
 path2 = 'P:/037/B3_BEHAVIORAL_STUDY/04_Experiment/LOG_Files/full_datasets_YA/'
-#localpath = 'H:/Sesyn/TRR265-B09/Analysis_SAT-PD2_Sophia/SAT_PD_Inference_Scripts' # LG # 
-localpath = 'P:/037/B3_BEHAVIORAL_STUDY/04_Experiment/Analysis_Scripts/SAT_Results/Results_default' # LG
+localpath = 'P:/037/B3_BEHAVIORAL_STUDY/04_Experiment/Analysis_Scripts/SAT_Results/Results_fullplanning' # LG
 
 filenames = ["space_adventure_pd-results.json",
              "space_adventure_pd_inv-results.json"]    # posible filenames of SAT logfiles
@@ -112,7 +109,6 @@ pars_df_oa = format_posterior_samples(infer_oa)
 n_samples = 100
 post_marg_oa = infer_oa.sample_posterior_marginal(n_samples=n_samples)
 pars_df_oa['IDs'] = np.array(ids_oa)[pars_df_oa.subject.values - 1]
-#pars_df_oa['subjIDs'] = np.array(subj_IDs_oa)[pars_df_oa.subject.values - 1]
 
 # plot convergence of ELBO bound (approximate value of the negative marginal log likelihood)
 fig, axes = plt.subplots(1, 1, figsize=(15, 5))
@@ -120,18 +116,13 @@ axes.plot(infer_oa.loss[100:])  # 100:
 df_loss = pd.DataFrame(infer_oa.loss)    
 axes.plot(range(len(df_loss[0].rolling(window=25).mean())-100), df_loss[0].rolling(window=25).mean()[100:], lw=1)    #                 
 axes.set_title('ELBO Testdaten')
-fig.savefig(localpath + '/ELBO Testdaten_oa_default.jpg')
+fig.savefig(localpath + '/ELBO Testdaten_oa_fullplanning.jpg')
 
 
 g = sns.FacetGrid(pars_df_oa, col="parameter", height=5, sharey=False);
 g = g.map(errorplot, 'subject', 'value').add_legend();
-#g.axes[0,0].set_ylim([-1, 2])
-#g.axes[0,1].set_ylim([0, 7])
-#g.axes[0,2].set_ylim([0, 1])
-
-g.fig.savefig(localpath + '/parameter_participant_oa_default.jpg')
-
-# In[6]:
+#g.axes[0,0].set_ylim([-1, 2]) # Adjust axes if necessary
+g.fig.savefig(localpath + '/parameter_participant_oa_fullplanning.jpg')
 
 
 infer_ya = variational_inference(stimuli_ya, mask_ya, responses_ya)
@@ -142,42 +133,22 @@ post_marg_ya = infer_ya.sample_posterior_marginal(n_samples=n_samples)
 pars_df_ya['IDs'] = np.array(ids_ya)[pars_df_ya.subject.values - 1]
 
 
-
-
-
-# The static parametrisations assumes that the planning depth at the start of every mini block is sampled from the same prior distribution (dependent on the number of choices, 2 or 3), independent on the planning depth in the previous trial. Alternative is to use dynamic parametrisation where planning depth is describes as a hidden markov or hidden semi-markov process. The dynamic representation would be useful to quantify the stability of planning depths within and between groups. For example, certain group of participants might be charachtersied by more varying planning depth between trials than other. 
-# 
-# Unfortuntaly, I still have problems implementing the dynamic representations in a meaningful way. If you would like to work on it, I can explain the details of the current model and related problems. 
-
-# In[7]:
-
-
 # plot convergence of ELBO bound (approximate value of the negative marginal log likelihood)
-
 fig, axes = plt.subplots(1, 1, figsize=(15, 5))
 axes.plot(infer_ya.loss[100:])  # 100:
 df_loss = pd.DataFrame(infer_ya.loss)    
 axes.plot(range(len(df_loss[0].rolling(window=25).mean())-100), df_loss[0].rolling(window=25).mean()[100:], lw=1)    #                 
 axes.set_title('ELBO Testdaten')
-fig.savefig(localpath + '/ELBO Testdaten_ya_default.jpg')
+fig.savefig(localpath + '/ELBO Testdaten_ya_fullplanning.jpg')
 
-# In[8]:
-
-
-# visualize posterior parameter estimates over subjects
 
 
 # visualize posterior parameter estimates over subjects
 
 g = sns.FacetGrid(pars_df_ya, col="parameter", height=5, sharey=False);
 g = g.map(errorplot, 'subject', 'value').add_legend();
-#g.axes[0,0].set_ylim([-1, 2])
-#g.axes[0,1].set_ylim([0, 7])
-#g.axes[0,2].set_ylim([0, 1])
-
-g.fig.savefig(localpath + '/parameter_participant_ya_default.jpg')
-
-# In[9]:
+#g.axes[0,0].set_ylim([-1, 2]) # Adjust axis if necessary
+g.fig.savefig(localpath + '/parameter_participant_ya_fullplanning.jpg')
 
 
 # plot posterior distribution over groups
@@ -188,14 +159,14 @@ pars_df = pars_df_oa.append(pars_df_ya, ignore_index=True)
 
 g = sns.FacetGrid(pars_df, col="parameter", hue='group', height=5, sharey=False, sharex=False, palette='Set1');
 g = g.map(sns.kdeplot, 'value').add_legend();
-g.fig.savefig(localpath + '/post_group_parameters_OA_YA_default.pdf', dpi=300)
+g.fig.savefig(localpath + '/post_group_parameters_OA_YA_fullplanning.pdf', dpi=300)
 
 
 # In[10]:
 
 
 pars_df = pars_df_oa.append(pars_df_ya)
-pars_df.to_csv(localpath + '/pars_post_samples_default.csv')
+pars_df.to_csv(localpath + '/pars_post_samples_fullplanning.csv')
 
 
 
@@ -207,15 +178,15 @@ pars_df.to_csv(localpath + '/pars_post_samples_default.csv')
 
 
 post_depth_oa, m_prob_oa, exc_count_oa = get_posterior_stats(post_marg_oa)
-np.savez(localpath + '/oa_plandepth_stats_B03_default', post_depth_oa, m_prob_oa, exc_count_oa)
+np.savez(localpath + '/oa_plandepth_stats_B03_fullplanning', post_depth_oa, m_prob_oa, exc_count_oa)
 
 post_depth_ya, m_prob_ya, exc_count_ya = get_posterior_stats(post_marg_ya)
-np.savez(localpath + '/ya_plandepth_stats_B03_default', post_depth_ya, m_prob_ya, exc_count_ya)
+np.savez(localpath + '/ya_plandepth_stats_B03_fullplanning', post_depth_ya, m_prob_ya, exc_count_ya)
 
 
 
 #file = b = np.load('/home/sass/Dokumente/plandepth/oa_plandepth_stats_B03.npz', allow_pickle=True)
-file = b = np.load(localpath + '/oa_plandepth_stats_B03_default.npz', allow_pickle=True)
+file = b = np.load(localpath + '/oa_plandepth_stats_B03_fullplanning.npz', allow_pickle=True)
 fs = file.files # names of the stored arrays (['post_depth_oa', 'm_prob_oa', 'exc_count_oa'])
 post_meanPD_firstAction_oa = np.matmul(file[fs[1]][0,:,:,:], np.arange(1,4))
 import pandas as pd
@@ -224,18 +195,18 @@ dict_ids_oa['ID'] = ids_oa
 pd.DataFrame(dict_ids_oa).to_csv(localpath + '/IDs_OA.csv')
 df_oa_meanPD = pd.DataFrame(post_meanPD_firstAction_oa) # Without subject IDs
 #df_oa_meanPD = np.transpose(pd.DataFrame(dict_ids_oa)).append(pd.DataFrame(post_meanPD_firstAction_oa)) # With subject IDs
-pd.DataFrame(df_oa_meanPD).to_csv(localpath + '/meanPD_1st_action_oa_single_default.csv')
+pd.DataFrame(df_oa_meanPD).to_csv(localpath + '/meanPD_1st_action_oa_single_fullplanning.csv')
 file.close()
 
 
 
 #file = b = np.load('/home/sass/Dokumente/plandepth/ya_plandepth_stats_B03.npz', allow_pickle=True)
-file = b = np.load(localpath + '/ya_plandepth_stats_B03_default.npz', allow_pickle=True)
+file = b = np.load(localpath + '/ya_plandepth_stats_B03_fullplanning.npz', allow_pickle=True)
 fs = file.files # names of the stored arrays (['post_depth_ya', 'm_prob_ya', 'exc_count_ya'])
 post_meanPD_firstAction_ya = np.matmul(file[fs[1]][0,:,:,:], np.arange(1,4))
 
 df_ya_meanPD = pd.DataFrame(post_meanPD_firstAction_ya) # Without subject IDs
-pd.DataFrame(df_ya_meanPD).to_csv(localpath + '/meanPD_1st_action_ya_single_default.csv')
+pd.DataFrame(df_ya_meanPD).to_csv(localpath + '/meanPD_1st_action_ya_single_fullplanning.csv')
 dict_ids_ya={}
 dict_ids_ya['ID'] = ids_ya
 pd.DataFrame(dict_ids_ya).to_csv(localpath + '/IDs_YA.csv')
@@ -374,8 +345,8 @@ for i_mblk in range(140):
             BIC_lonoise_120_ya[i_subj] = 2*nll_lonoise_120_mean_ya[i_subj] + m_param_count*np.log(60)   
 
 # Write ELBO bound (approximate value of the negative marginal log likelihood)
-pd.DataFrame(infer_ya.loss).to_csv(localpath + '/ELBO_ya_group_default.csv') #     
-pd.DataFrame(infer_oa.loss).to_csv(localpath + '/ELBO_oa_group_default.csv') # 
+pd.DataFrame(infer_ya.loss).to_csv(localpath + '/ELBO_ya_group_fullplanning.csv') #     
+pd.DataFrame(infer_oa.loss).to_csv(localpath + '/ELBO_oa_group_fullplanning.csv') # 
 
 # Write neg. log-likelihood / fit values:
 dict_nll_oa = {}
@@ -390,7 +361,7 @@ dict_nll_oa['pseudo_Rsquare_1staction_hinoise_120_mean'] = pseudo_rsquare_hinois
 dict_nll_oa['pseudo_Rsquare_1staction_lonoise_120_mean'] = pseudo_rsquare_lonoise_120_mean_oa   
 dict_nll_oa['ID'] = ids_oa
 df_nll_oa = pd.DataFrame(data=dict_nll_oa)
-df_nll_oa.to_csv(localpath + '/NLL_oa_group_default.csv') 
+df_nll_oa.to_csv(localpath + '/NLL_oa_group_fullplanning.csv') 
 
 
 dict_nll_ya = {}
@@ -405,7 +376,7 @@ dict_nll_ya['pseudo_Rsquare_1staction_hinoise_120_mean'] = pseudo_rsquare_hinois
 dict_nll_ya['pseudo_Rsquare_1staction_lonoise_120_mean'] = pseudo_rsquare_lonoise_120_mean_ya     
 dict_nll_ya['ID'] = ids_ya
 df_nll_ya = pd.DataFrame(data=dict_nll_ya)
-df_nll_ya.to_csv(localpath + '/NLL_ya_group_default.csv') 
+df_nll_ya.to_csv(localpath + '/NLL_ya_group_fullplanning.csv') 
 
 
 
@@ -417,31 +388,31 @@ exc_count_ya_1 = exc_count_ya[0] [:] [:]
 
 exc_count_oa_PD1 = exc_count_oa_1[0] [:] [:]
 import pandas as pd
-pd.DataFrame(exc_count_oa_PD1).to_csv(localpath+"/exc_PD1_oa_default.csv")
+pd.DataFrame(exc_count_oa_PD1).to_csv(localpath+"/exc_PD1_oa_fullplanning.csv")
 file.close()
 
 exc_count_ya_PD1 = exc_count_ya_1[0] [:] [:]
-pd.DataFrame(exc_count_ya_PD1).to_csv(localpath+"/exc_PD1_ya_default.csv")
+pd.DataFrame(exc_count_ya_PD1).to_csv(localpath+"/exc_PD1_ya_fullplanning.csv")
 file.close()
 
 # PD 2
 exc_count_oa_PD2 = exc_count_oa_1[1] [:] [:]
-pd.DataFrame(exc_count_oa_PD2).to_csv(localpath+"/exc_PD2_oa_default.csv")
+pd.DataFrame(exc_count_oa_PD2).to_csv(localpath+"/exc_PD2_oa_fullplanning.csv")
 file.close()
 
 exc_count_ya_PD2 = exc_count_ya_1[1] [:] [:]
-pd.DataFrame(exc_count_ya_PD2).to_csv(localpath+"/exc_PD2_ya_default.csv")
+pd.DataFrame(exc_count_ya_PD2).to_csv(localpath+"/exc_PD2_ya_fullplanning.csv")
 file.close()
 
 # PD 3
 exc_count_oa_PD3 = exc_count_oa_1[2] [:] [:]
 import pandas as pd
-pd.DataFrame(exc_count_oa_PD3).to_csv(localpath+"/exc_PD3_oa_default.csv")
+pd.DataFrame(exc_count_oa_PD3).to_csv(localpath+"/exc_PD3_oa_fullplanning.csv")
 file.close()
 
 exc_count_ya_PD3 = exc_count_ya_1[2] [:] [:]
 import pandas as pd
-pd.DataFrame(exc_count_ya_PD3).to_csv(localpath+"/exc_PD3_ya_default.csv")
+pd.DataFrame(exc_count_ya_PD3).to_csv(localpath+"/exc_PD3_ya_fullplanning.csv")
 file.close()
 
 

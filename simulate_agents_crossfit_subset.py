@@ -46,6 +46,7 @@ from inference import Inferrer
 from helper_files import get_posterior_stats # load_and_format_behavioural_data
 
 from calc_BIC import calc_BIC
+from scipy.stats import mode
 
 # In[1]:  #### simulation and recovery for SAT PD version 2.0 ###########################################
 # changes in task: new planet configs, no action costs, 140 trials in total, first 20 are training trials
@@ -61,7 +62,7 @@ pyro.enable_validation(True)
 
 sns.set(context='talk', style='white', color_codes=True)
 
-runs0 = 30 # 1000 # 20 # 40            #number of simulations 
+runs0 = 1000 # 20 # 40            #number of simulations 
 mini_blocks0 = 120     #+20 for training which will be removed in the following
 max_trials0 = 3        #maximum number of actions per mini-block
 max_depth0 = 3         #maximum planning depth
@@ -188,6 +189,7 @@ agents = {}
 
 m0 = {} # mean parameter values
 trans_pars0 = {}
+dict_mb_gain_all = {}
 
  
 for agent_key in agent_keys:    
@@ -381,11 +383,46 @@ for agent_key in agent_keys:
     dict_mb_gain['Std_gain_PD2'] = points_depth[agent_key][1][:,:,:].numpy().sum(2).std(0)
     dict_mb_gain['Mean_gain_PD1'] = points_depth[agent_key][0][:,:,:].numpy().sum(2).mean(0)
     dict_mb_gain['Std_gain_PD1'] = points_depth[agent_key][0][:,:,:].numpy().sum(2).std(0)
-    df_mean_std_permb = pd.DataFrame(data=dict_mb_gain)
-    df_mean_std_permb.to_csv(datapath + '/miniblock_gain_mean_std_'+agent_key+'_'+str(runs0)+'.csv')
+
+    df_mean_std_permb = pd.DataFrame(data=dict_mb_gain)    
+    df_mean_std_permb.to_csv(datapath + '/miniblock_gain_mean_std_'+agent_key+'_'+str(runs0)+'.csv')    
     #'''
+    
+    dict_mb_gain_all[agent_key] = {}
+    dict_mb_gain_all[agent_key]['Mean_gain_PD3'] = points_depth[agent_key][2][:,:,:].numpy().sum(2).mean(0)
+    dict_mb_gain_all[agent_key]['Std_gain_PD3'] = points_depth[agent_key][2][:,:,:].numpy().sum(2).std(0)
+    dict_mb_gain_all[agent_key]['Mean_gain_PD2'] = points_depth[agent_key][1][:,:,:].numpy().sum(2).mean(0)
+    dict_mb_gain_all[agent_key]['Std_gain_PD2'] = points_depth[agent_key][1][:,:,:].numpy().sum(2).std(0)
+    dict_mb_gain_all[agent_key]['Mean_gain_PD1'] = points_depth[agent_key][0][:,:,:].numpy().sum(2).mean(0)
+    dict_mb_gain_all[agent_key]['Std_gain_PD1'] = points_depth[agent_key][0][:,:,:].numpy().sum(2).std(0)    
+    
+    df_mean_std_permb_all = pd.DataFrame(data=dict_mb_gain_all)
+    df_mean_std_permb_all.to_csv(datapath + '/miniblock_gain_mean_std_allagents_'+str(runs0)+'_Jan2024.csv')    
 
 
+
+
+# Diagnostic plot:
+plt.figure(figsize=(12,6), dpi=300)    
+plt.plot(df_mean_std_permb_all['rational']['Mean_gain_PD3'] - df_mean_std_permb_all['anchor_pruning']['Mean_gain_PD3'], '.-') 
+plt.xlabel('Miniblock')   
+plt.ylabel('$\Delta$ Points PD3 rational - PD3 anchor pruning \n (Mean of 1000 agents)')
+plotpath = 'P:/037/B3_MAIN_STUDY/01_Preparation/Miniblock design/Notizen/Test Anchor Pruning SAT-PD2/'
+plt.savefig(plotpath + 'Points_rational_vs_anchor_pruning_SAT-PD2.png')
+plt.boxplot(df_mean_std_permb_all['rational']['Mean_gain_PD3'] - df_mean_std_permb_all['anchor_pruning']['Mean_gain_PD3'])  
+
+
+df_agentdiff_PD3 = pd.DataFrame(data = df_mean_std_permb_all['rational']['Mean_gain_PD3'] - df_mean_std_permb_all['anchor_pruning']['Mean_gain_PD3'])
+df_agentdiff_PD3.to_csv(plotpath + 'Gain_difference_PD3_rational_vs_anchorpruning.csv')
+  
+# Miniblock 117 has max. difference:
+# planets0[117] = array([4, 1, 1, 3, 0, 4])    
+# starts0[0,117] = 0 ("ganz links"!!!)
+# np.median(simulations['rational'][-1].responses[:,117], 0) # Jump-Move-Move, mean: 26.66 points
+# np.median(states['rational'][-1][:,117], 0)
+# points_depth['rational'][-1].mean(0)[117]
+# High variability of choices in anchor pruning?! No clear action preference?!
+# simulations['anchor_pruning'][-1].responses[:,117].numpy().mean(0)
 
 # RE-FITTING:
 
