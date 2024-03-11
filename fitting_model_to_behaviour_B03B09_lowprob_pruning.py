@@ -40,7 +40,7 @@ from helper_files import load_and_format_behavioural_data, get_posterior_stats, 
 import sys
 sys.path.append('../')
 
-from agents_anchor_pruning import BackInductionAnchorPruning
+from agents_lowprob_pruning import BackInductionLowProbPruning
 from inference import Inferrer
 
 def variational_inference(stimuli, mask, responses):
@@ -50,7 +50,7 @@ def variational_inference(stimuli, mask, responses):
     confs = stimuli['configs']
     
     # define agent
-    agent = BackInductionAnchorPruning(confs,
+    agent = BackInductionLowProbPruning(confs,
                           runs=runs,
                           mini_blocks=mini_blocks,
                           trials=max_trials,
@@ -69,7 +69,7 @@ def variational_inference(stimuli, mask, responses):
 # load and format behavioural data
 path1 = 'P:/037/B3_BEHAVIORAL_STUDY/04_Experiment/LOG_Files/full_datasets_OA/'   # change to correct path
 path2 = 'P:/037/B3_BEHAVIORAL_STUDY/04_Experiment/LOG_Files/full_datasets_YA/'
-localpath = 'P:/037/B3_BEHAVIORAL_STUDY/04_Experiment/Analysis_Scripts/SAT_Results/Results_anchor_pruning' # LG # 
+localpath = 'P:/037/B3_BEHAVIORAL_STUDY/04_Experiment/Analysis_Scripts/SAT_Results/Results_lowprob_pruning' # LG # 
 
 filenames = ["space_adventure_pd-results.json",
              "space_adventure_pd_inv-results.json"]    # posible filenames of SAT logfiles
@@ -111,7 +111,7 @@ axes.plot(infer_oa.loss[100:])  # 100:
 df_loss = pd.DataFrame(infer_oa.loss)    
 axes.plot(range(len(df_loss[0].rolling(window=25).mean())-100), df_loss[0].rolling(window=25).mean()[100:], lw=1)    #                 
 axes.set_title('ELBO Testdaten')
-fig.savefig(localpath + '/ELBO Testdaten_oa_anchor_pruning.jpg')
+fig.savefig(localpath + '/ELBO Testdaten_oa_lowprob_pruning.jpg')
 
 
 g = sns.FacetGrid(pars_df_oa, col="parameter", height=5, sharey=False);
@@ -120,7 +120,7 @@ g = g.map(errorplot, 'subject', 'value').add_legend();
 #g.axes[0,1].set_ylim([0, 7])
 #g.axes[0,2].set_ylim([0, 1])
 
-g.fig.savefig(localpath + '/parameter_participant_oa_anchor_pruning.jpg')
+g.fig.savefig(localpath + '/parameter_participant_oa_lowprob_pruning.jpg')
 
 # In[6]:
 
@@ -150,7 +150,7 @@ axes.plot(infer_ya.loss[100:])  # 100:
 df_loss = pd.DataFrame(infer_ya.loss)    
 axes.plot(range(len(df_loss[0].rolling(window=25).mean())-100), df_loss[0].rolling(window=25).mean()[100:], lw=1)    #                 
 axes.set_title('ELBO Testdaten')
-fig.savefig(localpath + '/ELBO Testdaten_ya_anchor_pruning.jpg')
+fig.savefig(localpath + '/ELBO Testdaten_ya_lowprob_pruning.jpg')
 
 # In[8]:
 
@@ -166,7 +166,7 @@ g = g.map(errorplot, 'subject', 'value').add_legend();
 #g.axes[0,1].set_ylim([0, 7])
 #g.axes[0,2].set_ylim([0, 1])
 
-g.fig.savefig(localpath + '/parameter_participant_ya_anchor_pruning.jpg')
+g.fig.savefig(localpath + '/parameter_participant_ya_lowprob_pruning.jpg')
 
 # In[9]:
 
@@ -179,14 +179,14 @@ pars_df = pars_df_oa.append(pars_df_ya, ignore_index=True)
 
 g = sns.FacetGrid(pars_df, col="parameter", hue='group', height=5, sharey=False, sharex=False, palette='Set1');
 g = g.map(sns.kdeplot, 'value').add_legend();
-g.fig.savefig(localpath + '/post_group_parameters_OA_YA_anchor_pruning.pdf', dpi=300)
+g.fig.savefig(localpath + '/post_group_parameters_OA_YA_lowprob_pruning.pdf', dpi=300)
 
 
 # In[10]:
 
 
 pars_df = pars_df_oa.append(pars_df_ya)
-pars_df.to_csv(localpath + '/pars_post_samples_anchor_pruning.csv')
+pars_df.to_csv(localpath + '/pars_post_samples_lowprob_pruning.csv')
 
 
 
@@ -198,15 +198,15 @@ pars_df.to_csv(localpath + '/pars_post_samples_anchor_pruning.csv')
 
 
 post_depth_oa, m_prob_oa, exc_count_oa = get_posterior_stats(post_marg_oa)
-np.savez(localpath + '/oa_plandepth_stats_B03_anchor_pruning', post_depth_oa, m_prob_oa, exc_count_oa)
+np.savez(localpath + '/oa_plandepth_stats_B03_lowprob_pruning', post_depth_oa, m_prob_oa, exc_count_oa)
 
 post_depth_ya, m_prob_ya, exc_count_ya = get_posterior_stats(post_marg_ya)
-np.savez(localpath + '/ya_plandepth_stats_B03_anchor_pruning', post_depth_ya, m_prob_ya, exc_count_ya)
+np.savez(localpath + '/ya_plandepth_stats_B03_lowprob_pruning', post_depth_ya, m_prob_ya, exc_count_ya)
 
 
 
 #file = b = np.load('/home/sass/Dokumente/plandepth/oa_plandepth_stats_B03.npz', allow_pickle=True)
-file = b = np.load(localpath + '/oa_plandepth_stats_B03_anchor_pruning.npz', allow_pickle=True)
+file = b = np.load(localpath + '/oa_plandepth_stats_B03_lowprob_pruning.npz', allow_pickle=True)
 fs = file.files # names of the stored arrays (['post_depth_oa', 'm_prob_oa', 'exc_count_oa'])
 post_meanPD_firstAction_oa = np.matmul(file[fs[1]][0,:,:,:], np.arange(1,4))
 import pandas as pd
@@ -215,18 +215,18 @@ dict_ids_oa['ID'] = ids_oa
 pd.DataFrame(dict_ids_oa).to_csv(localpath + '/IDs_OA.csv')
 df_oa_meanPD = pd.DataFrame(post_meanPD_firstAction_oa) # Without subject IDs
 #df_oa_meanPD = np.transpose(pd.DataFrame(dict_ids_oa)).append(pd.DataFrame(post_meanPD_firstAction_oa)) # With subject IDs
-pd.DataFrame(df_oa_meanPD).to_csv(localpath + '/meanPD_1st_action_oa_single_anchor_pruning.csv')
+pd.DataFrame(df_oa_meanPD).to_csv(localpath + '/meanPD_1st_action_oa_single_lowprob_pruning.csv')
 file.close()
 
 
 
 #file = b = np.load('/home/sass/Dokumente/plandepth/ya_plandepth_stats_B03.npz', allow_pickle=True)
-file = b = np.load(localpath + '/ya_plandepth_stats_B03_anchor_pruning.npz', allow_pickle=True)
+file = b = np.load(localpath + '/ya_plandepth_stats_B03_lowprob_pruning.npz', allow_pickle=True)
 fs = file.files # names of the stored arrays (['post_depth_ya', 'm_prob_ya', 'exc_count_ya'])
 post_meanPD_firstAction_ya = np.matmul(file[fs[1]][0,:,:,:], np.arange(1,4))
 
 df_ya_meanPD = pd.DataFrame(post_meanPD_firstAction_ya) # Without subject IDs
-pd.DataFrame(df_ya_meanPD).to_csv(localpath + '/meanPD_1st_action_ya_single_anchor_pruning.csv')
+pd.DataFrame(df_ya_meanPD).to_csv(localpath + '/meanPD_1st_action_ya_single_lowprob_pruning.csv')
 dict_ids_ya={}
 dict_ids_ya['ID'] = ids_ya
 pd.DataFrame(dict_ids_ya).to_csv(localpath + '/IDs_YA.csv')
@@ -366,8 +366,8 @@ for i_mblk in range(140):
             BIC_lonoise_120_ya[i_subj] = 2*nll_lonoise_120_mean_ya[i_subj] + m_param_count*np.log(60)   
 
 # Write ELBO bound (approximate value of the negative marginal log likelihood)
-pd.DataFrame(infer_ya.loss).to_csv(localpath + '/ELBO_ya_group_anchor_pruning.csv') #     
-pd.DataFrame(infer_oa.loss).to_csv(localpath + '/ELBO_oa_group_anchor_pruning.csv') # 
+pd.DataFrame(infer_ya.loss).to_csv(localpath + '/ELBO_ya_group_lowprob_pruning.csv') #     
+pd.DataFrame(infer_oa.loss).to_csv(localpath + '/ELBO_oa_group_lowprob_pruning.csv') # 
 
 # Write neg. log-likelihood / fit values:
 dict_nll_oa = {}
@@ -382,7 +382,7 @@ dict_nll_oa['pseudo_Rsquare_1staction_hinoise_120_mean'] = pseudo_rsquare_hinois
 dict_nll_oa['pseudo_Rsquare_1staction_lonoise_120_mean'] = pseudo_rsquare_lonoise_120_mean_oa   
 dict_nll_oa['ID'] = ids_oa
 df_nll_oa = pd.DataFrame(data=dict_nll_oa)
-df_nll_oa.to_csv(localpath + '/NLL_oa_group_anchor_pruning.csv') 
+df_nll_oa.to_csv(localpath + '/NLL_oa_group_lowprob_pruning.csv') 
 
 
 dict_nll_ya = {}
@@ -397,7 +397,7 @@ dict_nll_ya['pseudo_Rsquare_1staction_hinoise_120_mean'] = pseudo_rsquare_hinois
 dict_nll_ya['pseudo_Rsquare_1staction_lonoise_120_mean'] = pseudo_rsquare_lonoise_120_mean_ya     
 dict_nll_ya['ID'] = ids_ya
 df_nll_ya = pd.DataFrame(data=dict_nll_ya)
-df_nll_ya.to_csv(localpath + '/NLL_ya_group_anchor_pruning.csv') 
+df_nll_ya.to_csv(localpath + '/NLL_ya_group_lowprob_pruning.csv') 
 
 
 
@@ -409,31 +409,31 @@ exc_count_ya_1 = exc_count_ya[0] [:] [:]
 
 exc_count_oa_PD1 = exc_count_oa_1[0] [:] [:]
 import pandas as pd
-pd.DataFrame(exc_count_oa_PD1).to_csv(localpath+"/exc_PD1_oa_anchor_pruning.csv")
+pd.DataFrame(exc_count_oa_PD1).to_csv(localpath+"/exc_PD1_oa_lowprob_pruning.csv")
 file.close()
 
 exc_count_ya_PD1 = exc_count_ya_1[0] [:] [:]
-pd.DataFrame(exc_count_ya_PD1).to_csv(localpath+"/exc_PD1_ya_anchor_pruning.csv")
+pd.DataFrame(exc_count_ya_PD1).to_csv(localpath+"/exc_PD1_ya_lowprob_pruning.csv")
 file.close()
 
 # PD 2
 exc_count_oa_PD2 = exc_count_oa_1[1] [:] [:]
-pd.DataFrame(exc_count_oa_PD2).to_csv(localpath+"/exc_PD2_oa_anchor_pruning.csv")
+pd.DataFrame(exc_count_oa_PD2).to_csv(localpath+"/exc_PD2_oa_lowprob_pruning.csv")
 file.close()
 
 exc_count_ya_PD2 = exc_count_ya_1[1] [:] [:]
-pd.DataFrame(exc_count_ya_PD2).to_csv(localpath+"/exc_PD2_ya_anchor_pruning.csv")
+pd.DataFrame(exc_count_ya_PD2).to_csv(localpath+"/exc_PD2_ya_lowprob_pruning.csv")
 file.close()
 
 # PD 3
 exc_count_oa_PD3 = exc_count_oa_1[2] [:] [:]
 import pandas as pd
-pd.DataFrame(exc_count_oa_PD3).to_csv(localpath+"/exc_PD3_oa_anchor_pruning.csv")
+pd.DataFrame(exc_count_oa_PD3).to_csv(localpath+"/exc_PD3_oa_lowprob_pruning.csv")
 file.close()
 
 exc_count_ya_PD3 = exc_count_ya_1[2] [:] [:]
 import pandas as pd
-pd.DataFrame(exc_count_ya_PD3).to_csv(localpath+"/exc_PD3_ya_anchor_pruning.csv")
+pd.DataFrame(exc_count_ya_PD3).to_csv(localpath+"/exc_PD3_ya_lowprob_pruning.csv")
 file.close()
 
 

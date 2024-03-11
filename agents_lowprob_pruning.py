@@ -9,7 +9,7 @@ ones = torch.ones
 randn = torch.randn
 
 
-class BackInductionAnchorPruning(object):
+class BackInductionLowProbPruning(object):
     def __init__(self,
                  planet_confs, # Matrix of zeros and ones
                  runs=1, # number of parallel runs (i.e. agents). For each run, one can specify a different set of model parameters.
