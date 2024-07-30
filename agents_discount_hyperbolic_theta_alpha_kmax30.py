@@ -181,26 +181,6 @@ class BackInductionDiscountHyperbolicThetaAlphakmax30(object):
             # set state value
             Vs.append(p * Q[..., 1] + (1-p) * Q[..., 0]) # Note (LG): This corresponds to a max operation, see above
 
-            # Ideas for further models:
-                
-            # - Jump discounting: Apply discount factor (gamma) to Q[..., 1]:
-            #   Vs.append(p * gamma * Q[..., 1] + (1-p) * Q[..., 0]) # Can I make this specific for high noise?!
-            #   Can I insert tp_mean, the estimated success prob. of a jump, here somehow?! (dim: blocks x subjects x 2)
-            #   Or tp_mean0, the true success prob. of a jump (one dim. less - subjects x 2)
-            #   Try this: self.tp_mean[-1][:,self.noise[0]] 
-            #   Multiply like this:
-            #   torch.einsum('...j,...ijk->...ijk', self.tp_mean[0][:,self.noise[0]], p)    
-            #   e.g.:
-            #
-            
-            # - Loss aversion: Apply non-linear function on value estimates:
-            #   e.g., f(v) = v - exp(- lambda * v), with lambda from 0..2 for reward values -2..+2
-            #   dQ = f(Q[..., 1]) - f(Q[..., 0])
-            #   Apply loss aversion only on first action (for PD2) or an first and second action (for PD3)?!
-            
-            # - Jump bias specific for high noise / low noise?
-            #   Maybe this isn't necessary if both an overall jump bias and a jump discounting factor are in the model!
-
             D.append(dQ) 
 
             if d < depth:
