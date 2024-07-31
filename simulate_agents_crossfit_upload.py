@@ -44,7 +44,7 @@ pyro.enable_validation(True)
 
 sns.set(context='talk', style='white', color_codes=True)
 
-runs0 = 30             #number of simulations ("participants") 
+runs0 = 1000           #number of simulations ("participants") 
 mini_blocks0 = 120     #+20 for training which will be removed in the following
 max_trials0 = 3        #maximum number of actions per mini-block
 max_depth0 = 3         #maximum planning depth
@@ -71,7 +71,6 @@ planets0 = numpy.asarray(planets0)
 planets11 = planets0
 planets0 = planets0[20:140,:]
 planets0 = planets0 -1
-
 
 vect0 = np.eye(5)[planets0]
 
@@ -118,11 +117,8 @@ conditions0 = torch.zeros(2, runs0, mini_blocks0, dtype=torch.long)
 conditions0[0] = torch.tensor(noise0, dtype=torch.long)[None, :]
 conditions0[1] = torch.tensor(trials0, dtype=torch.long)
 
- 
-
 agent_keys = ['rational', 'lowprob_pruning', 'discount_hyperbolic_theta_alpha_k3.0', \
               'discount_hyperbolic_theta_lowprob_pruning_k3.0']   
-    
     
     
 simulations = {}
@@ -163,22 +159,21 @@ for agent_key in agent_keys:
                                   mini_blocks=mini_blocks0,
                                   trials=max_trials0)
 
-    # define the optimal agent, each with a different maximal planning depth
+    # define the agent, each with a different maximal planning depth
         if agent_key == 'rational':    
             agents['rational'] = BackInduction(confs0,
                           runs=runs0, mini_blocks=mini_blocks0, trials=3, costs = torch.tensor([0., 0.]), 
                           planning_depth=i+1)
 
             # set beta, theta and alpha parameters as a normal distribution around a certain value
-            #m0['rational'] = torch.tensor([1.099, 0., 0.0])# beta= 3, because 1.099=np.log(3); alpha = 0.5 (too high!!!)
-            m0['rational'] = torch.tensor([1.099, 0., -2.])#  beta= 3, because 1.099=np.log(3); alpha = 0.1
+            m0['rational'] = torch.tensor([1.099, 0., -2.])# beta= 3 (tranformation in agent script exp(1.099)=3); alpha = 0.1 (transformation sigmoid(-2)=0.1)
 
         elif agent_key == 'lowprob_pruning': 
             agents['lowprob_pruning'] = BackInductionLowProbPruning(confs0,
                           runs=runs0, mini_blocks=mini_blocks0, trials=3, costs = torch.tensor([0., 0.]), 
                           planning_depth=i+1)
             # set beta and theta parameters 
-            m0['lowprob_pruning'] = torch.tensor([1.099, 0.])# beta= 3 --> tranformation in agent script 1.099=np.log(3) 
+            m0['lowprob_pruning'] = torch.tensor([1.099, 0.])
 
         
         elif agent_key == 'discount_hyperbolic_theta_alpha_k3.0':
@@ -186,7 +181,7 @@ for agent_key in agent_keys:
                           runs=runs0, mini_blocks=mini_blocks0, trials=3, costs = torch.tensor([0., 0.]), 
                           planning_depth=i+1)
             # set beta, theta and kappa (discounting) parameters 
-             m0['discount_hyperbolic_theta_alpha_k3.0'] = torch.tensor([1.099, 0., -2, -2.2])# beta= 3, because 1.099=np.log(3) // theta=0, alpha=0.1, k=3 = 30*sigmoid(-2.2)
+             m0['discount_hyperbolic_theta_alpha_k3.0'] = torch.tensor([1.099, 0., -2, -2.2])# k = 3 (transformation in agent script 30*sigmoid(-2.2))
 
         elif agent_key == 'discount_hyperbolic_theta_lowprob_pruning_k3.0':
              agents['discount_hyperbolic_theta_lowprob_pruning_k3.0'] = BackInductionDiscountHyperbolicThetaLowProbPruningkmax30(confs0,
@@ -229,7 +224,7 @@ for agent_key in agent_keys:
         final_points[agent_key].append(points_depth[agent_key][i][:,:,:].numpy().sum(2).sum(1).mean())
  
 
-    #'''#
+  
     dict_mb_gain = {}
     dict_mb_gain['Mean_gain_PD3'] = points_depth[agent_key][2][:,:,:].numpy().sum(2).mean(0)
     dict_mb_gain['Std_gain_PD3'] = points_depth[agent_key][2][:,:,:].numpy().sum(2).std(0)
@@ -239,8 +234,8 @@ for agent_key in agent_keys:
     dict_mb_gain['Std_gain_PD1'] = points_depth[agent_key][0][:,:,:].numpy().sum(2).std(0)
 
     df_mean_std_permb = pd.DataFrame(data=dict_mb_gain)    
-  #  df_mean_std_permb.to_csv(datapath + '/miniblock_gain_mean_std_'+agent_key+'_'+str(runs0)+'.csv')    
-    #'''
+    df_mean_std_permb.to_csv(datapath + '/miniblock_gain_mean_std_'+agent_key+'_'+str(runs0)+'.csv')    
+  
     
     dict_mb_gain_all[agent_key] = {}
     dict_mb_gain_all[agent_key]['Mean_gain_PD3'] = points_depth[agent_key][2][:,:,:].numpy().sum(2).mean(0)
