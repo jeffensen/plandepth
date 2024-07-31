@@ -1,6 +1,4 @@
 # In[0]:
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 @authors: Lorenz Gönner & Sophia-Helen Sass
 """
@@ -117,7 +115,7 @@ conditions0 = torch.zeros(2, runs0, mini_blocks0, dtype=torch.long)
 conditions0[0] = torch.tensor(noise0, dtype=torch.long)[None, :]
 conditions0[1] = torch.tensor(trials0, dtype=torch.long)
 
-agent_keys = ['rational', 'lowprob_pruning', 'discount_hyperbolic_theta_alpha_k3.0', \
+agent_keys = ['rational', 'random','lowprob_pruning', 'discount_hyperbolic_theta_alpha_k3.0', \
               'discount_hyperbolic_theta_lowprob_pruning_k3.0']   
     
     
@@ -165,29 +163,33 @@ for agent_key in agent_keys:
                           runs=runs0, mini_blocks=mini_blocks0, trials=3, costs = torch.tensor([0., 0.]), 
                           planning_depth=i+1)
 
-            # set beta, theta and alpha parameters as a normal distribution around a certain value
-            m0['rational'] = torch.tensor([1.099, 0., -2.])# beta= 3 (tranformation in agent script exp(1.099)=3); alpha = 0.1 (transformation sigmoid(-2)=0.1)
-
-        elif agent_key == 'lowprob_pruning': 
-            agents['lowprob_pruning'] = BackInductionLowProbPruning(confs0,
+            # set parameters as a normal distribution around a certain value
+            m0['rational'] = torch.tensor([1.099, 0., -2.])# beta = 3 (tranformation in agent script exp(1.099) = 3); alpha = 0.1 (transformation sigmoid(-2)=0.1)
+            
+        elif agent_key == 'random':    
+              agents['random'] = BackInduction(confs0,
                           runs=runs0, mini_blocks=mini_blocks0, trials=3, costs = torch.tensor([0., 0.]), 
                           planning_depth=i+1)
-            # set beta and theta parameters 
-            m0['lowprob_pruning'] = torch.tensor([1.099, 0.])
+              m0['random'] = torch.tensor([-10, 0., -2.])# beta = 0 (tranformation in agent script exp(10) = 0); alpha = 0.1 (transformation sigmoid(-2)=0.1)
+
+
+        elif agent_key == 'lowprob_pruning': 
+             agents['lowprob_pruning'] = BackInductionLowProbPruning(confs0,
+                          runs=runs0, mini_blocks=mini_blocks0, trials=3, costs = torch.tensor([0., 0.]), 
+                          planning_depth=i+1)
+             m0['lowprob_pruning'] = torch.tensor([1.099, 0.])
 
         
         elif agent_key == 'discount_hyperbolic_theta_alpha_k3.0':
              agents['discount_hyperbolic_theta_alpha_k3.0'] = BackInductionDiscountHyperbolicThetaAlphakmax30(confs0,
                           runs=runs0, mini_blocks=mini_blocks0, trials=3, costs = torch.tensor([0., 0.]), 
-                          planning_depth=i+1)
-            # set beta, theta and kappa (discounting) parameters 
+                          planning_depth=i+1) 
              m0['discount_hyperbolic_theta_alpha_k3.0'] = torch.tensor([1.099, 0., -2, -2.2])# k = 3 (transformation in agent script 30*sigmoid(-2.2))
 
         elif agent_key == 'discount_hyperbolic_theta_lowprob_pruning_k3.0':
              agents['discount_hyperbolic_theta_lowprob_pruning_k3.0'] = BackInductionDiscountHyperbolicThetaLowProbPruningkmax30(confs0,
                           runs=runs0, mini_blocks=mini_blocks0, trials=3, costs = torch.tensor([0., 0.]), 
                           planning_depth=i+1)
-            # set beta, theta and kappa (discounting) parameters 
              m0['discount_hyperbolic_theta_lowprob_pruning_k3.0'] = torch.tensor([1.099, 0., -2.2])# beta= 3, because 1.099=np.log(3) //  k=1 = 30*sigmoid(-2.2)
 
       
@@ -252,7 +254,7 @@ for agent_key in agent_keys:
 # In[3]:
 # RE-FITTING:
 
-sim_number0 = 100
+sim_number0 = 2
 n_iter = 500
 
 fitting_agents = {}
@@ -261,6 +263,7 @@ modelfit = {}
 
 datapath = 'P:/037/B3_BEHAVIORAL_STUDY/04_Experiment/Analysis_Scripts/SAT_Results/Model_Fitting/Crossfitting_Results'
 datapath_modelfit = 'P:/037/B3_BEHAVIORAL_STUDY/04_Experiment/Analysis_Scripts/SAT_Results/Model_Fitting/Simulation_Results'
+
 
 for i_fitted in range(len(agent_keys)):
     fitting_agents['fit-'+agent_keys[i_fitted]] = {}
@@ -293,6 +296,13 @@ for i_fitted in range(len(agent_keys)):
                           costs = torch.tensor([0., 0.]), 
                           planning_depth=3)
 
+        elif agent_keys[i_fitted] == 'random':            
+            fitting_agents['fit-random']['sim-'+agent_keys[i_simulated]] = BackInduction(confs0,
+                          runs=runs0,
+                          mini_blocks=mini_blocks0,
+                          trials=3,
+                          costs = torch.tensor([0., 0.]), 
+                          planning_depth=3)
       
         elif agent_keys[i_fitted] == 'lowprob_pruning':    
             fitting_agents['fit-lowprob_pruning']['sim-'+agent_keys[i_simulated]] = BackInductionLowProbPruning(confs0,
