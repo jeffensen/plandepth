@@ -63,14 +63,16 @@ def variational_inference(stimuli, mask, responses):
 
     # load inference module and start model fitting
     infer = Inferrer(agent, stimuli, responses, mask)
-    infer.fit(num_iterations=1000, num_particles=100, optim_kwargs={'lr': .010}) # lr: learning rate 
+    infer.fit(num_iterations=1000, 
+              num_particles=100, 
+              optim_kwargs={'lr': .010}) # lr: learning rate 
     
     return infer
 
 # In[3]:
 
 # load and format behavioural data
-path1 = 'P:/037/B3_BEHAVIORAL_STUDY/04_Experiment/LOG_Files/full_datasets_OA/'   # change to correct path
+path1 = 'P:/037/B3_BEHAVIORAL_STUDY/04_Experiment/LOG_Files/full_datasets_OA/'
 path2 = 'P:/037/B3_BEHAVIORAL_STUDY/04_Experiment/LOG_Files/full_datasets_YA/'
 localpath = 'P:/037/B3_BEHAVIORAL_STUDY/04_Experiment/Analysis_Scripts/SAT_Results/Results_lowprob_pruning' 
 
@@ -98,7 +100,7 @@ def format_posterior_samples(infer):
         inferred parameters (n_samples per subject).
 
     """
-    labels = [r'$\tilde{\beta}$', r'$\theta$'] #, r'$\gamma$']
+    labels = [r'$\tilde{\beta}$', r'$\theta$'] 
     pars_df, mg_df, sg_df = infer.sample_from_posterior(labels)
     
     # transform sampled parameter values to the true parameter range
@@ -153,13 +155,11 @@ axes.plot(range(len(df_loss[0].rolling(window=25).mean())-100),
 axes.set_title('ELBO Testdaten')
 fig.savefig(localpath + '/ELBO Testdaten_ya_lowprob_pruning.jpg')
 
-
 # visualize posterior parameter estimates over subjects
 g = sns.FacetGrid(pars_df_ya, col="parameter", height=5, sharey=False);
 g = g.map(errorplot, 'subject', 'value').add_legend();
 #g.axes[0,0].set_ylim([-1, 2]) # Adjust axes if necessary
 g.fig.savefig(localpath + '/parameter_participant_ya_lowprob_pruning.jpg')
-
 
 # plot posterior distribution over groups
 pars_df_oa['group'] = 'OA'
@@ -186,7 +186,7 @@ post_depth_ya, m_prob_ya, exc_count_ya = get_posterior_stats(post_marg_ya)
 np.savez(localpath + '/ya_plandepth_stats_B03_lowprob_pruning', post_depth_ya, m_prob_ya, exc_count_ya)
 
 file = b = np.load(localpath + '/oa_plandepth_stats_B03_lowprob_pruning.npz', allow_pickle=True)
-fs = file.files # names of the stored arrays (['post_depth_oa', 'm_prob_oa', 'exc_count_oa'])
+fs = file.files 
 post_meanPD_firstAction_oa = np.matmul(file[fs[1]][0,:,:,:], np.arange(1,4))
 
 dict_ids_oa={}
@@ -196,10 +196,8 @@ df_oa_meanPD = pd.DataFrame(post_meanPD_firstAction_oa) # Without subject IDs
 pd.DataFrame(df_oa_meanPD).to_csv(localpath + '/meanPD_1st_action_oa_single_lowprob_pruning.csv')
 file.close()
 
-
-
 file = b = np.load(localpath + '/ya_plandepth_stats_B03_lowprob_pruning.npz', allow_pickle=True)
-fs = file.files # names of the stored arrays (['post_depth_ya', 'm_prob_ya', 'exc_count_ya'])
+fs = file.files
 post_meanPD_firstAction_ya = np.matmul(file[fs[1]][0,:,:,:], np.arange(1,4))
 
 df_ya_meanPD = pd.DataFrame(post_meanPD_firstAction_ya) # Without subject IDs
@@ -222,7 +220,7 @@ pseudo_rsquare_lonoise_120_mean_oa, BIC_lonoise_120_oa = calc_BIC(infer_oa,
                                                                   conditions_oa,
                                                                   m_prob_oa) 
        
-pd.DataFrame(infer_oa.loss).to_csv(localpath + '/ELBO_oa_group_fullplanning.csv') 
+pd.DataFrame(infer_oa.loss).to_csv(localpath + '/ELBO_oa_group_lowprob_pruning.csv') 
 
 dict_nll_oa = {}
 dict_nll_oa['nll_1staction_120_mean'] = nll_120_mean_oa
@@ -236,7 +234,7 @@ dict_nll_oa['pseudo_Rsquare_1staction_hinoise_120_mean'] = pseudo_rsquare_hinois
 dict_nll_oa['pseudo_Rsquare_1staction_lonoise_120_mean'] = pseudo_rsquare_lonoise_120_mean_oa   
 dict_nll_oa['ID'] = ids_oa
 df_nll_oa = pd.DataFrame(data=dict_nll_oa)
-df_nll_oa.to_csv(localpath + '/NLL_oa_group_fullplanning.csv') 
+df_nll_oa.to_csv(localpath + '/NLL_oa_group_lowprob_pruning.csv') 
 
 nll_120_mean_ya, nll_hinoise_120_mean_ya, nll_lonoise_120_mean_ya, \
 pseudo_rsquare_120_mean_ya, BIC_120_mean_ya, \
@@ -246,7 +244,7 @@ pseudo_rsquare_lonoise_120_mean_ya, BIC_lonoise_120_ya = calc_BIC(infer_ya,
                                                                   conditions_ya,
                                                                   m_prob_ya) 
        
-pd.DataFrame(infer_ya.loss).to_csv(localpath + '/ELBO_ya_group_fullplanning.csv') # 
+pd.DataFrame(infer_ya.loss).to_csv(localpath + '/ELBO_ya_group_lowprob_pruning.csv') # 
 
 dict_nll_ya = {}
 dict_nll_ya['nll_1staction_120_mean'] = nll_120_mean_ya
@@ -260,38 +258,5 @@ dict_nll_ya['pseudo_Rsquare_1staction_hinoise_120_mean'] = pseudo_rsquare_hinois
 dict_nll_ya['pseudo_Rsquare_1staction_lonoise_120_mean'] = pseudo_rsquare_lonoise_120_mean_ya   
 dict_nll_ya['ID'] = ids_ya
 df_nll_ya = pd.DataFrame(data=dict_nll_ya)
-df_nll_ya.to_csv(localpath + '/NLL_ya_group_fullplanning.csv') 
-
-# In[9]: get exceedance probabilities of the 3 planning depths (rows = mini block, column = participant)
-# PD 1
-exc_count_oa_1 = exc_count_oa[0] [:] [:]
-exc_count_ya_1 = exc_count_ya[0] [:] [:]
-
-exc_count_oa_PD1 = exc_count_oa_1[0] [:] [:]
-pd.DataFrame(exc_count_oa_PD1).to_csv(localpath+"/exc_PD1_oa_lowprob_pruning.csv")
-file.close()
-
-exc_count_ya_PD1 = exc_count_ya_1[0] [:] [:]
-pd.DataFrame(exc_count_ya_PD1).to_csv(localpath+"/exc_PD1_ya_lowprob_pruning.csv")
-file.close()
-
-# PD 2
-exc_count_oa_PD2 = exc_count_oa_1[1] [:] [:]
-pd.DataFrame(exc_count_oa_PD2).to_csv(localpath+"/exc_PD2_oa_lowprob_pruning.csv")
-file.close()
-
-exc_count_ya_PD2 = exc_count_ya_1[1] [:] [:]
-pd.DataFrame(exc_count_ya_PD2).to_csv(localpath+"/exc_PD2_ya_lowprob_pruning.csv")
-file.close()
-
-# PD 3
-exc_count_oa_PD3 = exc_count_oa_1[2] [:] [:]
-pd.DataFrame(exc_count_oa_PD3).to_csv(localpath+"/exc_PD3_oa_lowprob_pruning.csv")
-file.close()
-
-exc_count_ya_PD3 = exc_count_ya_1[2] [:] [:]
-pd.DataFrame(exc_count_ya_PD3).to_csv(localpath+"/exc_PD3_ya_lowprob_pruning.csv")
-file.close()
-
-
-
+df_nll_ya.to_csv(localpath + '/NLL_ya_group_lowprob_pruning')
+                 

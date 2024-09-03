@@ -1,33 +1,29 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# Here I will illustrate the steps needed to fit the behavioural model to empirical data. This entails determining the posterior beleifs over model parameters and mini-block specific planning depth.
-
+"""
+@author: Lorenz Goenner
+"""
 # In[1]:
 
 import torch
 from scipy import io
 import pandas as pd
-#from torch import zeros, ones
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-from calc_BIC import calc_BIC
-
 sns.set(context = 'talk', style = 'white')
 sns.set_palette("colorblind", n_colors=5, color_codes=True)
 
-#from pathlib import Path
 from os.path import expanduser, isdir, join
 from os import listdir, walk
-#import json
-from helper_files import load_and_format_behavioural_data, get_posterior_stats, errorplot#, map_noise_to_values
-# Probabilistic inference
+from helper_files import load_and_format_behavioural_data, get_posterior_stats, errorplot
 import sys
 sys.path.append('../')
+
 from agents import BackInduction
 from inference import Inferrer
-
+from calc_BIC import calc_BIC
 
 # In[2]:
 
@@ -67,25 +63,27 @@ def variational_inference(stimuli, mask, responses):
 
     # load inference module and start model fitting
     infer = Inferrer(agent, stimuli, responses, mask)
-    infer.fit(num_iterations=1000, num_particles=100, optim_kwargs={'lr': .010}) # 1000 # lr: Learning rate, keep at .010
+    infer.fit(num_iterations=1000, 
+              num_particles=100, 
+              optim_kwargs={'lr': .010}) # lr: Learning rate, keep at .010
     
     return infer
 
-
+# In[3]:
 
 # load and format behavioural data
 path1 = 'P:/037/B3_BEHAVIORAL_STUDY/04_Experiment/LOG_Files/full_datasets_OA/' # change to correct path
 path2 = 'P:/037/B3_BEHAVIORAL_STUDY/04_Experiment/LOG_Files/full_datasets_YA/'
-localpath = 'P:/037/B3_BEHAVIORAL_STUDY/04_Experiment/Analysis_Scripts/SAT_Results/Results_fullplanning_test1' 
+localpath = 'P:/037/B3_BEHAVIORAL_STUDY/04_Experiment/Analysis_Scripts/SAT_Results/Results_fullplanning_test2' 
 
 filenames = ["space_adventure_pd-results.json",
-             "space_adventure_pd_inv-results.json"]    # posible filenames of SAT logfiles
+             "space_adventure_pd_inv-results.json"]   
 
 stimuli_oa, mask_oa, responses_oa, conditions_oa, ids_oa = load_and_format_behavioural_data(path1, filenames)
 stimuli_ya, mask_ya, responses_ya, conditions_ya, ids_ya = load_and_format_behavioural_data(path2, filenames)
 
 
-# In[3]:
+# In[4]:
 
 # sample from posterior
 def format_posterior_samples(infer):
@@ -109,11 +107,12 @@ def format_posterior_samples(infer):
     pars_df[r'$\beta$'] = torch.from_numpy(pars_df[r'$\tilde{\beta}$'].values).exp().numpy()
     pars_df[r'$\alpha$'] = torch.from_numpy(pars_df[r'$\alpha$'].values).sigmoid().numpy()    
 
-    pars_df.drop([r'$\tilde{\beta}$'], axis=1, inplace=True) # , r'$\gamma_{loNoise}$', r'$\gamma_{hiNoise}$'
+    pars_df.drop([r'$\tilde{\beta}$'], axis=1, inplace=True) 
     return pars_df.melt(id_vars=['subject'], var_name='parameter')
 
 
-# In[4]:
+# In[5]:
+    
 # Variational inference
 infer_oa = variational_inference(stimuli_oa, mask_oa, responses_oa)
 pars_df_oa = format_posterior_samples(infer_oa)
@@ -126,7 +125,8 @@ pars_df_oa['IDs'] = np.array(ids_oa)[pars_df_oa.subject.values - 1]
 fig, axes = plt.subplots(1, 1, figsize=(15, 5))
 axes.plot(infer_oa.loss[100:])  # 100:
 df_loss = pd.DataFrame(infer_oa.loss)    
-axes.plot(range(len(df_loss[0].rolling(window=25).mean())-100), df_loss[0].rolling(window=25).mean()[100:], lw=1)    #                 
+axes.plot(range(len(df_loss[0].rolling(window=25).mean())-100), 
+          df_loss[0].rolling(window=25).mean()[100:], lw=1)                   
 axes.set_title('ELBO Testdaten')
 fig.savefig(localpath + '/ELBO Testdaten_oa_fullplanning.jpg')
 
@@ -135,8 +135,7 @@ g = g.map(errorplot, 'subject', 'value').add_legend();
 #g.axes[0,0].set_ylim([-1, 2]) # Adjust axes if necessary
 g.fig.savefig(localpath + '/parameter_participant_oa_fullplanning.jpg')
 
-
-
+# In[6]
 
 infer_ya = variational_inference(stimuli_ya, mask_ya, responses_ya)
 pars_df_ya = format_posterior_samples(infer_ya)
@@ -149,10 +148,10 @@ pars_df_ya['IDs'] = np.array(ids_ya)[pars_df_ya.subject.values - 1]
 fig, axes = plt.subplots(1, 1, figsize=(15, 5))
 axes.plot(infer_ya.loss[100:])  # 100:
 df_loss = pd.DataFrame(infer_ya.loss)    
-axes.plot(range(len(df_loss[0].rolling(window=25).mean())-100), df_loss[0].rolling(window=25).mean()[100:], lw=1)    #                 
+axes.plot(range(len(df_loss[0].rolling(window=25).mean())-100), 
+          df_loss[0].rolling(window=25).mean()[100:], lw=1)        
 axes.set_title('ELBO Testdaten')
 fig.savefig(localpath + '/ELBO Testdaten_ya_fullplanning.jpg')
-
 
 
 # visualize posterior parameter estimates over subjects
@@ -167,18 +166,17 @@ pars_df_ya['group'] = 'YA'
 
 pars_df = pd.concat([pars_df_oa, pars_df_ya], ignore_index=True)
 
-g = sns.FacetGrid(pars_df, col="parameter", hue='group', height=5, sharey=False, sharex=False, palette='Set1');
+g = sns.FacetGrid(pars_df, col="parameter", hue='group', 
+                  height=5, sharey=False, sharex=False, palette='Set1');
 g = g.map(sns.kdeplot, 'value').add_legend();
 g.fig.savefig(localpath + '/post_group_parameters_OA_YA_fullplanning.pdf', dpi=300)
 
-
-# In[10]:
 pars_df = pd.concat([pars_df_oa, pars_df_ya], ignore_index=True)
 pars_df.to_csv(localpath + '/pars_post_samples_fullplanning.csv')
 
-# In what follows we will compute the posterior marginal over planning depth, compute exceedanace probability and plot the results for individual subjects and for the group level results.
 
-# In[12]:
+# In[7]: Compute the posterior marginal over planning depth, 
+# compute exceedanace probability and plot the results for individual subjects and for the group level results.
 
 post_depth_oa, m_prob_oa, exc_count_oa = get_posterior_stats(post_marg_oa)
 np.savez(localpath + '/oa_plandepth_stats_B03_fullplanning', post_depth_oa, m_prob_oa, exc_count_oa)
@@ -186,13 +184,10 @@ np.savez(localpath + '/oa_plandepth_stats_B03_fullplanning', post_depth_oa, m_pr
 post_depth_ya, m_prob_ya, exc_count_ya = get_posterior_stats(post_marg_ya)
 np.savez(localpath + '/ya_plandepth_stats_B03_fullplanning', post_depth_ya, m_prob_ya, exc_count_ya)
 
-
-
-#file = b = np.load('/home/sass/Dokumente/plandepth/oa_plandepth_stats_B03.npz', allow_pickle=True)
 file = b = np.load(localpath + '/oa_plandepth_stats_B03_fullplanning.npz', allow_pickle=True)
 fs = file.files # names of the stored arrays (['post_depth_oa', 'm_prob_oa', 'exc_count_oa'])
 post_meanPD_firstAction_oa = np.matmul(file[fs[1]][0,:,:,:], np.arange(1,4))
-import pandas as pd
+
 dict_ids_oa={}
 dict_ids_oa['ID'] = ids_oa
 pd.DataFrame(dict_ids_oa).to_csv(localpath + '/IDs_OA.csv')
@@ -201,15 +196,13 @@ df_oa_meanPD = pd.DataFrame(post_meanPD_firstAction_oa) # Without subject IDs
 pd.DataFrame(df_oa_meanPD).to_csv(localpath + '/meanPD_1st_action_oa_single_fullplanning.csv')
 file.close()
 
-
-
-#file = b = np.load('/home/sass/Dokumente/plandepth/ya_plandepth_stats_B03.npz', allow_pickle=True)
 file = b = np.load(localpath + '/ya_plandepth_stats_B03_fullplanning.npz', allow_pickle=True)
-fs = file.files # names of the stored arrays (['post_depth_ya', 'm_prob_ya', 'exc_count_ya'])
+fs = file.files 
 post_meanPD_firstAction_ya = np.matmul(file[fs[1]][0,:,:,:], np.arange(1,4))
 
 df_ya_meanPD = pd.DataFrame(post_meanPD_firstAction_ya) # Without subject IDs
 pd.DataFrame(df_ya_meanPD).to_csv(localpath + '/meanPD_1st_action_ya_single_fullplanning.csv')
+
 dict_ids_ya={}
 dict_ids_ya['ID'] = ids_ya
 pd.DataFrame(dict_ids_ya).to_csv(localpath + '/IDs_YA.csv')
@@ -218,7 +211,7 @@ pd.DataFrame(dict_ids_ya).to_csv(localpath + '/IDs_YA.csv')
 
 file.close()
 
-# In[13]
+# In[8]: Compute measures for model comparison 
 
 nll_120_mean_oa, nll_hinoise_120_mean_oa, nll_lonoise_120_mean_oa, \
 pseudo_rsquare_120_mean_oa, BIC_120_mean_oa, \
@@ -229,8 +222,7 @@ pseudo_rsquare_lonoise_120_mean_oa, BIC_lonoise_120_oa = calc_BIC(infer_oa,
                                                                   m_prob_oa) 
        
 pd.DataFrame(infer_oa.loss).to_csv(localpath + '/ELBO_oa_group_fullplanning.csv') # 
-
-#### Write neg. log-likelihood / fit values:####
+#
 dict_nll_oa = {}
 dict_nll_oa['nll_1staction_120_mean'] = nll_120_mean_oa
 dict_nll_oa['nll_1staction_hinoise_120_mean'] = nll_hinoise_120_mean_oa
@@ -255,7 +247,6 @@ pseudo_rsquare_lonoise_120_mean_ya, BIC_lonoise_120_ya = calc_BIC(infer_ya,
        
 pd.DataFrame(infer_ya.loss).to_csv(localpath + '/ELBO_ya_group_fullplanning.csv') # 
 
-#### Write neg. log-likelihood / fit values: ####
 dict_nll_ya = {}
 dict_nll_ya['nll_1staction_120_mean'] = nll_120_mean_ya
 dict_nll_ya['nll_1staction_hinoise_120_mean'] = nll_hinoise_120_mean_ya
@@ -271,41 +262,6 @@ df_nll_ya = pd.DataFrame(data=dict_nll_ya)
 df_nll_ya.to_csv(localpath + '/NLL_ya_group_fullplanning.csv') 
 
 
-# In[]
-# get exceedance probabilities of the 3 planning depths (rows = mini block, column = participant)
-# PD 1
-exc_count_oa_1 = exc_count_oa[0] [:] [:]
-exc_count_ya_1 = exc_count_ya[0] [:] [:]
-
-
-exc_count_oa_PD1 = exc_count_oa_1[0] [:] [:]
-import pandas as pd
-pd.DataFrame(exc_count_oa_PD1).to_csv(localpath+"/exc_PD1_oa_fullplanning.csv")
-file.close()
-
-exc_count_ya_PD1 = exc_count_ya_1[0] [:] [:]
-pd.DataFrame(exc_count_ya_PD1).to_csv(localpath+"/exc_PD1_ya_fullplanning.csv")
-file.close()
-
-# PD 2
-exc_count_oa_PD2 = exc_count_oa_1[1] [:] [:]
-pd.DataFrame(exc_count_oa_PD2).to_csv(localpath+"/exc_PD2_oa_fullplanning.csv")
-file.close()
-
-exc_count_ya_PD2 = exc_count_ya_1[1] [:] [:]
-pd.DataFrame(exc_count_ya_PD2).to_csv(localpath+"/exc_PD2_ya_fullplanning.csv")
-file.close()
-
-# PD 3
-exc_count_oa_PD3 = exc_count_oa_1[2] [:] [:]
-import pandas as pd
-pd.DataFrame(exc_count_oa_PD3).to_csv(localpath+"/exc_PD3_oa_fullplanning.csv")
-file.close()
-
-exc_count_ya_PD3 = exc_count_ya_1[2] [:] [:]
-import pandas as pd
-pd.DataFrame(exc_count_ya_PD3).to_csv(localpath+"/exc_PD3_ya_fullplanning.csv")
-file.close()
 
 
 
