@@ -73,7 +73,8 @@ def calc_BIC(inferrer, responses, conditions, m_prob, n_actions_considered = 1):
                 BIC_hinoise_120[i_subj] = 2*nll_hinoise_120_mean[i_subj] + m_param_count*np.log(60 * n_actions_considered)
                 BIC_lonoise_120[i_subj] = 2*nll_lonoise_120_mean[i_subj] + m_param_count*np.log(60 * n_actions_considered)    
                 
-    return pseudo_rsquare_120_mean, BIC_120_mean, \
+    return nll_120_mean, nll_hinoise_120_mean, nll_lonoise_120_mean, \
+           pseudo_rsquare_120_mean, BIC_120_mean, \
            pseudo_rsquare_hinoise_120_mean, BIC_hinoise_120, \
            pseudo_rsquare_lonoise_120_mean, BIC_lonoise_120
            
