@@ -65,7 +65,7 @@ def variational_inference(stimuli, mask, responses):
     infer = Inferrer(agent, stimuli, responses, mask)
     infer.fit(num_iterations=1000, 
               num_particles=100, 
-              optim_kwargs={'lr': .010}) # lr: Learning rate, keep at .010
+              optim_kwargs={'lr': .010}) # lr: Learning rate
     
     return infer
 

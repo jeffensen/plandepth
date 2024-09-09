@@ -74,7 +74,7 @@ def variational_inference(stimuli, mask, responses):
 # load and format behavioural data
 path1 = 'P:/037/B3_BEHAVIORAL_STUDY/04_Experiment/LOG_Files/full_datasets_OA/'
 path2 = 'P:/037/B3_BEHAVIORAL_STUDY/04_Experiment/LOG_Files/full_datasets_YA/'
-localpath = 'P:/037/B3_BEHAVIORAL_STUDY/04_Experiment/Analysis_Scripts/SAT_Results/Results_discount_hyperbolic_theta_alpha_kmax30' 
+localpath = 'P:/037/B3_BEHAVIORAL_STUDY/04_Experiment/Analysis_Scripts/SAT_Results/Results_discount_hyperbolic_theta_alpha_kmax30_test1' 
 
 filenames = ["space_adventure_pd-results.json",
              "space_adventure_pd_inv-results.json"]    
@@ -165,14 +165,13 @@ g.fig.savefig(localpath + '/parameter_participant_ya_discount_hyperbolic_theta_a
 # plot posterior distribution over groups
 pars_df_oa['group'] = 'OA'
 pars_df_ya['group'] = 'YA'
-
-pars_df = pars_df_oa.append(pars_df_ya, ignore_index=True)
+pars_df = pd.concat([pars_df_oa, pars_df_ya], ignore_index=True)
 
 g = sns.FacetGrid(pars_df, col="parameter", hue='group', height=5, sharey=False, sharex=False, palette='Set1');
 g = g.map(sns.kdeplot, 'value').add_legend();
 g.fig.savefig(localpath + '/post_group_parameters_OA_YA_discount_hyperbolic_theta_alpha_kmax30.pdf', dpi=300)
 
-pars_df = pars_df_oa.append(pars_df_ya)
+pars_df = pd.concat([pars_df_oa, pars_df_ya], ignore_index=True)
 pars_df.to_csv(localpath + '/pars_post_samples_discount_hyperbolic_theta_alpha_kmax30.csv')
 
 # In[7]: Compute the posterior marginal over planning depth, 

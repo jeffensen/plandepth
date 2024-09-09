@@ -74,7 +74,7 @@ def variational_inference(stimuli, mask, responses):
 # load and format behavioural data
 path1 = 'P:/037/B3_BEHAVIORAL_STUDY/04_Experiment/LOG_Files/full_datasets_OA/' 
 path2 = 'P:/037/B3_BEHAVIORAL_STUDY/04_Experiment/LOG_Files/full_datasets_YA/'
-localpath = 'P:/037/B3_BEHAVIORAL_STUDY/04_Experiment/Analysis_Scripts/SAT_Results/Results_lowprob_pruning_discount_hyperbolic_theta_kmax30' 
+localpath = 'P:/037/B3_BEHAVIORAL_STUDY/04_Experiment/Analysis_Scripts/SAT_Results/Results_lowprob_pruning_discount_hyperbolic_theta_kmax30_test1' 
 
 filenames = ["space_adventure_pd-results.json",
              "space_adventure_pd_inv-results.json"]

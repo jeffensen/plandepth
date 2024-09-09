@@ -74,7 +74,7 @@ def variational_inference(stimuli, mask, responses):
 # load and format behavioural data
 path1 = 'P:/037/B3_BEHAVIORAL_STUDY/04_Experiment/LOG_Files/full_datasets_OA/'
 path2 = 'P:/037/B3_BEHAVIORAL_STUDY/04_Experiment/LOG_Files/full_datasets_YA/'
-localpath = 'P:/037/B3_BEHAVIORAL_STUDY/04_Experiment/Analysis_Scripts/SAT_Results/Results_lowprob_pruning' 
+localpath = 'P:/037/B3_BEHAVIORAL_STUDY/04_Experiment/Analysis_Scripts/SAT_Results/Results_lowprob_pruning_test1' 
 
 filenames = ["space_adventure_pd-results.json",
              "space_adventure_pd_inv-results.json"]    
@@ -258,5 +258,5 @@ dict_nll_ya['pseudo_Rsquare_1staction_hinoise_120_mean'] = pseudo_rsquare_hinois
 dict_nll_ya['pseudo_Rsquare_1staction_lonoise_120_mean'] = pseudo_rsquare_lonoise_120_mean_ya   
 dict_nll_ya['ID'] = ids_ya
 df_nll_ya = pd.DataFrame(data=dict_nll_ya)
-df_nll_ya.to_csv(localpath + '/NLL_ya_group_lowprob_pruning')
+df_nll_ya.to_csv(localpath + '/NLL_ya_group_lowprob_pruning.csv')
                  
