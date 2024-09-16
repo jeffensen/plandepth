@@ -64,6 +64,7 @@ class BackInduction(object):
                 self.beta = (trans_par[..., 0]) # Response noise
                 self.theta = trans_par[..., 1] # Bias term in sigmoid function fot action-selection
                 self.alpha = (trans_par[..., 2]) # Learning rate for belief update     
+                
             else:
                 assert trans_par.shape[-1] == self.np
                 #self.tp_mean0 = trans_par[:, :2].sigmoid()  # transition probabilty for action jump

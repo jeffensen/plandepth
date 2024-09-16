@@ -63,7 +63,7 @@ def variational_inference(stimuli, mask, responses):
 
     # load inference module and start model fitting
     infer = Inferrer(agent, stimuli, responses, mask)
-    infer.fit(num_iterations=1000, 
+    infer.fit(num_iterations=3, 
               num_particles=100, 
               optim_kwargs={'lr': .010}) # lr: Learning rate
     
@@ -74,7 +74,7 @@ def variational_inference(stimuli, mask, responses):
 # load and format behavioural data
 path1 = 'P:/037/B3_BEHAVIORAL_STUDY/04_Experiment/LOG_Files/full_datasets_OA/' # change to correct path
 path2 = 'P:/037/B3_BEHAVIORAL_STUDY/04_Experiment/LOG_Files/full_datasets_YA/'
-localpath = 'P:/037/B3_BEHAVIORAL_STUDY/04_Experiment/Analysis_Scripts/SAT_Results/Results_fullplanning_test2' 
+localpath = 'P:/037/B3_BEHAVIORAL_STUDY/04_Experiment/Analysis_Scripts/SAT_Results/Results_fullplanning_test4' 
 
 filenames = ["space_adventure_pd-results.json",
              "space_adventure_pd_inv-results.json"]   
@@ -86,7 +86,7 @@ stimuli_ya, mask_ya, responses_ya, conditions_ya, ids_ya = load_and_format_behav
 # In[4]:
 
 # sample from posterior
-def format_posterior_samples(infer):
+def format_posterior_samples(infer,n_subjects):
     """
     
 
@@ -97,28 +97,48 @@ def format_posterior_samples(infer):
     Returns
     -------
      DataFrame
-        inferred parameters (n_samples per subject).
+        pars_df: sampled parameters values (n_samples per subject).
 
     """
-    labels = [r'$\tilde{\beta}$', r'$\theta$', r'$\alpha$']
+    labels = [r'$\tilde{\beta}$', 'theta', r'$\alpha$']
     pars_df, mg_df, sg_df = infer.sample_from_posterior(labels)
     
     # transform sampled parameter values to the true parameter range
-    pars_df[r'$\beta$'] = torch.from_numpy(pars_df[r'$\tilde{\beta}$'].values).exp().numpy()
-    pars_df[r'$\alpha$'] = torch.from_numpy(pars_df[r'$\alpha$'].values).sigmoid().numpy()    
+    pars_df['beta'] = torch.from_numpy(pars_df[r'$\tilde{\beta}$'].values).exp().numpy()
+    pars_df['alpha'] = torch.from_numpy(pars_df[r'$\alpha$'].values).sigmoid().numpy()    
 
     pars_df.drop([r'$\tilde{\beta}$'], axis=1, inplace=True) 
-    return pars_df.melt(id_vars=['subject'], var_name='parameter')
+    pars_df.drop([r'order'], axis=1, inplace=True) 
+    
+   #add index for sample
+    repetitions = [num for num in range(1000) for _ in range(n_subjects)]
 
+    # Add the new column to the DataFrame
+    pars_df['sample_index'] = repetitions
+
+    pars_df = pars_df.melt(id_vars=['subject', 'sample_index'], var_name='parameter')
+        
+    return pars_df
 
 # In[5]:
-    
 # Variational inference
 infer_oa = variational_inference(stimuli_oa, mask_oa, responses_oa)
-pars_df_oa = format_posterior_samples(infer_oa)
+pars_df_oa = format_posterior_samples(infer_oa, len(ids_oa))
 
+# In[6]:
+# computed for the first action     
+log_likelihood_oa = infer_oa.compute_loglike(pars_df_oa)
+
+# In[7]:
+m_param_count = infer_oa.agent.np
+n_actions_considered = 1
+BIC_fullplan_oa =2 * -log_likelihood_oa + m_param_count * np.log(120 * n_actions_considered)
+
+# In[8]:
 n_samples = 100
 post_marg_oa = infer_oa.sample_posterior_marginal(n_samples=n_samples)
+
+# In[9]:
 pars_df_oa['IDs'] = np.array(ids_oa)[pars_df_oa.subject.values - 1]
 
 # plot convergence of ELBO bound (approximate value of the negative marginal log likelihood)
@@ -135,13 +155,24 @@ g = g.map(errorplot, 'subject', 'value').add_legend();
 #g.axes[0,0].set_ylim([-1, 2]) # Adjust axes if necessary
 g.fig.savefig(localpath + '/parameter_participant_oa_fullplanning.jpg')
 
-# In[6]
-
+# In[10]:
 infer_ya = variational_inference(stimuli_ya, mask_ya, responses_ya)
-pars_df_ya = format_posterior_samples(infer_ya)
+pars_df_ya = format_posterior_samples(infer_ya, len(ids_ya))
 
+# In[11]:
+# computed for the first action     
+log_likelihood_ya = infer_ya.compute_loglike(pars_df_ya)
+
+# In[12]:
+m_param_count = infer_ya.agent.np
+n_actions_considered = 1
+BIC_fullplan_ya =2 * -log_likelihood_ya + m_param_count * np.log(120 * n_actions_considered)
+
+# In[13]:
 n_samples = 100
 post_marg_ya = infer_ya.sample_posterior_marginal(n_samples=n_samples)
+
+# In[14]:
 pars_df_ya['IDs'] = np.array(ids_ya)[pars_df_ya.subject.values - 1]
 
 # plot convergence of ELBO bound (approximate value of the negative marginal log likelihood)
@@ -153,6 +184,7 @@ axes.plot(range(len(df_loss[0].rolling(window=25).mean())-100),
 axes.set_title('ELBO Testdaten')
 fig.savefig(localpath + '/ELBO Testdaten_ya_fullplanning.jpg')
 
+# In[15]:
 
 # visualize posterior parameter estimates over subjects
 g = sns.FacetGrid(pars_df_ya, col="parameter", height=5, sharey=False);
@@ -175,7 +207,7 @@ pars_df = pd.concat([pars_df_oa, pars_df_ya], ignore_index=True)
 pars_df.to_csv(localpath + '/pars_post_samples_fullplanning.csv')
 
 
-# In[7]: Compute the posterior marginal over planning depth, 
+# In[16]: Compute the posterior marginal over planning depth, 
 # compute exceedanace probability and plot the results for individual subjects and for the group level results.
 
 post_depth_oa, m_prob_oa, exc_count_oa = get_posterior_stats(post_marg_oa)
@@ -211,7 +243,7 @@ pd.DataFrame(dict_ids_ya).to_csv(localpath + '/IDs_YA.csv')
 
 file.close()
 
-# In[8]: Compute measures for model comparison 
+# In[17]: Compute measures for model comparison 
 
 nll_120_mean_oa, nll_hinoise_120_mean_oa, nll_lonoise_120_mean_oa, \
 pseudo_rsquare_120_mean_oa, BIC_120_mean_oa, \
@@ -260,8 +292,4 @@ dict_nll_ya['pseudo_Rsquare_1staction_lonoise_120_mean'] = pseudo_rsquare_lonois
 dict_nll_ya['ID'] = ids_ya
 df_nll_ya = pd.DataFrame(data=dict_nll_ya)
 df_nll_ya.to_csv(localpath + '/NLL_ya_group_fullplanning.csv') 
-
-
-
-
 

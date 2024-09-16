@@ -10,6 +10,7 @@ from torch.distributions import constraints, biject_to
 
 from pyro.distributions.util import broadcast_shape, sum_rightmost
 
+import pyro
 import pyro.distributions as dist
 from pyro import sample, param, plate, markov, poutine, clear_param_store, get_param_store, module
 from pyro.infer import SVI, TraceEnum_ELBO
@@ -56,7 +57,7 @@ class Inferrer(object):
 
         # define prior uncertanty over model parameters and subjects
         a = param('a', 2*ones(np), constraint=constraints.positive)
-        r = param('b', 2*ones(np), constraint=constraints.positive)
+        r = param('r', 2*ones(np), constraint=constraints.positive)
         tau = sample('tau', dist.Gamma(a, r/a).to_event(1))
 
         sig = 1./torch.sqrt(tau)
@@ -65,23 +66,26 @@ class Inferrer(object):
         s = param('s', ones(np), constraint=constraints.positive)
         mu = sample("mu", dist.Normal(m, s*sig).to_event(1))
 
-        ac1 = param("alphas_c1", ones(2), constraint=constraints.positive)
-        ac2 = param("alphas_c2", ones(3), constraint=constraints.positive)
+        alphas_c1 = param("alphas_c1", ones(2), constraint=constraints.positive)
+        alphas_c2 = param("alphas_c2", ones(3), constraint=constraints.positive)
 
         with plate('subjects', nsub):
+            # locs.shape : [num_particles, num_subjects, 3]
             locs = sample("locs", dist.Normal(mu, sig).to_event(1))
+            # print(locs.shape)
+            # print('=== === ===')
             # define priors over planning depth
-            probsc1 = sample("probs_c1", dist.Dirichlet(ac1))
-            probsc2 = sample("probs_c2", dist.Dirichlet(ac2))
+            probs_c1 = sample("probs_c1", dist.Dirichlet(alphas_c1))
+            probs_c2 = sample("probs_c2", dist.Dirichlet(alphas_c2))
 
         agent.set_parameters(locs)
 
         shape = agent.batch_shape
 
         tmp = zeros(shape + (3,))
-        tmp[..., :2] = probsc1
+        tmp[..., :2] = probs_c1
 
-        priors = torch.stack([tmp, probsc2], -2)
+        priors = torch.stack([tmp, probs_c2], -2)
 
         for b in markov(range(nblk)):
             conditions = self.conditions[..., b]
@@ -95,6 +99,7 @@ class Inferrer(object):
                 if t == 0:
                     res = None
                     probs = priors[..., range(nsub), max_trials - 2, :]
+                    
                 else:
                     res = responses[:, t-1]
                     probs = tm[t-1, -1]
@@ -110,7 +115,11 @@ class Inferrer(object):
                 probs = probs[..., valid, :]
 
                 if t == 2:
-                    agent.update_beliefs(b, t + 1, states[:, t + 1], conditions, responses[:, t])
+                    agent.update_beliefs(b, 
+                                         t + 1, 
+                                         states[:, t + 1], 
+                                         conditions, 
+                                         responses[:, t])
 
                 if N > 0:
                     with plate('responses_{}_{}'.format(b, t), N):
@@ -411,7 +420,7 @@ class Inferrer(object):
 
         return tp_df, mg_df, tg_df
 
-    def sample_posterior_marginal(self, n_samples=100):
+    def sample_posterior_marginal(self, n_samples=1000):
 
         elbo = TraceEnum_ELBO(max_plate_nesting=self.mpn)
         post_depth_samples = {}
@@ -430,3 +439,152 @@ class Inferrer(object):
             post_depth_samples[name] = torch.stack(post_depth_samples[name]).numpy()
 
         return post_depth_samples
+    
+    def compute_loglike(self, model_params):
+        '''
+
+        Parameters
+        ----------
+        model_params : df
+            Contains model parameters for loglike computation
+            3 parameters: alpha, beta, theta
+            Columns: 
+                subject
+                sample_index
+                parameter
+                value
+               
+
+        Returns
+        -------
+        Log-likelihood 
+        --> for the first action choice across all participants in the space adventure task.
+
+        '''
+        # reduce number of samples considered for shorter analysis runtime in debugging 
+        model_params = model_params[model_params['sample_index']<2]
+        
+        # predefine variables
+        ### df grouped by sample from prosterior index (mean across all subjects)
+        grouped_df = model_params.groupby(['sample_index']) 
+        ### n participants in behavioral data set 
+        num_subjects = len(model_params['subject'].unique())
+        ### n samples drawn from posterior
+        num_samples = len(model_params['sample_index'].unique())
+        
+        ### predefine to fill in later
+        first_action_locs = torch.zeros(num_subjects, 3) + 0.01
+        # all_action_locs = torch.zeros(num_subjects, 3) + 0.01
+        first_action_max_param_values = torch.zeros(num_subjects, 3) # parameters at max loglike for first action
+        # all_actions_max_param_values = torch.zeros(num_subjects, 3) # parameters at max. loglike all actions
+        
+    
+        for subidx in range(num_subjects):
+
+            parameters = torch.zeros(num_samples, 3)
+            # all_actions_loglike = torch.zeros(num_samples)
+            first_action_loglike = torch.zeros(num_samples) 
+            
+            
+            for name, group in grouped_df:
+                sample_idx = group['sample_index'].unique()[0]
+                
+                print(sample_idx) #show progress
+                                
+                beta = torch.log(torch.tensor(group[group['parameter'] == 'beta']['value'].tolist()))
+                theta = torch.tensor(group[group['parameter'] == 'theta']['value'].tolist())
+                alpha = torch.logit(torch.tensor(group[group['parameter'] == 'alpha']['value'].tolist()))
+                
+                first_action_locs[subidx, 0] = beta[subidx]
+                first_action_locs[subidx, 1] = theta[subidx]
+                first_action_locs[subidx, 2] = alpha[subidx]
+               
+                # all_actions_locs[subidx, 0] = beta[subidx]
+                # all_actions_locs[subidx, 1] = theta[subidx]
+                # all_actions_locs[subidx, 2] = alpha[subidx]
+            
+             
+                parameters[sample_idx, :] = torch.tensor([beta[subidx], 
+                                              theta[subidx], 
+                                              alpha[subidx]])
+                
+            
+                # the probabilistic model (self.model_static) is conditioned on the current locs
+                conditioned_model = poutine.condition(self.model_static, 
+                                                      data = {'locs': first_action_locs})
+            
+                # conditioned_model = poutine.condition(self.model_static, 
+                #                                     data = {'locs': all_actions_locs})
+
+                # do we need this ?
+                # conditioned_model = poutine.condition(self.model_static, 
+                #                                       data = {'locs': locs, 
+                #                                               'probs_c2': probs_c2})
+    
+    
+                # the trace is computed for all actions 
+                all_actions_trace = poutine.trace(conditioned_model).get_trace()
+                                   
+                # then the subset of data for first action is extracted from the trace
+                ### Define the specific keys needed from the trace
+                initial_keys = ['_INPUT', 
+                                'a', 
+                                'r', 
+                                'tau',
+                                'm',
+                                's', 
+                                'mu', 
+                                'alphas_c1', 
+                                'alphas_c2', 
+                                'subjects', 
+                                'locs', 
+                                'probs_c1', 
+                                'probs_c2']
+                
+                ### Generate keys for 'd', 'obs', and 'responses' that end with '_0' 
+                ### (which means "first action"), keeping them grouped
+                pattern_keys = [
+                    (f"d_{i}_0", 
+                     f"obs_{i}_0", 
+                     f"responses_{i}_0") for i in range(140)
+                ]
+                
+                # Flatten the pattern_keys tuples and combine with initial_keys
+                subset_keys = initial_keys + [key for group in pattern_keys for key in group] 
+               
+                # create the trace that contains only first action data                
+                first_action_trace = pyro.poutine.Trace()
+
+                for key in subset_keys:
+                    if key in all_actions_trace.nodes:
+                        first_action_trace.nodes[key] = all_actions_trace.nodes[key]
+
+                first_action_log_likelihood = first_action_trace.log_prob_sum()
+                # all_actions_log_likelihood = all_actions_trace.log_prob_sum()
+                                
+                first_action_loglike[sample_idx] = first_action_log_likelihood                
+                # all_actions_loglike[sample_idx] = all_actions_log_likelihood
+                
+                # updates max_param_values with the parameters that yielded the highest log-likelihood for the current sample
+                first_action_max_param_values[subidx, : ] = parameters[first_action_loglike.argmax(), :]
+                # all_actions_max_param_values[subidx, : ] = parameters[all_actions_loglike.argmax(), :]
+            
+        # the locs tensor is updated with the max_param_values
+        # all_actions_locs[:, 0] = all_actions_max_param_values[:, 0]
+        # all_actions_locs[:, 1] = all_actions_max_param_values[:, 1]
+        # all_actions_locs[:, 2] = all_actions_max_param_values[:, 2]
+    
+        first_action_locs[:, 0] = first_action_max_param_values[:, 0]
+        first_action_locs[:, 1] = first_action_max_param_values[:, 1]
+        first_action_locs[:, 2] = first_action_max_param_values[:, 2]
+        
+        # The model is conditioned on these final locs    
+        conditioned_model = poutine.condition(self.model_static, 
+                                              data = {'locs': first_action_locs})
+        # conditioned_model = poutine.condition(self.model_static, 
+        #                                     data = {'locs': all_actions_locs})
+    
+        first_action_trace = poutine.trace(conditioned_model).get_trace()
+        first_action_log_likelihood = first_action_trace.log_prob_sum()
+        
+        return first_action_log_likelihood

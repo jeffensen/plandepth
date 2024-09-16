@@ -33,26 +33,28 @@ def calc_BIC(inferrer, responses, conditions, m_prob, n_actions_considered = 1):
     for i_mblk in range(n_miniblocks):
         for i_action in range(n_actions_considered): # Consider only first action; use range(3) to consider all action steps
             #resp = inferrer.responses[0][i_mblk].numpy()[i_action]      # Index 0 to get rid of "duplicate" data
-            #logits_depths = inferrer.agent.logits[3*i_mblk + i_action].detach().numpy()[0] # agent.logits = Value difference between Jump and Move            
-            # CAUTION: If there are as many logit values as particles (e.g., 100), we have to extract the mean rather than index 0!
-            logits_depths = inferrer.agent.logits[3*i_mblk + i_action].detach().numpy() #.mean(0) # agent.logits = Value difference between Jump and Move             
-        
+   # CAUTION: If there are as many logit values as particles (e.g., 100), we have to extract the mean rather than index 0!
+            #logits = Log-odds: They express the relative preference for the "jump" action compared to the "move" action. 
+            logits_depths = inferrer.agent.logits[3*i_mblk + i_action].detach().numpy() 
             for i_subj in range(n_subj):
                 resp = inferrer.responses[i_subj][i_mblk].numpy()[i_action] 
-
-                p_jump_depths = 1.0 / (1 + np.exp(-logits_depths[i_subj])) # softmax function for choice probabilities
+                
+                #The logits haven't been transformed into probabilities yet.--> softmax function for choice probabilities
+                p_jump_depths = 1.0 / (1 + np.exp(-logits_depths[i_subj])) 
                 p_move_depths = 1 - p_jump_depths
+                
                 if resp==1:
-                    nll = -np.log(p_jump_depths) # Apply -np.log() to obtain the negative log-likelihood (nll), for numerical reasons
+                    nll = -np.log(p_jump_depths) # obtain the negative log-likelihood (nll), for numerical reasons
                 elif resp==0:
-                    nll = -np.log(p_move_depths)                              
+                    nll = -np.log(p_move_depths)        
+                      
                 nll_firstaction_depths[i_subj, i_mblk, :] = nll              
-                #nll_firstaction_mean[i_subj, i_mblk] = np.matmul(nll_firstaction_depths[i_subj, i_mblk, :], m_prob[0][i_mblk,0,:]) # WRONG - m_prob_ya[0] has shape (n_miniblocks, n_subjects, n_steps !!!
                 nll_firstaction_mean[i_subj, i_mblk] = np.matmul(nll_firstaction_depths[i_subj, i_mblk, :], m_prob[0][i_mblk, i_subj, :])            
 
                 nll_hinoise_all[i_subj, :] = np.matmul(nll_firstaction_depths[i_subj, :, :].transpose(), conditions[0][i_subj, :].numpy()) # Sum of NLL for high noise (noise==1) 
                 nll_lonoise_all[i_subj, :] = np.matmul(nll_firstaction_depths[i_subj, :, :].transpose(), 1 - conditions[0][i_subj, :].numpy()) # Sum of NLL for low noise (noise==0)
                 nll_all[i_subj, :] = nll_hinoise_all[i_subj, :] + nll_lonoise_all[i_subj, :]
+                
                 nll_hinoise_120[i_subj, :] = np.matmul(nll_firstaction_depths[i_subj, 20:, :].transpose(), conditions[0][i_subj, 20:].numpy()) # Exclude 20 training miniblocks
                 nll_lonoise_120[i_subj, :] = np.matmul(nll_firstaction_depths[i_subj, 20:, :].transpose(), 1 - conditions[0][i_subj, 20:].numpy()) 
                 nll_120[i_subj, :] = nll_hinoise_120[i_subj, :] + nll_lonoise_120[i_subj, :]
